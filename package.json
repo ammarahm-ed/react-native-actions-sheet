@@ -1,0 +1,32 @@
+{
+  "name": "react-native-raw-bottom-sheet",
+  "version": "0.1",
+  "description": "",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ammarahm-ed/react-native-actions-sheet"
+  },
+  "keywords": [
+    "bottom-sheet",
+    "action-sheet",
+    "raw-bottom-sheet",
+    "bottom-drawer",
+    "bottom-animated",
+    "drawer",
+    "picker",
+    "swipper",
+    "modal",
+    "dialog"
+  ],
+  "author": "NY Samnang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ammarahm-ed/react-native-actions-sheet/issues/"
+  },
+  "homepage": "https://github.com/ammarahm-ed/react-native-actions-sheet",
+  "devDependencies": {
+    "react": "^16.8.6",
+    "react-native": "^0.60.5"
+  }
+}
