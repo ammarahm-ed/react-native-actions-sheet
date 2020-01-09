@@ -16,14 +16,17 @@ const ActionSheet = ({
   animationType = 'fade',
   closeOnPressBack = true,
   gestureEnabled = true,
-  initialOffsetFromBottom = 0.5,
+  initialOffsetFromBottom = 0.6,
   customStyles = {},
   onClose = () => {},
   onOpen = () => {},
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [scrollable, setScrollable] = useState(false);
-  let customComponentHeight;
+  const [layoutHasCalled, setLayoutHasCalled] = useState(false);
+
+  ActionSheet.customComponentHeight;
+  ActionSheet.prevScroll;
 
   ActionSheet._setModalVisible = () => {
     if (!modalVisible) {
@@ -37,21 +40,27 @@ const ActionSheet = ({
   };
 
   _hideModal = () => {
-    scrollTo(0);
+    _scrollTo(0);
     setTimeout(() => {
+      setLayoutHasCalled(false);
       setModalVisible(false);
+
       onClose();
-    }, 50);
+    }, 150);
   };
 
   _showModal = event => {
-    customComponentHeight = event.nativeEvent.layout.height;
-
-    _scrollTo(
-      gestureEnabled
-        ? customComponentHeight * initialOffsetFromBottom
-        : customComponentHeight,
-    );
+    if (layoutHasCalled) {
+      return;
+    } else {
+      ActionSheet.customComponentHeight = event.nativeEvent.layout.height;
+      _scrollTo(
+        gestureEnabled
+          ? ActionSheet.customComponentHeight * initialOffsetFromBottom
+          : ActionSheet.customComponentHeight,
+      );
+      setLayoutHasCalled(true);
+    }
   };
 
   const _onScrollBeginDrag = event => {
@@ -63,8 +72,9 @@ const ActionSheet = ({
     let verticalOffset = event.nativeEvent.contentOffset.y;
 
     if (prevScroll < verticalOffset) {
-      if (verticalOffset - prevScroll > 50) {
-        _scrollTo(customComponentHeight);
+      if (verticalOffset - prevScroll > 35) {
+        let addFactor = deviceHeight * 0.1;
+        _scrollTo(ActionSheet.customComponentHeight + addFactor);
       } else {
         _scrollTo(prevScroll);
       }
@@ -117,6 +127,7 @@ const ActionSheet = ({
           scrollEnabled={scrollable}
           onScrollBeginDrag={_onScrollBeginDrag}
           onScrollEndDrag={_onScrollEndDrag}
+          onTouchEnd={_onTouchEnd}
           overScrollMode="always"
           style={styles.scrollview}>
           <View
@@ -124,7 +135,7 @@ const ActionSheet = ({
             onTouchStart={_onTouchStart}
             onTouchEnd={_onTouchEnd}
             style={{
-              height: deviceHeight,
+              height: deviceHeight * 1.1,
               width: '100%',
             }}>
             <TouchableOpacity
