@@ -23,20 +23,20 @@ or if you use yarn:
 For complete usage, see the example project.
 
 ## ActionSheet Props
-|Name|Description|Default Value|
-|--|--|--|
-|children|Your custom component to render inside ActionSheet|`<View/>`
-|customStyles|Any custom styles you want to add to the container|
-|animated | Enable or disable animation of Modal|`true`
-|animationType| Animation type for Modal|`fade`
-|gestureEnabled| Enable gestures to control ActionSheet|`true`
-|initialOffsetFromBottom|Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**|`0.6`
-|closeOnPressBack| Enable gestures to control ActionSheet|`true`
-|elevation| Elevation of ActionSheet|`5`
-|indicatorColor| Color of gestureEnabled indicator|`gray`
-|overlayColor| Color of background Overlay. **Must be a rgba(r,g,b,a)** value|`rgba(0,0,0,0.3)`
-|onClose| Function Called on Close
-|onOpen| Function Called on Open
+|Name|Type|Description|Default Value|
+|--|--|--|--|
+|children|React.Component|Your custom component to render inside ActionSheet|`<View/>`
+|customStyles|object|Any custom styles you want to add to the container|
+|animated |boolean| Enable or disable animation of Modal|`true`
+|animationType|"fade" or "slide"| Animation type for Modal|`fade`
+|gestureEnabled|boolean| Enable gestures to control ActionSheet|`true`
+|initialOffsetFromBottom|number|Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**|`0.6`
+|closeOnPressBack|boolean| Enable gestures to control ActionSheet|`true`
+|elevation|number| Elevation of ActionSheet|`5`
+|indicatorColor|string| Color of gestureEnabled indicator|`gray`
+|overlayColor|rgba string| Color of background Overlay. **Must be a rgba(r,g,b,a)** value|`rgba(0,0,0,0.3)`
+|onClose|function| Function Called on Close
+|onOpen|function| Function Called on Open
 
 ## ActionSheet Methods
 ActionSheet can be made visible using its own method only.
