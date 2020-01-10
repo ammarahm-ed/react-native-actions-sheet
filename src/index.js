@@ -21,7 +21,7 @@ const getElevation = elevation => {
 };
 
 const ActionSheet = ({
-  children = <View />,
+  children = <View /> ,
   animated = true,
   animationType = 'fade',
   closeOnPressBack = true,
@@ -30,6 +30,7 @@ const ActionSheet = ({
   bounceBackOffset=50,
   initialOffsetFromBottom = 0.6,
   indicatorColor = 'gray',
+  width = '100%',
   customStyles = {backgroundColor: 'white'},
   overlayColor = 'rgba(0,0,0,0.3)',
   onClose = () => {},
@@ -156,14 +157,14 @@ const ActionSheet = ({
             onTouchEnd={_onTouchEnd}
             style={{
               height: deviceHeight * 1.1,
-              width: '100%',
+              width:width,
             }}>
             <TouchableOpacity
               onPress={_hideModal}
               onLongPress={_hideModal}
               style={{
                 height: deviceHeight,
-                width: '100%',
+                width: width,
               }}
             />
           </View>
