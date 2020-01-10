@@ -129,7 +129,11 @@ const ActionSheet = ({
       visible={modalVisible}
       animationType={animationType}
       animated={animated}
-      onShow={() => onOpen}
+      onShow={() => { 
+        if (typeof onOpen === "function") {
+          onOpen();
+        }
+        }}
       onRequestClose={() => {
         if (closeOnPressBack) _hideModal();
       }}
