@@ -139,7 +139,7 @@ const ActionSheet = ({
         if (closeOnPressBack) _hideModal();
       }}
       transparent={true}>
-      <View style={[styles.parentContainer, {backgroundColor: overlayColor}]}>
+      <View style={[styles.parentContainer, {backgroundColor: overlayColor.includes('rgba')? overlayColor : 'rgba(0,0,0,0.3)' }]}>
         <ScrollView
           bounces={false}
           ref={ref => (scrollViewRef = ref)}
