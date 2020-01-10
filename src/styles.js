@@ -24,7 +24,6 @@ export const styles = StyleSheet.create({
   parentContainer: {
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.23)',
     justifyContent: 'center',
     alignItems: 'center',
   },

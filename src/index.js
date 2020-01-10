@@ -10,14 +10,27 @@ import {styles} from './styles';
 let scrollViewRef;
 const deviceHeight = Dimensions.get('window').height;
 
+const getElevation = elevation => {
+  return {
+    elevation,
+    shadowColor: 'black',
+    shadowOffset: {width: 0.3 * elevation, height: 0.5 * elevation},
+    shadowOpacity: 0.2,
+    shadowRadius: 0.7 * elevation,
+  };
+};
+
 const ActionSheet = ({
   children = <View />,
   animated = true,
   animationType = 'fade',
   closeOnPressBack = true,
   gestureEnabled = true,
+  elevation = 5,
   initialOffsetFromBottom = 0.6,
-  customStyles = {},
+  indicatorColor = 'gray',
+  customStyles = {backgroundColor: 'white'},
+  overlayColor = 'rgba(0,0,0,0.3)',
   onClose = () => {},
   onOpen = () => {},
 }) => {
@@ -54,9 +67,11 @@ const ActionSheet = ({
       return;
     } else {
       ActionSheet.customComponentHeight = event.nativeEvent.layout.height;
+      let addFactor = deviceHeight * 0.1;
       _scrollTo(
         gestureEnabled
-          ? ActionSheet.customComponentHeight * initialOffsetFromBottom
+          ? ActionSheet.customComponentHeight * initialOffsetFromBottom +
+              addFactor
           : ActionSheet.customComponentHeight,
       );
       setLayoutHasCalled(true);
@@ -119,7 +134,7 @@ const ActionSheet = ({
         if (closeOnPressBack) _hideModal();
       }}
       transparent={true}>
-      <View style={styles.parentContainer}>
+      <View style={[styles.parentContainer, {backgroundColor: overlayColor}]}>
         <ScrollView
           bounces={false}
           ref={ref => (scrollViewRef = ref)}
@@ -129,7 +144,7 @@ const ActionSheet = ({
           onScrollEndDrag={_onScrollEndDrag}
           onTouchEnd={_onTouchEnd}
           overScrollMode="always"
-          style={styles.scrollview}>
+          style={[styles.scrollview]}>
           <View
             onTouchMove={_onTouchMove}
             onTouchStart={_onTouchStart}
@@ -147,8 +162,12 @@ const ActionSheet = ({
               }}
             />
           </View>
-          <View onLayout={_showModal} style={[customStyles, styles.container]}>
-            <View style={styles.indicator} />
+          <View
+            onLayout={_showModal}
+            style={[styles.container, customStyles, {...getElevation(5)}]}>
+            <View
+              style={[styles.indicator, {backgroundColor: indicatorColor}]}
+            />
             {children}
           </View>
         </ScrollView>
