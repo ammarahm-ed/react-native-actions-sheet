@@ -169,7 +169,7 @@ const ActionSheet = ({
           </View>
           <View
             onLayout={_showModal}
-            style={[styles.container, customStyles, {...getElevation(5)}]}>
+            style={[styles.container, customStyles, {...getElevation(elevation)}]}>
             <View
               style={[styles.indicator, {backgroundColor: indicatorColor}]}
             />
