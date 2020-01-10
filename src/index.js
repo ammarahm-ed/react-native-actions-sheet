@@ -27,6 +27,7 @@ const ActionSheet = ({
   closeOnPressBack = true,
   gestureEnabled = true,
   elevation = 5,
+  bounceBackOffset=50,
   initialOffsetFromBottom = 0.6,
   indicatorColor = 'gray',
   customStyles = {backgroundColor: 'white'},
@@ -87,14 +88,14 @@ const ActionSheet = ({
     let verticalOffset = event.nativeEvent.contentOffset.y;
 
     if (prevScroll < verticalOffset) {
-      if (verticalOffset - prevScroll > 35) {
+      if (verticalOffset - prevScroll > bounceBackOffset* 0.75) {
         let addFactor = deviceHeight * 0.1;
         _scrollTo(ActionSheet.customComponentHeight + addFactor);
       } else {
         _scrollTo(prevScroll);
       }
     } else {
-      if (prevScroll - verticalOffset > 50) {
+      if (prevScroll - verticalOffset > bounceBackOffset) {
         _hideModal();
       } else {
         _scrollTo(prevScroll);
