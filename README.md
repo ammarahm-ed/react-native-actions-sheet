@@ -40,11 +40,9 @@ For complete usage, see the example project.
 
 ## ActionSheet Methods
 ActionSheet can be made visible using its own method only.
-
-    ActionSheet._setModalVisible()
-
-
-
+```jsx
+ActionSheet.setModalVisible();
+```
 #
 
 ### MIT Licensed
