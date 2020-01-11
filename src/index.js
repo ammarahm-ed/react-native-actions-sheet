@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {Component} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -6,8 +6,9 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
+import PropTypes from 'prop-types';
 import {styles} from './styles';
-let scrollViewRef;
+
 const deviceHeight = Dimensions.get('window').height;
 
 const getElevation = elevation => {
@@ -20,196 +21,255 @@ const getElevation = elevation => {
   };
 };
 
-const ActionSheet = ({
-  children = <View />,
-  animated = true,
-  animationType = 'fade',
-  closeOnPressBack = true,
-  gestureEnabled = false,
-  bounceOnOpen = false,
-  bounceOffset = 20,
-  springOffset = 50,
-  elevation = 0,
-  initialOffsetFromBottom = 1,
-  indicatorColor = 'gray',
-  customStyles = {backgroundColor: 'white'},
-  overlayColor = 'rgba(0,0,0,0.3)',
-  onClose = () => {},
-  onOpen = () => {},
-}) => {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [scrollable, setScrollable] = useState(false);
-  const [layoutHasCalled, setLayoutHasCalled] = useState(false);
+export default class ActionSheet extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      modalVisible: false,
+      scrollable: false,
+      layoutHasCalled: false,
+    };
+    this.customComponentHeight;
+    this.prevScroll;
+    this.scrollAnimationEndValue;
+    this.hasBounced;
+    this.scrollViewRef;
+  }
 
-  ActionSheet.customComponentHeight;
-  ActionSheet.prevScroll;
-  ActionSheet.scrollAnimationEndValue;
-  ActionSheet.hasBounced;
-
-  ActionSheet._setModalVisible = () => {
-    if (!modalVisible) {
-      setModalVisible(true);
-      if (gestureEnabled) {
-        setScrollable(true);
-      }
+  _setModalVisible = () => {
+    if (!this.state.modalVisible) {
+      this.setState({
+        modalVisible: true,
+        scrollable: this.props.gestureEnabled,
+      });
     } else {
-      _hideModal();
+      this._hideModal();
     }
   };
 
-  const _hideModal = () => {
-    _scrollTo(0);
+  _hideModal = () => {
+    this._scrollTo(0);
     setTimeout(() => {
-      setLayoutHasCalled(false);
-      setModalVisible(false);
-      ActionSheet.customComponentHeight = null;
-      ActionSheet.prevScroll = null;
-      ActionSheet.scrollAnimationEndValue = null;
-      ActionSheet.hasBounced = null;
-      if (typeof onClose === 'function') onClose();
+      this.setState(
+        {
+          modalVisible: false,
+          layoutHasCalled: false,
+        },
+        () => {
+          if (typeof this.props.onClose === 'function') this.props.onClose();
+        },
+      );
     }, 150);
   };
 
-  const _showModal = event => {
-    if (layoutHasCalled) {
+  _showModal = event => {
+    let {gestureEnabled, bounceOffset, initialOffsetFromBottom} = this.props;
+
+    if (this.state.layoutHasCalled) {
       return;
     } else {
-      ActionSheet.customComponentHeight = event.nativeEvent.layout.height;
+      this.customComponentHeight = event.nativeEvent.layout.height;
       let addFactor = deviceHeight * 0.1;
-      _scrollTo(
+      this._scrollTo(
         gestureEnabled
-          ? ActionSheet.customComponentHeight * initialOffsetFromBottom +
+          ? this.customComponentHeight * initialOffsetFromBottom +
               addFactor +
               bounceOffset
-          : ActionSheet.customComponentHeight + bounceOffset,
+          : this.customComponentHeight + bounceOffset,
       );
-
-      setLayoutHasCalled(true);
+      this.setState({
+        layoutHasCalled: true,
+      });
     }
   };
 
-  const _onScrollBeginDrag = event => {
+  _onScrollBeginDrag = event => {
     let verticalOffset = event.nativeEvent.contentOffset.y;
-    ActionSheet.prevScroll = verticalOffset;
+
+    this.prevScroll = verticalOffset;
   };
 
-  const _onScrollEndDrag = event => {
+  _onScrollEndDrag = event => {
+    let {springOffset} = this.props;
+
     let verticalOffset = event.nativeEvent.contentOffset.y;
 
-    if (ActionSheet.prevScroll < verticalOffset) {
-      if (verticalOffset - ActionSheet.prevScroll > springOffset * 0.75) {
+    if (this.prevScroll < verticalOffset) {
+      if (verticalOffset - this.prevScroll > springOffset * 0.75) {
         let addFactor = deviceHeight * 0.1;
-        _scrollTo(ActionSheet.customComponentHeight + addFactor);
+        this._scrollTo(this.customComponentHeight + addFactor);
       } else {
-        _scrollTo(ActionSheet.prevScroll);
+        this._scrollTo(this.prevScroll);
       }
     } else {
-      if (ActionSheet.prevScroll - verticalOffset > springOffset) {
-        _hideModal();
+      if (this.prevScroll - verticalOffset > springOffset) {
+        this._hideModal();
       } else {
-        _scrollTo(ActionSheet.prevScroll);
+        this._scrollTo(this.prevScroll);
       }
     }
   };
 
-  const _scrollTo = (y, bouncing) => {
+  _scrollTo = (y, bouncing) => {
+    let {bounceOffset, bounceOnOpen} = this.props;
+
+    this.hasBounced = false;
     if (!bouncing && bounceOnOpen) {
-      ActionSheet.scrollAnimationEndValue = y + bounceOffset;
+      this.scrollAnimationEndValue = y + bounceOffset;
     } else {
-      ActionSheet.scrollAnimationEndValue = y;
+      this.scrollAnimationEndValue = y;
     }
-    ActionSheet.hasBounced = false;
-    scrollViewRef.scrollTo({
+
+    this.scrollViewRef.scrollTo({
       x: 0,
-      y: ActionSheet.scrollAnimationEndValue,
+      y: this.scrollAnimationEndValue,
       animated: true,
     });
   };
 
-  const _onTouchMove = () => {
-    setScrollable(false);
+  _onTouchMove = () => {
+    this._hideModal();
+    this.setState({
+      scrollable: false,
+    });
   };
 
-  const _onTouchStart = () => {
-    setScrollable(false);
+  _onTouchStart = () => {
+    this._hideModal();
+    this.setState({
+      scrollable: false,
+    });
   };
 
-  const _onTouchEnd = () => {
-    if (gestureEnabled) {
-      setScrollable(true);
+  _onTouchEnd = () => {
+    if (this.props.gestureEnabled) {
+      this.setState({
+        scrollable: true,
+      });
     }
   };
 
-  const _onScrollEndAnimation = () => {
-    if (!ActionSheet.hasBounced) {
-      _scrollTo(ActionSheet.scrollAnimationEndValue - bounceOffset, true);
-      ActionSheet.hasBounced = true;
+  _onScrollEndAnimation = () => {
+    let {bounceOffset} = this.props;
+    if (!this.hasBounced) {
+      this._scrollTo(this.scrollAnimationEndValue - bounceOffset, true);
+      this.hasBounced = true;
     }
   };
 
-  return (
-    <Modal
-      visible={modalVisible}
-      animationType={animationType}
-      animated={animated}
-      onShow={() => onOpen}
-      onRequestClose={() => {
-        if (closeOnPressBack) _hideModal();
-      }}
-      transparent={true}>
-      <View style={[styles.parentContainer, {backgroundColor: overlayColor}]}>
-        <ScrollView
-          bounces={false}
-          ref={ref => (scrollViewRef = ref)}
-          showsVerticalScrollIndicator={false}
-          scrollEnabled={scrollable}
-          onScrollBeginDrag={_onScrollBeginDrag}
-          onScrollEndDrag={_onScrollEndDrag}
-          onMomentumScrollEnd={() => {
-            if (bounceOnOpen) {
-              _onScrollEndAnimation();
-            }
-          }}
-          onScrollAnimationEnd={_onScrollEndAnimation}
-          onTouchEnd={_onTouchEnd}
-          overScrollMode="always"
-          style={[styles.scrollview]}>
-          <View
-            onTouchMove={_onTouchMove}
-            onTouchStart={_onTouchStart}
-            onTouchEnd={_onTouchEnd}
-            style={{
-              height: deviceHeight * 1.1,
-              width: '100%',
-            }}>
-            <TouchableOpacity
-              onPress={_hideModal}
-              onLongPress={_hideModal}
+  render() {
+    let {scrollable, modalVisible} = this.state;
+    let {
+      animationType,
+      animated,
+      onOpen,
+      closeOnPressBack,
+      overlayColor,
+      bounceOnOpen,
+      gestureEnabled,
+      elevation,
+      indicatorColor,
+      children,
+      customStyles,
+    } = this.props;
+
+    return (
+      <Modal
+        visible={modalVisible}
+        animationType={animationType}
+        animated={animated}
+        onShow={() => onOpen}
+        onRequestClose={() => {
+          if (closeOnPressBack) this._hideModal();
+        }}
+        transparent={true}>
+        <View style={[styles.parentContainer, {backgroundColor: overlayColor}]}>
+          <ScrollView
+            bounces={false}
+            ref={ref => (this.scrollViewRef = ref)}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={scrollable}
+            onScrollBeginDrag={this._onScrollBeginDrag}
+            onScrollEndDrag={this._onScrollEndDrag}
+            onMomentumScrollEnd={() => {
+              if (bounceOnOpen) {
+                this._onScrollEndAnimation();
+              }
+            }}
+            onScrollAnimationEnd={this._onScrollEndAnimation}
+            onTouchEnd={this._onTouchEnd}
+            overScrollMode="always"
+            style={[styles.scrollview]}>
+            <View
+              onTouchMove={this._onTouchMove}
+              onTouchStart={this._onTouchStart}
+              onTouchEnd={this._onTouchEnd}
               style={{
-                height: deviceHeight,
+                height: deviceHeight * 1.1,
                 width: '100%',
-              }}
-            />
-          </View>
-          <View
-            onLayout={_showModal}
-            style={[
-              styles.container,
-              customStyles,
-              {...getElevation(elevation)},
-            ]}>
-            {gestureEnabled ? (
-              <View
-                style={[styles.indicator, {backgroundColor: indicatorColor}]}
+              }}>
+              <TouchableOpacity
+                onPress={this._hideModal}
+                onLongPress={this._hideModal}
+                style={{
+                  height: deviceHeight,
+                  width: '100%',
+                }}
               />
-            ) : null}
+            </View>
+            <View
+              onLayout={this._showModal}
+              style={[
+                styles.container,
+                customStyles,
+                {...getElevation(elevation)},
+              ]}>
+              {gestureEnabled ? (
+                <View
+                  style={[styles.indicator, {backgroundColor: indicatorColor}]}
+                />
+              ) : null}
 
-            {children}
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
-  );
+              {children}
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+    );
+  }
+}
+
+ActionSheet.defaultProps = {
+  children: <View />,
+  animated: true,
+  animationType: 'fade',
+  closeOnPressBack: true,
+  gestureEnabled: true,
+  bounceOnOpen: true,
+  bounceOffset: 20,
+  springOffset: 50,
+  elevation: 5,
+  initialOffsetFromBottom: 0.6,
+  indicatorColor: 'gray',
+  customStyles: {},
+  overlayColor: 'rgba(0,0,0,0.3)',
+  onClose: () => {},
+  onOpen: () => {},
 };
-
-export default ActionSheet;
+ActionSheet.propTypes = {
+  children: PropTypes.node,
+  animated: PropTypes.bool,
+  animationType: PropTypes.oneOf(['none', 'slide', 'fade']),
+  closeOnPressBack: PropTypes.bool,
+  gestureEnabled: PropTypes.bool,
+  bounceOnOpen: PropTypes.bool,
+  bounceOffset: PropTypes.number,
+  springOffset: PropTypes.number,
+  elevation: PropTypes.number,
+  initialOffsetFromBottom: PropTypes.number,
+  indicatorColor: PropTypes.string,
+  customStyles: PropTypes.objectOf(PropTypes.object),
+  overlayColor: PropTypes.string,
+  onClose: PropTypes.func,
+  onOpen: PropTypes.func,
+};
