@@ -1,5 +1,17 @@
+
 # react-native-actions-sheet
 A Cross Platform(Android &amp; iOS) ActionSheet with a flexible api, native performance and zero dependency code for react native. Create anything you want inside the ActionSheet.
+
+**Features:**
+
+ - Native Performance
+ - Cross Platform (iOS and Android)
+ - Zero Dependency Code
+ - Gesture Control
+ - Raw ActionSheet - You can Add Anything
+ - Allow ActionSheet to be partially shown when opened
+ - Support TextInputs
+
 ## Run the Example
 To run the example app clone the project
 
