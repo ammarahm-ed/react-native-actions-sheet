@@ -36,7 +36,7 @@ export default class ActionSheet extends Component {
     this.scrollViewRef;
   }
 
-  _setModalVisible = () => {
+  setModalVisible = () => {
     if (!this.state.modalVisible) {
       this.setState({
         modalVisible: true,
@@ -47,6 +47,7 @@ export default class ActionSheet extends Component {
     }
   };
 
+  
   _hideModal = () => {
     this._scrollTo(0);
     setTimeout(() => {
