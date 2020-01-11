@@ -5,6 +5,8 @@ import {
   Dimensions,
   ScrollView,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import PropTypes from 'prop-types';
 import {styles} from './styles';
@@ -36,7 +38,7 @@ export default class ActionSheet extends Component {
     this.scrollViewRef;
   }
 
-  setModalVisible = () => {
+  _setModalVisible = () => {
     if (!this.state.modalVisible) {
       this.setState({
         modalVisible: true,
@@ -47,7 +49,6 @@ export default class ActionSheet extends Component {
     }
   };
 
-  
   _hideModal = () => {
     this._scrollTo(0);
     setTimeout(() => {
@@ -65,12 +66,25 @@ export default class ActionSheet extends Component {
 
   _showModal = event => {
     let {gestureEnabled, bounceOffset, initialOffsetFromBottom} = this.props;
-
+    let addFactor = deviceHeight * 0.1;
+    let height = event.nativeEvent.layout.height;
+    console.log('layout called again');
     if (this.state.layoutHasCalled) {
+      let diff;
+      if (height > this.customComponentHeight) {
+        diff = height - this.customComponentHeight;
+        this._scrollTo(this.prevScroll + diff);
+        console.log(this.prevScroll);
+        this.customComponentHeight = height;
+      } else {
+        diff = this.customComponentHeight - height;
+        this._scrollTo(this.prevScroll - diff);
+        this.customComponentHeight = height;
+      }
       return;
     } else {
-      this.customComponentHeight = event.nativeEvent.layout.height;
-      let addFactor = deviceHeight * 0.1;
+      this.customComponentHeight = height;
+
       this._scrollTo(
         gestureEnabled
           ? this.customComponentHeight * initialOffsetFromBottom +
@@ -150,9 +164,11 @@ export default class ActionSheet extends Component {
     }
   };
 
-  _onScrollEndAnimation = () => {
-    let {bounceOffset} = this.props;
-    if (!this.hasBounced) {
+  _onScrollEndAnimation = event => {
+    this.prevScroll = event.nativeEvent.contentOffset.y;
+
+    let {bounceOffset, bounceOnOpen} = this.props;
+    if (!this.hasBounced && bounceOnOpen) {
       this._scrollTo(this.scrollAnimationEndValue - bounceOffset, true);
       this.hasBounced = true;
     }
@@ -185,55 +201,61 @@ export default class ActionSheet extends Component {
         }}
         transparent={true}>
         <View style={[styles.parentContainer, {backgroundColor: overlayColor}]}>
-          <ScrollView
-            bounces={false}
-            ref={ref => (this.scrollViewRef = ref)}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={scrollable}
-            onScrollBeginDrag={this._onScrollBeginDrag}
-            onScrollEndDrag={this._onScrollEndDrag}
-            onMomentumScrollEnd={() => {
-              if (bounceOnOpen) {
-                this._onScrollEndAnimation();
-              }
+          <KeyboardAvoidingView
+            style={{
+              width: '100%',
             }}
-            onScrollAnimationEnd={this._onScrollEndAnimation}
-            onTouchEnd={this._onTouchEnd}
-            overScrollMode="always"
-            style={[styles.scrollview]}>
-            <View
-              onTouchMove={this._onTouchMove}
-              onTouchStart={this._onTouchStart}
+            enabled={Platform.OS === 'ios' ? true : false}
+            behavior="position">
+            <ScrollView
+              bounces={false}
+              ref={ref => (this.scrollViewRef = ref)}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={scrollable}
+              onScrollBeginDrag={this._onScrollBeginDrag}
+              onScrollEndDrag={this._onScrollEndDrag}
+              onMomentumScrollEnd={this._onScrollEndAnimation}
+              onScrollAnimationEnd={this._onScrollEndAnimation}
               onTouchEnd={this._onTouchEnd}
-              style={{
-                height: deviceHeight * 1.1,
-                width: '100%',
-              }}>
-              <TouchableOpacity
-                onPress={this._hideModal}
-                onLongPress={this._hideModal}
+              overScrollMode="always"
+              style={[styles.scrollview]}>
+              <View
+                onTouchMove={this._onTouchMove}
+                onTouchStart={this._onTouchStart}
+                onTouchEnd={this._onTouchEnd}
                 style={{
-                  height: deviceHeight,
+                  height: deviceHeight * 1.1,
                   width: '100%',
-                }}
-              />
-            </View>
-            <View
-              onLayout={this._showModal}
-              style={[
-                styles.container,
-                customStyles,
-                {...getElevation(elevation)},
-              ]}>
-              {gestureEnabled ? (
-                <View
-                  style={[styles.indicator, {backgroundColor: indicatorColor}]}
+                }}>
+                <TouchableOpacity
+                  onPress={this._hideModal}
+                  onLongPress={this._hideModal}
+                  style={{
+                    height: deviceHeight,
+                    width: '100%',
+                  }}
                 />
-              ) : null}
+              </View>
+              <View
+                onLayout={this._showModal}
+                style={[
+                  styles.container,
+                  customStyles,
+                  {...getElevation(elevation)},
+                ]}>
+                {gestureEnabled ? (
+                  <View
+                    style={[
+                      styles.indicator,
+                      {backgroundColor: indicatorColor},
+                    ]}
+                  />
+                ) : null}
 
-              {children}
-            </View>
-          </ScrollView>
+                {children}
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     );
@@ -269,7 +291,7 @@ ActionSheet.propTypes = {
   elevation: PropTypes.number,
   initialOffsetFromBottom: PropTypes.number,
   indicatorColor: PropTypes.string,
-  customStyles: PropTypes.objectOf(PropTypes.object),
+  customStyles: PropTypes.object,
   overlayColor: PropTypes.string,
   onClose: PropTypes.func,
   onOpen: PropTypes.func,
