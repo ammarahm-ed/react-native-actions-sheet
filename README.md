@@ -42,9 +42,19 @@ For complete usage, see the example project.
 |onOpen|function| Function Called on Open
 
 ## ActionSheet Methods
-ActionSheet can be made visible using its own method only.
+ActionSheet can be made visible using its ref.
 ```jsx
-ActionSheet.setModalVisible();
+// First create a ref on your <ActionSheet/> Component.
+
+<ActionSheet
+ref={ref => this.actionSheet = ref}
+/>
+
+// then later in your function to open the ActionSheet:
+
+this.actionSheet.setModalVisible();
+
+
 ```
 #
 
