@@ -29,10 +29,13 @@ For complete usage, see the example project.
 |customStyles|object|Any custom styles you want to add to the container|
 |animated |boolean| Enable or disable animation of Modal|`true`
 |animationType|"fade" or "slide"| Animation type for Modal|`fade`
-|gestureEnabled|boolean| Enable gestures to control ActionSheet|`true`
-|initialOffsetFromBottom|number|Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**|`0.6`
+|gestureEnabled|boolean| Enable gestures to control ActionSheet|`false`
+|bounceOnOpen|boolean| Enable gestures to control ActionSheet|`false`
+|bounceOffset|number| Enable gestures to control ActionSheet|`20`
+|springOffset|number| Enable gestures to control ActionSheet|`50`
+|initialOffsetFromBottom|number|Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**|`1`
 |closeOnPressBack|boolean| Enable gestures to control ActionSheet|`true`
-|elevation|number| Elevation of ActionSheet|`5`
+|elevation|number| Elevation of ActionSheet|`0`
 |indicatorColor|string| Color of gestureEnabled indicator|`gray`
 |overlayColor|rgba string| Color of background Overlay. **Must be a rgba(r,g,b,a)** value|`rgba(0,0,0,0.3)`
 |onClose|function| Function Called on Close
