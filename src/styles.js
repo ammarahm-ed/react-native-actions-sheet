@@ -11,6 +11,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopRightRadius: 10,
     borderTopLeftRadius: 10,
+    alignSelf:'center'
   },
   indicator: {
     height: 6,
