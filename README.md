@@ -42,7 +42,7 @@ For complete usage, see the example project.
 |onOpen|function| Function Called on Open
 
 ## ActionSheet Methods
-ActionSheet can be made visible using its ref.
+ActionSheet can be opened or closed using its ref.
 ```jsx
 // First create a ref on your <ActionSheet/> Component.
 
@@ -53,6 +53,7 @@ ref={ref => this.actionSheet = ref}
 // then later in your function to open the ActionSheet:
 
 this.actionSheet.setModalVisible();
+
 
 
 ```
