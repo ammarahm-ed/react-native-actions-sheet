@@ -53,11 +53,11 @@ For complete usage, see the example project.
 |animated |boolean| Enable or disable animation of Modal|`true`
 |animationType|"fade" or "slide"| Animation type for Modal|`fade`
 |gestureEnabled|boolean| Enable gestures to control ActionSheet|`false`
-|bounceOnOpen|boolean| Enable gestures to control ActionSheet|`false`
-|bounceOffset|number| Enable gestures to control ActionSheet|`20`
-|springOffset|number| Enable gestures to control ActionSheet|`50`
+|bounceOnOpen|boolean| Bounce the actionSheet on open|`false`
+|bounceOffset|number| How much you want the view to bounce from the actual position on drag end.|`20`
+|springOffset|number| When touch ends and user has not moved farther from the set springOffset, the ActionSheet will return to previous position. |`50`
 |initialOffsetFromBottom|number|Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**|`1`
-|closeOnPressBack|boolean| Enable gestures to control ActionSheet|`true`
+|closeOnPressBack|boolean| BackHandler Controls the ActionSheet|`true`
 |elevation|number| Elevation of ActionSheet|`0`
 |indicatorColor|string| Color of gestureEnabled indicator|`gray`
 |overlayColor|rgba string| Color of background Overlay. **Must be a rgba(r,g,b,a)** value|`rgba(0,0,0,0.3)`
