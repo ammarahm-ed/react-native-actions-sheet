@@ -1,25 +1,30 @@
 {
-  "name": "react-native-raw-bottom-sheet",
+  "name": "react-native-actions-sheet",
   "version": "0.1",
-  "description": "",
+  "description": "A Cross Platform(Android & iOS) ActionSheet with a robust and flexible api, native performance and zero dependency code for react native. Create anything you want inside ActionSheet.",
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ammarahm-ed/react-native-actions-sheet"
   },
   "keywords": [
-    "bottom-sheet",
-    "action-sheet",
-    "raw-bottom-sheet",
-    "bottom-drawer",
-    "bottom-animated",
-    "drawer",
-    "picker",
-    "swipper",
-    "modal",
-    "dialog"
+ "bottom-animated",
+ "react-native",
+"javascript",
+"actionsheet",
+"android",
+"ios",
+"action-sheet",
+"bottom-sheet",
+"bottom-drawer",
+"dialog",
+"picker",
+"modal",
+"drawer",
+"raw-bottom-sheet",
+"bottom-app-bar"
   ],
-  "author": "NY Samnang",
+  "author": "ammarahm-ed",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ammarahm-ed/react-native-actions-sheet/issues/"
