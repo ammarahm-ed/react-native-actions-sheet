@@ -5032,9 +5032,9 @@ react-is@^16.8.1, react-is@^16.8.4, react-is@^16.9.0:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.12.0.tgz#2cc0fe0fba742d97fd527c42a13bec4eeb06241c"
   integrity sha512-rPCkf/mWBtKc97aLL9/txD8DZdemK0vkA3JMLShjlJB3Pj3s+lpf1KaBzMfQrAmhMQB0n1cU/SUGgKKBCe837Q==
 
-"react-native-actions-sheet@https://github.com/ammarahm-ed/react-native-actions-sheet":
+"react-native-actions-sheet@https://github.com/ammarahm-ed/react-native-actions-sheet.git":
   version "0.1.0"
-  resolved "https://github.com/ammarahm-ed/react-native-actions-sheet#3d20d1f93bb755e859401ba64182082a85a23e13"
+  resolved "https://github.com/ammarahm-ed/react-native-actions-sheet.git#5e35b91dab53dd41d1abdf8e7889408a64fcbe4a"
 
 react-native@0.61.5:
   version "0.61.5"

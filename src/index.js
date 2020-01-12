@@ -38,7 +38,7 @@ class ActionSheet extends Component {
     this.scrollViewRef;
   }
 
-  _setModalVisible = () => {
+  setModalVisible = () => {
     if (!this.state.modalVisible) {
       this.setState({
         modalVisible: true,

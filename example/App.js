@@ -30,7 +30,7 @@ const App = () => {
         }}>
         <TouchableOpacity
           onPress={() => {
-            actionSheet._setModalVisible();
+            actionSheet.setModalVisible();
           }}
           style={{
             height: 50,
@@ -56,6 +56,7 @@ const App = () => {
         </TouchableOpacity>
 
         <ActionSheet
+          
           initialOffsetFromBottom={0.5}
           ref={ref => (actionSheet = ref)}
           bounceOnOpen={true}
@@ -77,7 +78,7 @@ const App = () => {
                 {['#4a4e4d','#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'].map(color => 
                   <TouchableOpacity
                   onPress={() => {
-                    actionSheet._setModalVisible();
+                    actionSheet.setModalVisible();
                   }}
                   key={color}
                     style={{
@@ -115,7 +116,7 @@ const App = () => {
                 60,150,200,170,80,40
               ].map((item) => <TouchableOpacity
               onPress={() => {
-                actionSheet._setModalVisible();
+                actionSheet.setModalVisible();
               }}
               style={{
                 flexDirection:"row",
