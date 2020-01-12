@@ -8,21 +8,21 @@
     "url": "git+https://github.com/ammarahm-ed/react-native-actions-sheet.git"
   },
   "keywords": [
- "bottom-animated",
- "react-native",
-"javascript",
-"actionsheet",
-"android",
-"ios",
-"action-sheet",
-"bottom-sheet",
-"bottom-drawer",
-"dialog",
-"picker",
-"modal",
-"drawer",
-"raw-bottom-sheet",
-"bottom-app-bar"
+    "bottom-animated",
+    "react-native",
+    "javascript",
+    "actionsheet",
+    "android",
+    "ios",
+    "action-sheet",
+    "bottom-sheet",
+    "bottom-drawer",
+    "dialog",
+    "picker",
+    "modal",
+    "drawer",
+    "raw-bottom-sheet",
+    "bottom-app-bar"
   ],
   "author": "ammarahm-ed",
   "license": "MIT",
@@ -34,5 +34,11 @@
     "react": "^16.8.6",
     "react-native": "^0.60.5",
     "prop-types": "^15.7.2"
+  },
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
