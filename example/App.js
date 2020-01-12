@@ -9,106 +9,148 @@
 import React from 'react';
 import {
   SafeAreaView,
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
   StatusBar,
+  TouchableOpacity,
+  Text,
+  View,
+  TextInput
 } from 'react-native';
+import ActionSheet from 'react-native-actions-sheet';
 
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const App = () => {
+  let actionSheet;
 
-const App: () => React$Node = () => {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={styles.scrollView}>
-          <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
-              <Text style={styles.footer}>Engine: Hermes</Text>
+      <SafeAreaView
+        style={{
+          justifyContent: 'center',
+          flex: 1,
+        }}>
+        <TouchableOpacity
+          onPress={() => {
+            actionSheet._setModalVisible();
+          }}
+          style={{
+            height: 50,
+            justifyContent: 'center',
+            alignItems: 'center',
+            alignSelf: 'center',
+            backgroundColor: '#fe8a71',
+            paddingHorizontal: 10,
+            borderRadius: 5,
+            elevation: 5,
+            shadowColor: 'black',
+            shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
+            shadowOpacity: 0.2,
+            shadowRadius: 0.7 * 4,
+          }}>
+          <Text
+            style={{
+              color: 'white',
+              fontWeight: 'bold',
+            }}>
+            Open ActionSheet
+          </Text>
+        </TouchableOpacity>
+
+        <ActionSheet
+          initialOffsetFromBottom={0.5}
+          ref={ref => (actionSheet = ref)}
+          bounceOnOpen={true}
+          gestureEnabled={true}
+          
+          children={
+            <View
+              style={{
+                width: '100%',
+                padding: 12,
+              }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom:15
+                }}>
+                {['#4a4e4d','#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'].map(color => 
+                  <TouchableOpacity
+                  onPress={() => {
+                    actionSheet._setModalVisible();
+                  }}
+                  key={color}
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 100,
+                      backgroundColor: color,
+                    }}/>
+                )}
+              </View>
+
+              <TextInput
+              style={{
+                width:'100%',
+                height:50,
+                borderRadius:5,
+                borderWidth:1,
+                borderColor:'#f0f0f0',
+                marginBottom:15,
+                paddingHorizontal:10
+              }}
+              placeholder="Write your text here"
+             
+              >
+
+              </TextInput>
+
+               <View
+               style={{
+                 
+               }}
+               >
+              {[
+                100,
+                60,150,200,170,80,40
+              ].map((item) => <TouchableOpacity
+              onPress={() => {
+                actionSheet._setModalVisible();
+              }}
+              style={{
+                flexDirection:"row",
+                justifyContent:"space-between",
+                alignItems:'center'
+              }}
+              >
+                <View
+                style={{
+                  width:item,
+                  height:15,
+                  backgroundColor:'#f0f0f0',
+                  marginVertical:15,
+                  borderRadius:5
+                }}
+                >
+
+                </View>
+
+                <View
+                  style={{
+                    width:30,
+                    height:30,
+                    backgroundColor:'#f0f0f0',
+                    borderRadius:100
+                  }}
+                />
+              </TouchableOpacity>)}   
+              </View> 
             </View>
-          )}
-          <View style={styles.body}>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Step One</Text>
-              <Text style={styles.sectionDescription}>
-                Edit <Text style={styles.highlight}>App.js</Text> to change this
-                screen and then come back to see your edits.
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>See Your Changes</Text>
-              <Text style={styles.sectionDescription}>
-                <ReloadInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Debug</Text>
-              <Text style={styles.sectionDescription}>
-                <DebugInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Learn More</Text>
-              <Text style={styles.sectionDescription}>
-                Read the docs to discover what to do next:
-              </Text>
-            </View>
-            <LearnMoreLinks />
-          </View>
-        </ScrollView>
+          }
+        />
       </SafeAreaView>
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  scrollView: {
-    backgroundColor: Colors.lighter,
-  },
-  engine: {
-    position: 'absolute',
-    right: 0,
-  },
-  body: {
-    backgroundColor: Colors.white,
-  },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
-  },
-});
 
 export default App;

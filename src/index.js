@@ -23,7 +23,7 @@ const getElevation = elevation => {
   };
 };
 
-export default class ActionSheet extends Component {
+class ActionSheet extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -68,13 +68,13 @@ export default class ActionSheet extends Component {
     let {gestureEnabled, bounceOffset, initialOffsetFromBottom} = this.props;
     let addFactor = deviceHeight * 0.1;
     let height = event.nativeEvent.layout.height;
-    console.log('layout called again');
+  
     if (this.state.layoutHasCalled) {
       let diff;
       if (height > this.customComponentHeight) {
         diff = height - this.customComponentHeight;
         this._scrollTo(this.prevScroll + diff);
-        console.log(this.prevScroll);
+     
         this.customComponentHeight = height;
       } else {
         diff = this.customComponentHeight - height;
@@ -84,13 +84,13 @@ export default class ActionSheet extends Component {
       return;
     } else {
       this.customComponentHeight = height;
-
+     
       this._scrollTo(
         gestureEnabled
           ? this.customComponentHeight * initialOffsetFromBottom +
               addFactor +
               bounceOffset
-          : this.customComponentHeight + bounceOffset,
+          : this.customComponentHeight + bounceOffset + addFactor,
       );
       this.setState({
         layoutHasCalled: true,
@@ -296,3 +296,5 @@ ActionSheet.propTypes = {
   onClose: PropTypes.func,
   onOpen: PropTypes.func,
 };
+
+export default ActionSheet;
