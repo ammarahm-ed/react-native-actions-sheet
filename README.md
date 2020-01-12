@@ -2,6 +2,17 @@
 # react-native-actions-sheet
 A Cross Platform(Android &amp; iOS) ActionSheet with a flexible api, native performance and zero dependency code for react native. Create anything you want inside the ActionSheet.
 
+<img
+width='45%'
+height:600
+src=https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/2020_01_12_14_16_30_trim.gif
+/>
+<img
+width='40%'
+height:500
+src=https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/screen-recording-1.gif
+/>
+
 **Features:**
 
  - Native Performance
