@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ammarahm-ed/react-native-actions-sheet"
+    "url": "git+https://github.com/ammarahm-ed/react-native-actions-sheet.git"
   },
   "keywords": [
  "bottom-animated",
