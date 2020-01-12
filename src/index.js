@@ -23,6 +23,14 @@ const getElevation = elevation => {
   };
 };
 
+const SUPPORTED_ORIENTATIONS = [
+  "portrait",
+  "portrait-upside-down",
+  "landscape",
+  "landscape-left",
+  "landscape-right"
+];
+
 class ActionSheet extends Component {
   constructor(props) {
     super(props);
@@ -194,6 +202,7 @@ class ActionSheet extends Component {
       <Modal
         visible={modalVisible}
         animationType={animationType}
+        supportedOrientations={SUPPORTED_ORIENTATIONS}
         animated={animated}
         onShow={() => onOpen}
         onRequestClose={() => {

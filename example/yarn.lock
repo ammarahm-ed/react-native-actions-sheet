@@ -5034,7 +5034,7 @@ react-is@^16.8.1, react-is@^16.8.4, react-is@^16.9.0:
 
 "react-native-actions-sheet@https://github.com/ammarahm-ed/react-native-actions-sheet.git":
   version "0.1.0"
-  resolved "https://github.com/ammarahm-ed/react-native-actions-sheet.git#5e35b91dab53dd41d1abdf8e7889408a64fcbe4a"
+  resolved "https://github.com/ammarahm-ed/react-native-actions-sheet.git#4a8878c9d54698c7a7e2ed98561d33caee2fed85"
 
 react-native@0.61.5:
   version "0.61.5"
