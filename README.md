@@ -1,5 +1,10 @@
 
 # react-native-actions-sheet
+
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green?style=flat-square)](https://github.com/ammarahm-ed/react-native-actions-sheet/pulls)
+[![react-native-actions-sheet](https://img.shields.io/npm/v/react-native-actions-sheet?color=green)](https://www.npmjs.com/package/react-native-actions-sheet)
+[![react-native-actions-sheet](https://img.shields.io/npm/dt/react-native-actions-sheet?color=green)](https://www.npmjs.com/package/react-native-actions-sheet)
+
 A Cross Platform(Android &amp; iOS) ActionSheet with a flexible api, native performance and zero dependency code for react native. Create anything you want inside the ActionSheet.
 
 <img
