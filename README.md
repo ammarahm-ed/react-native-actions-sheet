@@ -1,5 +1,10 @@
 
 # react-native-actions-sheet
+
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green?style=flat-square)](https://github.com/ammarahm-ed/react-native-actions-sheet/pulls)
+[![react-native-actions-sheet](https://img.shields.io/npm/v/react-native-actions-sheet?color=green)](https://www.npmjs.com/package/react-native-actions-sheet)
+[![react-native-actions-sheet](https://img.shields.io/npm/dt/react-native-actions-sheet?color=green)](https://www.npmjs.com/package/react-native-actions-sheet)
+
 A Cross Platform(Android &amp; iOS) ActionSheet with a flexible api, native performance and zero dependency code for react native. Create anything you want inside the ActionSheet.
 
 <img
@@ -205,16 +210,18 @@ export default App;
 |children|React.Component|Your custom component to render inside ActionSheet|`<View/>`
 |customStyles|object|Any custom styles you want to add to the container|
 |animated |boolean| Enable or disable animation of Modal|`true`
-|animationType|"fade" or "slide"| Animation type for Modal|`fade`
+|openAnimationDuration |number| Duration of opening animation|`200`
+|closeAnimationDuration |number| Duration of closing animation|`300`
 |gestureEnabled|boolean| Enable gestures to control ActionSheet|`false`
 |bounceOnOpen|boolean| Bounce the actionSheet on open|`false`
-|bounceOffset|number| How much you want the view to bounce from the actual position on drag end.|`20`
+|bounciness|number| How much you want the view to bounce from the actual position on drag end.|`8`
 |springOffset|number| When touch ends and user has not moved farther from the set springOffset, the ActionSheet will return to previous position. |`50`
 |initialOffsetFromBottom|number|Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**|`1`
 |closeOnPressBack|boolean| BackHandler Controls the ActionSheet|`true`
 |elevation|number| Elevation of ActionSheet|`0`
 |indicatorColor|string| Color of gestureEnabled indicator|`gray`
-|overlayColor|rgba string| Color of background Overlay. **Must be a rgba(r,g,b,a)** value|`rgba(0,0,0,0.3)`
+|overlayColor|rgba string| Color of background Overlay.
+|defaultOverlayOpacity| number 0 - 1| Opacity of background Overlay| `0.3`
 |onClose|function| Function Called on Close
 |onOpen|function| Function Called on Open
 
