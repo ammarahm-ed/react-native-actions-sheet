@@ -96,7 +96,7 @@ export default class ActionSheet extends Component {
   };
 
   _showModal = event => {
-    let {gestureEnabled, bounciness, initialOffsetFromBottom,bounceOnOpen,animated,defaultOverlayOpacity,openAnimationDuration} = this.props;
+    let {gestureEnabled, bounciness, initialOffsetFromBottom,bounceOnOpen,animated} = this.props;
 
     let addFactor = deviceHeight * 0.1;
     let height = event.nativeEvent.layout.height;
@@ -141,9 +141,6 @@ export default class ActionSheet extends Component {
       this.layoutHasCalled = true;
     }
   };
-
-
-
 
   _onScrollBeginDrag = event => {
     let verticalOffset = event.nativeEvent.contentOffset.y;
