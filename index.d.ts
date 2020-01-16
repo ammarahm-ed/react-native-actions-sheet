@@ -11,9 +11,8 @@ declare module "react-native-actions-sheet" {
     indicatorColor?: string;
     overlayColor?: string;
     closeAnimationDuration?:number;
-    defaultOverlayOpacity?:number;
     openAnimationDuration?:number;
-    bounciness:number;
+    bounciness?:number;
     closeOnPressBack?: boolean;
     defaultOverlayOpacity:number;
     gestureEnabled?: boolean;
