@@ -61,6 +61,7 @@ const App = () => {
           ref={ref => (actionSheet = ref)}
           bounceOnOpen={true}
           gestureEnabled={true}
+          defaultOverlayOpacity={0.3}
           
           children={
             <View
