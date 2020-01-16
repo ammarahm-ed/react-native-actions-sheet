@@ -39,6 +39,7 @@ export default class ActionSheet extends Component {
       scrollable: false,
       layoutHasCalled: false,
     };
+    this.containerOpacity = new Animated.Value(0);
     this.transformValue = new Animated.Value(0);
     this.opacity = new Animated.Value(0);
     this.customComponentHeight;
@@ -65,6 +66,7 @@ export default class ActionSheet extends Component {
     let {animated,closeAnimationDuration,onClose} = this.props;
     if (this.isClosing) return;
     this.isClosing = true;
+   
 
     Animated.parallel([
       Animated.timing(this.transformValue, {
@@ -72,13 +74,13 @@ export default class ActionSheet extends Component {
         duration: animated? closeAnimationDuration : 1,
         useNativeDriver: true,
       }),
-      Animated.timing(this.opacity, {
-        toValue: 0,
-        duration: animated? closeAnimationDuration : 1,
-        useNativeDriver: true,
-      }),
+     
     ]).start(() => {
-      setTimeout(() => {
+        this.scrollViewRef.scrollTo({
+          x: 0,
+          y: 0,
+          animated: false,
+        });
         this.setState(
           {
             modalVisible: false,
@@ -89,7 +91,7 @@ export default class ActionSheet extends Component {
             if (typeof onClose === 'function') onClose();
           },
         );
-      }, closeAnimationDuration/2);
+     
     });
   };
 
@@ -132,11 +134,7 @@ export default class ActionSheet extends Component {
             bounciness:bounceOnOpen?  bounciness : 1,
             useNativeDriver: true,
           }).start(),
-          Animated.timing(this.opacity, {
-            toValue: defaultOverlayOpacity,
-            duration:openAnimationDuration,
-            useNativeDriver: true,
-          }),
+         
         ]).start();
       }
      
@@ -213,6 +211,7 @@ export default class ActionSheet extends Component {
       gestureEnabled,
       elevation,
       indicatorColor,
+      defaultOverlayOpacity,
       children,
       customStyles,
     } = this.props;
@@ -220,14 +219,15 @@ export default class ActionSheet extends Component {
     return (
       <Modal
         visible={modalVisible}
-        animated={false}
+        animated={true}
+        animationType='fade'
         supportedOrientations={SUPPORTED_ORIENTATIONS}
         onShow={() => onOpen}
         onRequestClose={() => {
           if (closeOnPressBack) this._hideModal();
         }}
         transparent={true}>
-        <View style={[styles.parentContainer]}>
+        <Animated.View style={[styles.parentContainer]}>
           <KeyboardAvoidingView
             style={{
               width: '100%',
@@ -248,7 +248,7 @@ export default class ActionSheet extends Component {
                 style={{
                   height: '100%',
                   width: '100%',
-                  opacity: this.opacity,
+                  opacity: defaultOverlayOpacity,
                   position: 'absolute',
                   backgroundColor: overlayColor,
                   zIndex: 1,
@@ -309,7 +309,7 @@ export default class ActionSheet extends Component {
 
             </ScrollView>
           </KeyboardAvoidingView>
-        </View>
+        </Animated.View>
       </Modal>
     );
   }
