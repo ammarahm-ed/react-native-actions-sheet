@@ -4,18 +4,20 @@ import { StyleProp, ViewStyle } from "react-native";
 
 declare module "react-native-actions-sheet" {
   export type ActionSheetProps = {
-
     animated?: boolean;
-    animationType?: "none" | "fade" | "slide";
-    initialOffsetFromBottom?: number,
-    bounceOffset?: number;
+    initialOffsetFromBottom?: number;
     springOffset?: number;
     elevation?: number;
     indicatorColor?: string;
     overlayColor?: string;
+    closeAnimationDuration?:number;
+    defaultOverlayOpacity?:number;
+    openAnimationDuration?:number;
+    bounciness:number;
     closeOnPressBack?: boolean;
-    gestureEnabled?: boolean,
-    bounceOnOpen?: boolean,
+    defaultOverlayOpacity:number;
+    gestureEnabled?: boolean;
+    bounceOnOpen?: boolean;
     onClose?: () => void;
     onOpen?: () => void;
     customStyles?: StyleProp<ViewStyle>;
