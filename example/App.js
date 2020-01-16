@@ -60,6 +60,7 @@ const App = () => {
           initialOffsetFromBottom={0.5}
           ref={ref => (actionSheet = ref)}
           bounceOnOpen={true}
+          bounciness={8}
           gestureEnabled={true}
           defaultOverlayOpacity={0.3}
           
