@@ -116,7 +116,7 @@ export default class ActionSheet extends Component {
     } else {
       
       if (footerAlwaysVisible) {
-        this.customComponentHeight = height + footerHeight;
+        this.customComponentHeight = height;
       } else {
         this.customComponentHeight = height - footerHeight;
       }
@@ -335,7 +335,7 @@ ActionSheet.defaultProps = {
   footerAlwaysVisible:false, 
   headerAlwaysVisible:false,
   containerStyle: {},
-  footerHeight:10,
+  footerHeight:80,
   footerStyle:{},
   animated: true,
   closeOnPressBack: true,

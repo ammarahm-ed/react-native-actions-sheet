@@ -55,12 +55,12 @@ const App = () => {
           </Text>
         </TouchableOpacity>
 
-        <ActionSheet
-          
+        <ActionSheet 
           initialOffsetFromBottom={0.5}
           ref={ref => (actionSheet = ref)}
           bounceOnOpen={true}
           bounciness={8}
+          c
           footerStyle={{
             height:10
           }}
