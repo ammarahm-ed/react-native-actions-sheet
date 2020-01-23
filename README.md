@@ -210,7 +210,13 @@ export default App;
 |Name|Type|Description|Default Value|
 |--|--|--|--|
 |children|React.Component|Your custom component to render inside ActionSheet|`<View/>`
-|customStyles|object|Any custom styles you want to add to the container|
+|containerStyle|object|Any custom styles you want to add to the container|
+|CustomHeaderComponent|React.Component|Your custom header component, it will hide the indicator.|
+|CustomFooterComponent|React.Component|A footer component if you want to add some info at the bottom. Always remember to **give footer a fixed height and provide the actionSheet the `footerHeight` prop with same value.** If you have added margins etc, add those values to `footerHeight` also. |
+|footerStyle|object|A custom style to modify the footer|
+|footerHeight|number|The height of the footer|80
+|headerAlwaysVisible|object|Setting this to true keeps the header always visible, even when gestures are disabled|false
+|footerAlwaysVisible|object|Should the footer always be visible? Currently when you overdraw, the footer appears, however you can change this by setting this to `true`.|false
 |animated |boolean| Enable or disable animation of Modal|`true`
 |openAnimationDuration |number| Duration of opening animation|`200`
 |closeAnimationDuration |number| Duration of closing animation|`300`
