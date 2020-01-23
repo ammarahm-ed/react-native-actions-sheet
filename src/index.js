@@ -96,7 +96,7 @@ export default class ActionSheet extends Component {
   };
 
   _showModal = event => {
-    let {gestureEnabled, bounciness, initialOffsetFromBottom,bounceOnOpen,animated} = this.props;
+    let {gestureEnabled, bounciness, initialOffsetFromBottom,bounceOnOpen,animated,footerHeight,footerAlwaysVisible} = this.props;
 
     let addFactor = deviceHeight * 0.1;
     let height = event.nativeEvent.layout.height;
@@ -114,7 +114,12 @@ export default class ActionSheet extends Component {
       }
       return;
     } else {
-      this.customComponentHeight = height - 100;
+      
+      if (footerAlwaysVisible) {
+        this.customComponentHeight = height + footerHeight;
+      } else {
+        this.customComponentHeight = height - footerHeight;
+      }
       let scrollOffset = gestureEnabled
         ? (this.customComponentHeight * initialOffsetFromBottom) + addFactor
         : this.customComponentHeight + addFactor;
@@ -210,7 +215,12 @@ export default class ActionSheet extends Component {
       indicatorColor,
       defaultOverlayOpacity,
       children,
-      customStyles,
+      containerStyle,
+      footerStyle,
+      footerHeight,
+      CustomHeaderComponent,
+      CustomFooterComponent,
+      headerAlwaysVisible
     } = this.props;
 
     return (
@@ -274,7 +284,7 @@ export default class ActionSheet extends Component {
                 onLayout={this._showModal}
                 style={[
                   styles.container,
-                  customStyles,
+                  containerStyle,
                   {
                     ...getElevation(elevation),
                     zIndex: 11,
@@ -285,8 +295,8 @@ export default class ActionSheet extends Component {
                     ],
                   },
                 ]}>
-                {gestureEnabled ? (
-                  <View
+                {gestureEnabled || headerAlwaysVisible ? (
+                  CustomHeaderComponent? CustomHeaderComponent : <View
                     style={[
                       styles.indicator,
                       {backgroundColor: indicatorColor},
@@ -296,12 +306,18 @@ export default class ActionSheet extends Component {
 
                 {children}
                 <View
+              
                 style={[{
-                  height:100,
                   width:'100%',
                   backgroundColor:'white'
-                },customStyles]}
-                />
+                },
+                footerStyle,
+                {
+                  height:footerHeight
+                }]}
+                >
+                  {CustomFooterComponent}
+                </View>
               </Animated.View>
 
             </ScrollView>
@@ -314,6 +330,13 @@ export default class ActionSheet extends Component {
 
 ActionSheet.defaultProps = {
   children: <View />,
+  CustomFooterComponent:<View/>,
+  CustomHeaderComponent:null,
+  footerAlwaysVisible:false, 
+  headerAlwaysVisible:false,
+  containerStyle: {},
+  footerHeight:10,
+  footerStyle:{},
   animated: true,
   closeOnPressBack: true,
   gestureEnabled: false,
@@ -325,7 +348,6 @@ ActionSheet.defaultProps = {
   elevation: 5,
   initialOffsetFromBottom: 1,
   indicatorColor: 'gray',
-  customStyles: {},
   defaultOverlayOpacity:0.3,
   overlayColor: 'black',
   onClose: () => {},
@@ -333,6 +355,13 @@ ActionSheet.defaultProps = {
 };
 ActionSheet.propTypes = {
   children: PropTypes.node,
+  CustomHeaderComponent:PropTypes.node,
+  CustomFooterComponent:PropTypes.node,
+  footerAlwaysVisible:PropTypes.bool,
+  headerAlwaysVisible:PropTypes.bool,
+  containerStyle: PropTypes.object,
+  footerStyle: PropTypes.object,
+  footerHeight:PropTypes.number,
   animated: PropTypes.bool,
   closeOnPressBack: PropTypes.bool,
   gestureEnabled: PropTypes.bool,
@@ -345,7 +374,6 @@ ActionSheet.propTypes = {
   elevation: PropTypes.number,
   initialOffsetFromBottom: PropTypes.number,
   indicatorColor: PropTypes.string,
-  customStyles: PropTypes.object,
   overlayColor: PropTypes.string,
   onClose: PropTypes.func,
   onOpen: PropTypes.func,
