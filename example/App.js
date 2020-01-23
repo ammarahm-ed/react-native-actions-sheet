@@ -61,6 +61,9 @@ const App = () => {
           ref={ref => (actionSheet = ref)}
           bounceOnOpen={true}
           bounciness={8}
+          footerStyle={{
+            height:10
+          }}
           gestureEnabled={true}
           defaultOverlayOpacity={0.3}
           
@@ -118,6 +121,7 @@ const App = () => {
                 100,
                 60,150,200,170,80,40
               ].map((item) => <TouchableOpacity
+              key={item}
               onPress={() => {
                 actionSheet.setModalVisible();
               }}
