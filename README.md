@@ -7,6 +7,9 @@
 
 A Cross Platform(Android &amp; iOS) ActionSheet with a flexible api, native performance and zero dependency code for react native. Create anything you want inside the ActionSheet.
 
+**Version 0.1.7 breaking changes:**
+ `customStyles` prop has been renamed to containerStyle.
+
 <img
 width='45%'
 height:600
@@ -29,6 +32,8 @@ src=https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/s
  - Allow ActionSheet to be partially shown when opened
  - Support TextInputs
  - Cool bounce effect on open.
+ 
+ 
 
 ## Run the Example
 To run the example app clone the project
