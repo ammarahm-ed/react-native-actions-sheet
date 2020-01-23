@@ -10,6 +10,11 @@ declare module "react-native-actions-sheet" {
     elevation?: number;
     indicatorColor?: string;
     overlayColor?: string;
+    footerAlwaysVisible?:false, 
+    headerAlwaysVisible?:false,
+    containerStyle?: StyleProp<ViewStyle>,
+    footerHeight?:80,
+    footerStyle?:StyleProp<ViewStyle>,
     closeAnimationDuration?:number;
     openAnimationDuration?:number;
     bounciness?:number;
@@ -19,7 +24,6 @@ declare module "react-native-actions-sheet" {
     bounceOnOpen?: boolean;
     onClose?: () => void;
     onOpen?: () => void;
-    customStyles?: StyleProp<ViewStyle>;
   };
 
   export default class ActionSheet extends Component<ActionSheetProps> {
