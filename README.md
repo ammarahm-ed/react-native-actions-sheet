@@ -102,41 +102,292 @@ For complete usage, see the example project.
 
 ```
 
-<div align="center">
-<h2>ActionSheet Props</h2>
-</div>
 
-|Name|Type|Description|Default Value|
-|--|--|--|--|
-|children|React.Component|Your custom component to render inside ActionSheet|`<View/>`
-|containerStyle|object|Any custom styles you want to add to the container|
-|CustomHeaderComponent|React.Component|Your custom header component, it will hide the indicator.|
-|CustomFooterComponent|React.Component|A footer component if you want to add some info at the bottom. Always remember to **give footer a fixed height and provide the actionSheet the `footerHeight` prop with same value.** If you have added margins etc, add those values to `footerHeight` also. |
-|footerStyle|object|A custom style to modify the footer|
-|footerHeight|number|The height of the footer|80
-|headerAlwaysVisible|object|Setting this to true keeps the header always visible, even when gestures are disabled|false
-|footerAlwaysVisible|object|Should the footer always be visible? Currently when you overdraw, the footer appears, however you can change this by setting this to `true`.|false
-|animated |boolean| Enable or disable animation of Modal|`true`
-|openAnimationDuration |number| Duration of opening animation|`200`
-|closeAnimationDuration |number| Duration of closing animation|`300`
-|gestureEnabled|boolean| Enable gestures to control ActionSheet|`false`
-|bounceOnOpen|boolean| Bounce the actionSheet on open|`false`
-|bounciness|number| How much you want the view to bounce from the actual position on drag end.|`8`
-|springOffset|number| When touch ends and user has not moved farther from the set springOffset, the ActionSheet will return to previous position. |`50`
-|initialOffsetFromBottom|number|Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**|`1`
-|closeOnPressBack|boolean| BackHandler Controls the ActionSheet|`true`
-|elevation|number| Elevation of ActionSheet|`0`
-|indicatorColor|string| Color of gestureEnabled indicator|`gray`
-|overlayColor|rgba string| Color of background Overlay.
-|defaultOverlayOpacity| number 0 - 1| Opacity of background Overlay| `0.3`
-|onClose|function| Function Called on Close
-|onOpen|function| Function Called on Open
+## Props
 
-<div align="center">
-<h2>ActionSheet Methods</h2>
-</div>
+### `ref`
+Renders a custom component inside the ActionSheet. 
+
+| Type | Required |
+| ---- | -------- |
+| ref | Yes |
+
+---
+
+### `children`
+
+Renders a custom component inside the ActionSheet. 
+
+| Type | Required |
+| ---- | -------- |
+| React.Component | Yes
+
+Default: An Empty`<View/>`
+
+```jsx
+	<ActionSheet
+	children={<View/>}
+	/>
+```
+You can also wrap your component in ActionSheet like this:
+```jsx
+	<ActionSheet>
+	<View/>
+	</ActionSheet>
+
+```
+---
+
+### `initialOffsetFromBottom`
+
+Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default:`1`
+
+---
+
+### `containerStyle`
+
+Any custom styles for the container. 
+
+| Type | Required |
+| ---- | -------- |
+| Object | no |
+
+
+---
+
+### `CustomHeaderComponent`
+
+Your custom header component. Using this will hide the default indicator.
+
+| Type | Required |
+| ---- | -------- |
+| React.Component | no |
+
+
+---
+### `headerAlwaysVisible`
+
+Keep the header always visible even when gestures are disabled.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `false`
+
+---
+### `CustomFooterComponent`
+
+A footer component if you want to add some info at the bottom. 
+
+| Type | Required |
+| ---- | -------- |
+| React.Component | no |
+
+**Note:** Remember to give footer a fixed height and provide ActionSheet the `footerHeight` prop with same value. If you have added margins etc, add those values to `footerHeight` also.
+
+---
+### `footerHeight`
+
+Height of the footer
+
+| Type | Required |
+| ---- | -------- |
+| number | no |
+Default: `80`
+
+---
+### `footerStyle`
+
+Custom Styles for the footer container.
+
+| Type | Required |
+| ---- | -------- |
+| Object | no |
+
+---
+### `footerAlwaysVisible`
+
+Keep footer visible. Currently when you overdraw, the footer appears, however you can change this by setting this to `true`.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `false`
+
+---
+
+### `animated`
+
+Keep footer visible. Currently when you overdraw, the footer appears, however you can change this by setting this to `true`.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `true`
+
+---
+### `openAnimationDuration`
+
+Duration of opening animation.
+
+| Type | Required |
+| ---- | -------- |
+| number | no |
+
+Default: `200`
+
+---
+
+### `closeAnimationDuration`
+
+Duration of closing animation.
+
+| Type | Required |
+| ---- | -------- |
+| number | no |
+
+Default: `300`
+
+### `gestureEnabled`
+
+Enables gesture control of ActionSheet
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `false`
+
+---
+
+### `bounceOnOpen`
+
+Bounces the ActionSheet on open.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `false`
+
+---
+
+### `bounciness`
+
+How much you want the ActionSheet to bounce when it is opened. 
+
+| Type | Required |
+| ---- | -------- |
+| number | no |
+
+Default: `8`
+
+---
+### `springOffset`
+
+When touch ends and user has not moved farther from the set springOffset, the ActionSheet will return to previous position.
+
+| Type | Required |
+| ---- | -------- |
+| number | no |
+
+Default: `50`
+
+---
+### `elevation`
+
+Add elevation to the ActionSheet container. 
+
+| Type | Required |
+| ---- | -------- |
+| number | no |
+
+Default: `0`
+
+---
+### `indicatorColor`
+
+Color of the gestureEnabled Indicator.
+
+| Type | Required |
+| ---- | -------- |
+| string | no |
+
+Default: `"#f0f0f0"`
+
+---
+### `overlayColor`
+
+Color of the overlay/backdrop.
+
+| Type | Required |
+| ---- | -------- |
+| string | no |
+
+Default: `"black"`
+
+---
+### `defaultOverlayOpacity`
+
+Default opacity of the overlay/backdrop.
+
+| Type | Required |
+| ---- | -------- |
+| number 0 - 1 | no |
+
+Default: `0.3`
+
+---
+
+
+
+### `closeOnPressBack`
+
+Will the ActionSheet close on `hardwareBackPress` event.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `true`
+
+---
+
+### `onClose`
+
+Event called when the ActionSheet closes.
+
+| Type | Required |
+| ---- | -------- |
+| function | no |
+
+
+---
+### `onOpen`
+
+An event called when the ActionSheet Opens.
+
+| Type | Required |
+| ---- | -------- |
+| function | no |
+
+
+
+
+## Methods
+Methods require you to set a ref on ActionSheet Component.
+
+### `setModalVisible`
 ActionSheet can be opened or closed using its ref.
-
 ```jsx
 // First create a ref on your <ActionSheet/> Component.
 
@@ -147,7 +398,6 @@ ref={ref => this.actionSheet = ref}
 // then later in your function to open the ActionSheet:
 
 this.actionSheet.setModalVisible();
-
 ```
 
 #
