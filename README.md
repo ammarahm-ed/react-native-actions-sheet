@@ -1,5 +1,4 @@
 <div align="center">
-
 <h1>  react-native-actions-sheet</h1>
 </div>
 <div
@@ -17,11 +16,9 @@ A highly customizable cross platform ActionSheet for react native.
 <img src="https://raw.githubusercontent.com/ammarahm-ed/react-native-actions-sheet/master/gifs/preview1.png"/>
 </p>
 
-
-
-**Version 0.1.7 breaking changes:**
- `customStyles` prop has been renamed to containerStyle.
-
+<div align="center">
+<h2>Screenshots</h2>
+</div>
 <img
 width='45%'
 height:600
@@ -33,21 +30,24 @@ height:500
 src="https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/screen-recording-1.gif"
 />
 
-**Features:**
-
- - Native Animations & Performance
- - Cross Platform (iOS and Android)
- - Identical Working on Android and iOS
- - Zero Dependency Code
- - Gesture Control
- - Raw ActionSheet - You can Add Anything
- - Allow ActionSheet to be partially shown when opened
- - Support TextInputs
- - Cool bounce effect on open.
+<div align="center">
+<h2>Features</h2>
+</div>
+<p align="center">
+ ❶ Native Animations & Performance  ❷ Cross Platform (iOS and Android)
+ ❸ Identical Working on Android and iOS
+❹ Gesture Control
+ ❺  Raw ActionSheet - You can Add Anything
+❻ Allow ActionSheet to be partially shown when opened
+❽ Support TextInputs
+ ❿ Cool bounce effect on open.
+</p>
  
  
 
-## Run the Example
+<div align="center">
+<h2>Run Example</h2>
+</div>
 To run the example app clone the project
 
     git clone https://github.com/ammarahm-ed/react-native-actions-sheet.git
@@ -59,35 +59,23 @@ To run the example app clone the project
    
     react-native run-android
 
-## Installation
+<div align="center">
+<h2>Installation Guide</h2>
+</div>
 
     npm install react-native-actions-sheet --save
 or if you use yarn:
 
     yarn add react-native-actions-sheet
 
-## Usage
+<div align="center">
+<h2>Usage Example</h2>
+</div>
 For complete usage, see the example project.
 
 ```jsx
-import React from 'react';
-import {
-  SafeAreaView,
-  StatusBar,
-  TouchableOpacity,
-  Text,
-  View,
-  TextInput
-} from 'react-native';
-import ActionSheet from 'react-native-actions-sheet';
-
-const App = () => {
-  let actionSheet;
-
-  return (
-    <>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView
+      
+      <View
         style={{
           justifyContent: 'center',
           flex: 1,
@@ -95,135 +83,26 @@ const App = () => {
         <TouchableOpacity
           onPress={() => {
             actionSheet.setModalVisible();
-          }}
-          style={{
-            height: 50,
-            justifyContent: 'center',
-            alignItems: 'center',
-            alignSelf: 'center',
-            backgroundColor: '#fe8a71',
-            paddingHorizontal: 10,
-            borderRadius: 5,
-            elevation: 5,
-            shadowColor: 'black',
-            shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
-            shadowOpacity: 0.2,
-            shadowRadius: 0.7 * 4,
           }}>
-          <Text
-            style={{
-              color: 'white',
-              fontWeight: 'bold',
-            }}>
+          <Text>
             Open ActionSheet
           </Text>
         </TouchableOpacity>
 
         <ActionSheet
-          
-          initialOffsetFromBottom={0.5}
           ref={ref => (actionSheet = ref)}
-          bounceOnOpen={true}
-          gestureEnabled={true}
-          
-          // YOUR CUSTOM COMPONENT INSIDE THE ACTIONSHEET
-          children={
-            <View
-              style={{
-                width: '100%',
-                padding: 12,
-              }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom:15
-                }}>
-                {['#4a4e4d','#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'].map(color => 
-                  <TouchableOpacity
-                  onPress={() => {
-                    
-                    actionSheet.setModalVisible();
-                  }}
-                  key={color}
-                    style={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 100,
-                      backgroundColor: color,
-                    }}/>
-                )}
-              </View>
-
-              <TextInput
-              style={{
-                width:'100%',
-                height:50,
-                borderRadius:5,
-                borderWidth:1,
-                borderColor:'#f0f0f0',
-                marginBottom:15,
-                paddingHorizontal:10
-              }}
-              placeholder="Write your text here"
-             
-              >
-
-              </TextInput>
-
-               <View
-               style={{
-                 
-               }}
-               >
-              {[
-                100,
-                60,150,200,170,80,40
-              ].map((item) => <TouchableOpacity
-              onPress={() => {
-                actionSheet.setModalVisible();
-              }}
-              style={{
-                flexDirection:"row",
-                justifyContent:"space-between",
-                alignItems:'center'
-              }}
-              >
-                <View
-                style={{
-                  width:item,
-                  height:15,
-                  backgroundColor:'#f0f0f0',
-                  marginVertical:15,
-                  borderRadius:5
-                }}
-                >
-
-                </View>
-
-                <View
-                  style={{
-                    width:30,
-                    height:30,
-                    backgroundColor:'#f0f0f0',
-                    borderRadius:100
-                  }}
-                />
-              </TouchableOpacity>)}   
-              </View> 
-            </View>
-          }
+          children={YOUR CUSTOM COMPONENT INSIDE THE ACTIONSHEET}
         />
-      </SafeAreaView>
-    </>
-  );
-};
+        
+      </View>
+    
 
-export default App;
 ```
 
-## ActionSheet Props
+<div align="center">
+<h2>ActionSheet Props</h2>
+</div>
+
 |Name|Type|Description|Default Value|
 |--|--|--|--|
 |children|React.Component|Your custom component to render inside ActionSheet|`<View/>`
@@ -250,7 +129,9 @@ export default App;
 |onClose|function| Function Called on Close
 |onOpen|function| Function Called on Open
 
-## ActionSheet Methods
+<div align="center">
+<h2>ActionSheet Methods</h2>
+</div>
 ActionSheet can be opened or closed using its ref.
 ```jsx
 // First create a ref on your <ActionSheet/> Component.
@@ -269,3 +150,4 @@ this.actionSheet.setModalVisible();
 #
 
 ### MIT Licensed
+
