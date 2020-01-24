@@ -154,7 +154,7 @@ Default:`1`
 
 #### `extraScroll`
 
-Scroll the ActionSheet beyond its natural limits.
+Normally when the ActionSheet is fully opened, a small portion from the bottom is hidden by default. Use this prop if you want the ActionSheet to hover over the bottom of screen and not hide a little behind it.
 
 | Type | Required |
 | ---- | -------- |
