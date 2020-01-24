@@ -152,6 +152,18 @@ Default:`1`
 
 ---
 
+#### `extraScroll`
+
+Scroll the ActionSheet beyond its natural limits.
+
+| Type | Required |
+| ---- | -------- |
+| number | no |
+
+Default:`0`
+
+---
+
 #### `containerStyle`
 
 Any custom styles for the container. 
