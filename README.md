@@ -137,6 +137,7 @@ For complete usage, see the example project.
 <h2>ActionSheet Methods</h2>
 </div>
 ActionSheet can be opened or closed using its ref.
+
 ```jsx
 // First create a ref on your <ActionSheet/> Component.
 
@@ -148,9 +149,8 @@ ref={ref => this.actionSheet = ref}
 
 this.actionSheet.setModalVisible();
 
-
-
 ```
+
 #
 
 ### MIT Licensed
