@@ -108,7 +108,7 @@ For complete usage, see the example project.
 ## Props
 
 #### `ref`
-Renders a custom component inside the ActionSheet. 
+Assigns a ref to ActionSheet component to use methods. 
 
 | Type | Required |
 | ---- | -------- |
