@@ -1,11 +1,23 @@
+<div align="center">
 
-# react-native-actions-sheet
+<h1>  react-native-actions-sheet</h1>
+</div>
+<div
+align="center"
+style="width:100%;"
+>
+<img href="https://github.com/ammarahm-ed/react-native-actions-sheet/pulls" src="https://img.shields.io/badge/PRs-welcome-green"/>
+<img href="https://www.npmjs.com/package/react-native-actions-sheet" src="https://img.shields.io/npm/v/react-native-actions-sheet?color=green"/>
+<img href="https://www.npmjs.com/package/react-native-actions-sheet" src="https://img.shields.io/npm/dt/react-native-actions-sheet?color=green"/>
+</div>
+<p align="center">
+A highly customizable cross platform ActionSheet for react native. 
+</p>
+<p align="center">
+<img src="https://raw.githubusercontent.com/ammarahm-ed/react-native-actions-sheet/master/gifs/preview1.png"/>
+</p>
 
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green?style=flat-square)](https://github.com/ammarahm-ed/react-native-actions-sheet/pulls)
-[![react-native-actions-sheet](https://img.shields.io/npm/v/react-native-actions-sheet?color=green)](https://www.npmjs.com/package/react-native-actions-sheet)
-[![react-native-actions-sheet](https://img.shields.io/npm/dt/react-native-actions-sheet?color=green)](https://www.npmjs.com/package/react-native-actions-sheet)
 
-A Cross Platform(Android &amp; iOS) ActionSheet with a flexible api, native performance and zero dependency code for react native. Create anything you want inside the ActionSheet.
 
 **Version 0.1.7 breaking changes:**
  `customStyles` prop has been renamed to containerStyle.
@@ -13,12 +25,12 @@ A Cross Platform(Android &amp; iOS) ActionSheet with a flexible api, native perf
 <img
 width='45%'
 height:600
-src=https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/2020_01_12_14_16_30_trim.gif
+src="https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/2020_01_12_14_16_30_trim.gif"
 />
 <img
 width='40%'
 height:500
-src=https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/screen-recording-1.gif
+src="https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/screen-recording-1.gif"
 />
 
 **Features:**
