@@ -101,7 +101,9 @@ For complete usage, see the example project.
     
 
 ```
-
+<div align="center">
+<h1>Reference</h1>
+</div>
 
 ## Props
 
