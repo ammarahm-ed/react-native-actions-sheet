@@ -25,11 +25,11 @@ const getElevation = elevation => {
 };
 
 const SUPPORTED_ORIENTATIONS = [
-  "portrait",
-  "portrait-upside-down",
-  "landscape",
-  "landscape-left",
-  "landscape-right"
+  'portrait',
+  'portrait-upside-down',
+  'landscape',
+  'landscape-left',
+  'landscape-right',
 ];
 export default class ActionSheet extends Component {
   constructor(props) {
@@ -63,40 +63,46 @@ export default class ActionSheet extends Component {
   };
 
   _hideModal = () => {
-    let {animated,closeAnimationDuration,onClose} = this.props;
+    let {animated, closeAnimationDuration, onClose} = this.props;
     if (this.isClosing) return;
     this.isClosing = true;
-   
 
     Animated.parallel([
       Animated.timing(this.transformValue, {
         toValue: this.customComponentHeight * 2,
-        duration: animated? closeAnimationDuration : 1,
+        duration: animated ? closeAnimationDuration : 1,
         useNativeDriver: true,
       }),
-     
     ]).start(() => {
-        this.scrollViewRef.scrollTo({
-          x: 0,
-          y: 0,
-          animated: false,
-        });
-        this.setState(
-          {
-            modalVisible: false,
-          },
-          () => {
-            this.layoutHasCalled = false;
-            this.isClosing = false;
-            if (typeof onClose === 'function') onClose();
-          },
-        );
-     
+      this.scrollViewRef.scrollTo({
+        x: 0,
+        y: 0,
+        animated: false,
+      });
+      this.setState(
+        {
+          modalVisible: false,
+        },
+        () => {
+          this.layoutHasCalled = false;
+          this.isClosing = false;
+          if (typeof onClose === 'function') onClose();
+        },
+      );
     });
   };
 
   _showModal = event => {
-    let {gestureEnabled, bounciness, initialOffsetFromBottom,bounceOnOpen,animated,footerHeight,footerAlwaysVisible} = this.props;
+    let {
+      gestureEnabled,
+      bounciness,
+      initialOffsetFromBottom,
+      bounceOnOpen,
+      animated,
+      footerHeight,
+      footerAlwaysVisible,
+      extraScroll,
+    } = this.props;
 
     let addFactor = deviceHeight * 0.1;
     let height = event.nativeEvent.layout.height;
@@ -114,17 +120,17 @@ export default class ActionSheet extends Component {
       }
       return;
     } else {
-      
       if (footerAlwaysVisible) {
         this.customComponentHeight = height;
       } else {
         this.customComponentHeight = height - footerHeight;
       }
       let scrollOffset = gestureEnabled
-        ? (this.customComponentHeight * initialOffsetFromBottom) + addFactor
-        : this.customComponentHeight + addFactor;
+        ? this.customComponentHeight * initialOffsetFromBottom +
+          addFactor +
+          extraScroll
+        : this.customComponentHeight + addFactor + extraScroll;
 
-      
       this.scrollViewRef.scrollTo({
         x: 0,
         y: scrollOffset,
@@ -136,13 +142,12 @@ export default class ActionSheet extends Component {
         Animated.parallel([
           Animated.spring(this.transformValue, {
             toValue: 0,
-            bounciness:bounceOnOpen?  bounciness : 1,
+            bounciness: bounceOnOpen ? bounciness : 1,
             useNativeDriver: true,
           }).start(),
-         
         ]).start();
       }
-     
+
       this.layoutHasCalled = true;
     }
   };
@@ -160,7 +165,7 @@ export default class ActionSheet extends Component {
     if (this.prevScroll < verticalOffset) {
       if (verticalOffset - this.prevScroll > springOffset * 0.75) {
         let addFactor = deviceHeight * 0.1;
-        this._scrollTo(this.customComponentHeight + addFactor);
+        this._scrollTo(this.customComponentHeight + addFactor + extraScroll);
       } else {
         this._scrollTo(this.prevScroll);
       }
@@ -220,14 +225,14 @@ export default class ActionSheet extends Component {
       footerHeight,
       CustomHeaderComponent,
       CustomFooterComponent,
-      headerAlwaysVisible
+      headerAlwaysVisible,
     } = this.props;
 
     return (
       <Modal
         visible={modalVisible}
         animated={true}
-        animationType='fade'
+        animationType="fade"
         supportedOrientations={SUPPORTED_ORIENTATIONS}
         onShow={() => onOpen}
         onRequestClose={() => {
@@ -296,30 +301,33 @@ export default class ActionSheet extends Component {
                   },
                 ]}>
                 {gestureEnabled || headerAlwaysVisible ? (
-                  CustomHeaderComponent? CustomHeaderComponent : <View
-                    style={[
-                      styles.indicator,
-                      {backgroundColor: indicatorColor},
-                    ]}
-                  />
+                  CustomHeaderComponent ? (
+                    CustomHeaderComponent
+                  ) : (
+                    <View
+                      style={[
+                        styles.indicator,
+                        {backgroundColor: indicatorColor},
+                      ]}
+                    />
+                  )
                 ) : null}
 
                 {children}
                 <View
-              
-                style={[{
-                  width:'100%',
-                  backgroundColor:'white'
-                },
-                footerStyle,
-                {
-                  height:footerHeight
-                }]}
-                >
+                  style={[
+                    {
+                      width: '100%',
+                      backgroundColor: 'white',
+                    },
+                    footerStyle,
+                    {
+                      height: footerHeight,
+                    },
+                  ]}>
                   {CustomFooterComponent}
                 </View>
               </Animated.View>
-
             </ScrollView>
           </KeyboardAvoidingView>
         </Animated.View>
@@ -330,47 +338,49 @@ export default class ActionSheet extends Component {
 
 ActionSheet.defaultProps = {
   children: <View />,
-  CustomFooterComponent:<View/>,
-  CustomHeaderComponent:null,
-  footerAlwaysVisible:false, 
-  headerAlwaysVisible:false,
+  CustomFooterComponent: <View />,
+  CustomHeaderComponent: null,
+  footerAlwaysVisible: false,
+  headerAlwaysVisible: false,
   containerStyle: {},
-  footerHeight:80,
-  footerStyle:{},
+  footerHeight: 80,
+  footerStyle: {},
   animated: true,
   closeOnPressBack: true,
   gestureEnabled: false,
   bounceOnOpen: false,
   bounciness: 8,
-  closeAnimationDuration:300,
-  openAnimationDuration:200,
+  extraScroll: 0,
+  closeAnimationDuration: 300,
+  openAnimationDuration: 200,
   springOffset: 50,
   elevation: 5,
   initialOffsetFromBottom: 1,
   indicatorColor: 'gray',
-  defaultOverlayOpacity:0.3,
+  defaultOverlayOpacity: 0.3,
   overlayColor: 'black',
   onClose: () => {},
   onOpen: () => {},
 };
 ActionSheet.propTypes = {
   children: PropTypes.node,
-  CustomHeaderComponent:PropTypes.node,
-  CustomFooterComponent:PropTypes.node,
-  footerAlwaysVisible:PropTypes.bool,
-  headerAlwaysVisible:PropTypes.bool,
+  CustomHeaderComponent: PropTypes.node,
+  CustomFooterComponent: PropTypes.node,
+  extraScroll: PropTypes.number,
+  footerAlwaysVisible: PropTypes.bool,
+  headerAlwaysVisible: PropTypes.bool,
   containerStyle: PropTypes.object,
   footerStyle: PropTypes.object,
-  footerHeight:PropTypes.number,
+  footerHeight: PropTypes.number,
   animated: PropTypes.bool,
   closeOnPressBack: PropTypes.bool,
   gestureEnabled: PropTypes.bool,
   bounceOnOpen: PropTypes.bool,
   bounciness: PropTypes.number,
   springOffset: PropTypes.number,
-  defaultOverlayOpacity:PropTypes.number,
-  closeAnimationDuration:PropTypes.number,
-  openAnimationDuration:PropTypes.number,
+  defaultOverlayOpacity: PropTypes.number,
+  closeAnimationDuration: PropTypes.number,
+  openAnimationDuration: PropTypes.number,
   elevation: PropTypes.number,
   initialOffsetFromBottom: PropTypes.number,
   indicatorColor: PropTypes.string,

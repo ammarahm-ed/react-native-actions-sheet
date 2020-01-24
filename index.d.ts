@@ -9,6 +9,7 @@ declare module "react-native-actions-sheet" {
     springOffset?: number;
     elevation?: number;
     indicatorColor?: string;
+    extraScroll?:number;
     overlayColor?: string;
     footerAlwaysVisible?:false, 
     headerAlwaysVisible?:false,
