@@ -19,12 +19,12 @@ A highly customizable cross platform ActionSheet for react native.
 <div align="center">
 <h2>Screenshots</h2>
 </div>
+
 <img
-width='45%'
+width='44%'
 height:600
 src="https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/2020_01_12_14_16_30_trim.gif"
-/>
-<img
+/><img
 width='40%'
 height:500
 src="https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/screen-recording-1.gif"
