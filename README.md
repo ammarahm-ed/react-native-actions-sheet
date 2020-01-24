@@ -107,7 +107,7 @@ For complete usage, see the example project.
 
 ## Props
 
-### `ref`
+#### `ref`
 Renders a custom component inside the ActionSheet. 
 
 | Type | Required |
@@ -116,7 +116,7 @@ Renders a custom component inside the ActionSheet.
 
 ---
 
-### `children`
+#### `children`
 
 Renders a custom component inside the ActionSheet. 
 
@@ -140,7 +140,7 @@ You can also wrap your component in ActionSheet like this:
 ```
 ---
 
-### `initialOffsetFromBottom`
+#### `initialOffsetFromBottom`
 
 Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**
 
@@ -152,7 +152,7 @@ Default:`1`
 
 ---
 
-### `containerStyle`
+#### `containerStyle`
 
 Any custom styles for the container. 
 
@@ -163,7 +163,7 @@ Any custom styles for the container.
 
 ---
 
-### `CustomHeaderComponent`
+#### `CustomHeaderComponent`
 
 Your custom header component. Using this will hide the default indicator.
 
@@ -173,7 +173,7 @@ Your custom header component. Using this will hide the default indicator.
 
 
 ---
-### `headerAlwaysVisible`
+#### `headerAlwaysVisible`
 
 Keep the header always visible even when gestures are disabled.
 
@@ -184,7 +184,7 @@ Keep the header always visible even when gestures are disabled.
 Default: `false`
 
 ---
-### `CustomFooterComponent`
+#### `CustomFooterComponent`
 
 A footer component if you want to add some info at the bottom. 
 
@@ -195,7 +195,7 @@ A footer component if you want to add some info at the bottom.
 **Note:** Remember to give footer a fixed height and provide ActionSheet the `footerHeight` prop with same value. If you have added margins etc, add those values to `footerHeight` also.
 
 ---
-### `footerHeight`
+#### `footerHeight`
 
 Height of the footer
 
@@ -205,7 +205,7 @@ Height of the footer
 Default: `80`
 
 ---
-### `footerStyle`
+#### `footerStyle`
 
 Custom Styles for the footer container.
 
@@ -214,7 +214,7 @@ Custom Styles for the footer container.
 | Object | no |
 
 ---
-### `footerAlwaysVisible`
+#### `footerAlwaysVisible`
 
 Keep footer visible. Currently when you overdraw, the footer appears, however you can change this by setting this to `true`.
 
@@ -226,7 +226,7 @@ Default: `false`
 
 ---
 
-### `animated`
+#### `animated`
 
 Keep footer visible. Currently when you overdraw, the footer appears, however you can change this by setting this to `true`.
 
@@ -237,7 +237,7 @@ Keep footer visible. Currently when you overdraw, the footer appears, however yo
 Default: `true`
 
 ---
-### `openAnimationDuration`
+#### `openAnimationDuration`
 
 Duration of opening animation.
 
@@ -249,7 +249,7 @@ Default: `200`
 
 ---
 
-### `closeAnimationDuration`
+#### `closeAnimationDuration`
 
 Duration of closing animation.
 
@@ -259,7 +259,7 @@ Duration of closing animation.
 
 Default: `300`
 
-### `gestureEnabled`
+#### `gestureEnabled`
 
 Enables gesture control of ActionSheet
 
@@ -271,7 +271,7 @@ Default: `false`
 
 ---
 
-### `bounceOnOpen`
+#### `bounceOnOpen`
 
 Bounces the ActionSheet on open.
 
@@ -283,7 +283,7 @@ Default: `false`
 
 ---
 
-### `bounciness`
+#### `bounciness`
 
 How much you want the ActionSheet to bounce when it is opened. 
 
@@ -294,7 +294,7 @@ How much you want the ActionSheet to bounce when it is opened.
 Default: `8`
 
 ---
-### `springOffset`
+#### `springOffset`
 
 When touch ends and user has not moved farther from the set springOffset, the ActionSheet will return to previous position.
 
@@ -305,7 +305,7 @@ When touch ends and user has not moved farther from the set springOffset, the Ac
 Default: `50`
 
 ---
-### `elevation`
+#### `elevation`
 
 Add elevation to the ActionSheet container. 
 
@@ -316,7 +316,7 @@ Add elevation to the ActionSheet container.
 Default: `0`
 
 ---
-### `indicatorColor`
+#### `indicatorColor`
 
 Color of the gestureEnabled Indicator.
 
@@ -327,7 +327,7 @@ Color of the gestureEnabled Indicator.
 Default: `"#f0f0f0"`
 
 ---
-### `overlayColor`
+#### `overlayColor`
 
 Color of the overlay/backdrop.
 
@@ -338,7 +338,7 @@ Color of the overlay/backdrop.
 Default: `"black"`
 
 ---
-### `defaultOverlayOpacity`
+#### `defaultOverlayOpacity`
 
 Default opacity of the overlay/backdrop.
 
@@ -352,7 +352,7 @@ Default: `0.3`
 
 
 
-### `closeOnPressBack`
+#### `closeOnPressBack`
 
 Will the ActionSheet close on `hardwareBackPress` event.
 
@@ -364,7 +364,7 @@ Default: `true`
 
 ---
 
-### `onClose`
+#### `onClose`
 
 Event called when the ActionSheet closes.
 
@@ -374,7 +374,7 @@ Event called when the ActionSheet closes.
 
 
 ---
-### `onOpen`
+#### `onOpen`
 
 An event called when the ActionSheet Opens.
 
@@ -388,7 +388,7 @@ An event called when the ActionSheet Opens.
 ## Methods
 Methods require you to set a ref on ActionSheet Component.
 
-### `setModalVisible`
+#### `setModalVisible`
 ActionSheet can be opened or closed using its ref.
 ```jsx
 // First create a ref on your <ActionSheet/> Component.
