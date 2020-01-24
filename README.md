@@ -114,7 +114,7 @@ Assigns a ref to ActionSheet component to use methods.
 | ---- | -------- |
 | ref | Yes |
 
----
+
 
 #### `children`
 
@@ -138,7 +138,7 @@ You can also wrap your component in ActionSheet like this:
 	</ActionSheet>
 
 ```
----
+
 
 #### `initialOffsetFromBottom`
 
@@ -150,7 +150,6 @@ Use if you want to show the ActionSheet Partially on Opening. **Requires `gestur
 
 Default:`1`
 
----
 
 #### `extraScroll`
 
@@ -162,7 +161,7 @@ Normally when the ActionSheet is fully opened, a small portion from the bottom i
 
 Default:`0`
 
----
+
 
 #### `containerStyle`
 
@@ -173,7 +172,7 @@ Any custom styles for the container.
 | Object | no |
 
 
----
+
 
 #### `CustomHeaderComponent`
 
@@ -184,7 +183,7 @@ Your custom header component. Using this will hide the default indicator.
 | React.Component | no |
 
 
----
+
 #### `headerAlwaysVisible`
 
 Keep the header always visible even when gestures are disabled.
@@ -195,7 +194,7 @@ Keep the header always visible even when gestures are disabled.
 
 Default: `false`
 
----
+
 #### `CustomFooterComponent`
 
 A footer component if you want to add some info at the bottom. 
@@ -206,7 +205,7 @@ A footer component if you want to add some info at the bottom.
 
 **Note:** Remember to give footer a fixed height and provide ActionSheet the `footerHeight` prop with same value. If you have added margins etc, add those values to `footerHeight` also.
 
----
+
 #### `footerHeight`
 
 Height of the footer
@@ -216,7 +215,7 @@ Height of the footer
 | number | no |
 Default: `80`
 
----
+
 #### `footerStyle`
 
 Custom Styles for the footer container.
@@ -225,7 +224,7 @@ Custom Styles for the footer container.
 | ---- | -------- |
 | Object | no |
 
----
+
 #### `footerAlwaysVisible`
 
 Keep footer visible. Currently when you overdraw, the footer appears, however you can change this by setting this to `true`.
@@ -236,7 +235,6 @@ Keep footer visible. Currently when you overdraw, the footer appears, however yo
 
 Default: `false`
 
----
 
 #### `animated`
 
@@ -248,7 +246,7 @@ Keep footer visible. Currently when you overdraw, the footer appears, however yo
 
 Default: `true`
 
----
+
 #### `openAnimationDuration`
 
 Duration of opening animation.
@@ -259,7 +257,7 @@ Duration of opening animation.
 
 Default: `200`
 
----
+
 
 #### `closeAnimationDuration`
 
@@ -281,7 +279,7 @@ Enables gesture control of ActionSheet
 
 Default: `false`
 
----
+
 
 #### `bounceOnOpen`
 
@@ -293,7 +291,7 @@ Bounces the ActionSheet on open.
 
 Default: `false`
 
----
+
 
 #### `bounciness`
 
@@ -305,7 +303,7 @@ How much you want the ActionSheet to bounce when it is opened.
 
 Default: `8`
 
----
+
 #### `springOffset`
 
 When touch ends and user has not moved farther from the set springOffset, the ActionSheet will return to previous position.
@@ -316,7 +314,7 @@ When touch ends and user has not moved farther from the set springOffset, the Ac
 
 Default: `50`
 
----
+
 #### `elevation`
 
 Add elevation to the ActionSheet container. 
@@ -327,7 +325,7 @@ Add elevation to the ActionSheet container.
 
 Default: `0`
 
----
+
 #### `indicatorColor`
 
 Color of the gestureEnabled Indicator.
@@ -338,7 +336,7 @@ Color of the gestureEnabled Indicator.
 
 Default: `"#f0f0f0"`
 
----
+
 #### `overlayColor`
 
 Color of the overlay/backdrop.
@@ -349,7 +347,7 @@ Color of the overlay/backdrop.
 
 Default: `"black"`
 
----
+
 #### `defaultOverlayOpacity`
 
 Default opacity of the overlay/backdrop.
@@ -360,7 +358,7 @@ Default opacity of the overlay/backdrop.
 
 Default: `0.3`
 
----
+
 
 
 
@@ -374,7 +372,7 @@ Will the ActionSheet close on `hardwareBackPress` event.
 
 Default: `true`
 
----
+
 
 #### `onClose`
 
@@ -385,7 +383,7 @@ Event called when the ActionSheet closes.
 | function | no |
 
 
----
+
 #### `onOpen`
 
 An event called when the ActionSheet Opens.
