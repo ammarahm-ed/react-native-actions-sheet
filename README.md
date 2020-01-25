@@ -414,5 +414,8 @@ this.actionSheet.setModalVisible();
 
 #
 
+## Find this library useful? ❤️
+Support it by joining stargazers for this repository. ⭐️ and follow me for my next creations!
+
 ### MIT Licensed
 
