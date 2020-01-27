@@ -22,7 +22,7 @@ declare module "react-native-actions-sheet" {
     openAnimationDuration?:number;
     bounciness?:number;
     closeOnPressBack?: boolean;
-    defaultOverlayOpacity:number;
+    defaultOverlayOpacity?:number;
     gestureEnabled?: boolean;
     bounceOnOpen?: boolean;
     onClose?: () => void;
