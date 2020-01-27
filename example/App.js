@@ -60,7 +60,6 @@ const App = () => {
           ref={ref => (actionSheet = ref)}
           bounceOnOpen={true}
           bounciness={8}
-          c
           footerStyle={{
             height:10
           }}
