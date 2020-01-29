@@ -339,7 +339,7 @@ ActionSheet.defaultProps = {
   footerAlwaysVisible: false,
   headerAlwaysVisible: false,
   containerStyle: {},
-  footerHeight: 80,
+  footerHeight: 40,
   footerStyle: {},
   animated: true,
   closeOnPressBack: true,
