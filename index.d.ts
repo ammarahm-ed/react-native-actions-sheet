@@ -19,7 +19,6 @@ declare module "react-native-actions-sheet" {
     footerHeight?:number,
     footerStyle?:StyleProp<ViewStyle>,
     closeAnimationDuration?:number;
-    openAnimationDuration?:number;
     bounciness?:number;
     closeOnPressBack?: boolean;
     defaultOverlayOpacity?:number;
