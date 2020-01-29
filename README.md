@@ -77,28 +77,35 @@ or if you use yarn:
 For complete usage, see the example project.
 
 ```jsx
-      
-      <View
-        style={{
-          justifyContent: 'center',
-          flex: 1,
-        }}>
-        <TouchableOpacity
-          onPress={() => {
-            actionSheet.setModalVisible();
-          }}>
-          <Text>
-            Open ActionSheet
-          </Text>
-        </TouchableOpacity>
+import ActionSheet from 'react-native-actions-sheet';
 
-        <ActionSheet
-          ref={ref => (actionSheet = ref)}
-          children={YOUR CUSTOM COMPONENT INSIDE THE ACTIONSHEET}
-        />
-        
-      </View>
-    
+const App = () => {
+  let actionSheet;
+
+  return (
+    <View
+      style={{
+        justifyContent: 'center',
+        flex: 1,
+      }}>
+      <TouchableOpacity
+        onPress={() => {
+          actionSheet.setModalVisible();
+        }}>
+        <Text>Open ActionSheet</Text>
+      </TouchableOpacity>
+
+      <ActionSheet ref={ref => (actionSheet = ref)}>
+        <View>
+          <Text>YOUR CUSTOM COMPONENT INSIDE THE ACTIONSHEET</Text>
+        </View>
+      </ActionSheet>
+    </View>
+  );
+};
+
+export default App;
+
 
 ```
 <div align="center">
@@ -116,29 +123,6 @@ Assigns a ref to ActionSheet component to use methods.
 
 #
 
-#### `children`
-
-Renders a custom component inside the ActionSheet. 
-
-| Type | Required |
-| ---- | -------- |
-| React.Component | Yes
-
-Default: An Empty`<View/>`
-
-```jsx
-	<ActionSheet
-	children={<View/>}
-	/>
-```
-You can also wrap your component in ActionSheet like this:
-```jsx
-	<ActionSheet>
-	<View/>
-	</ActionSheet>
-
-```
-#
 
 #### `initialOffsetFromBottom`
 
