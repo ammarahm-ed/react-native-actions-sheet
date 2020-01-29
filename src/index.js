@@ -314,7 +314,7 @@ export default class ActionSheet extends Component {
                   style={[
                     {
                       width: '100%',
-                      backgroundColor: 'white',
+                      backgroundColor: 'transparent',
                     },
                     footerStyle,
                     {
