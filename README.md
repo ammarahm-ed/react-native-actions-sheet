@@ -13,7 +13,7 @@ style="width:100%;"
 A highly customizable cross platform ActionSheet for react native. 
 </p>
 <p align="center">
-<img src="https://raw.githubusercontent.com/ammarahm-ed/react-native-actions-sheet/master/gifs/preview1.png"/>
+<img src="https://raw.githubusercontent.com/ammarahm-ed/react-native-actions-sheet/master/gifs/preview3.png"/>
 </p>
 
 <div align="center">
