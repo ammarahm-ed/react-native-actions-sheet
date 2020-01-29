@@ -12,7 +12,7 @@
   "dependencies": {
     "react": "16.9.0",
     "react-native": "0.61.5",
-    "react-native-actions-sheet": "^0.1.6"
+    "react-native-actions-sheet": "^0.1.9"
   },
   "devDependencies": {
     "@babel/core": "^7.8.0",
