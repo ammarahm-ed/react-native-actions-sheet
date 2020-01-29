@@ -98,6 +98,7 @@ export default class ActionSheet extends Component {
       footerHeight,
       footerAlwaysVisible,
       extraScroll,
+      openAnimationSpeed
     } = this.props;
 
     let addFactor = deviceHeight * 0.1;
@@ -138,6 +139,7 @@ export default class ActionSheet extends Component {
         Animated.spring(this.transformValue, {
           toValue: 0,
           bounciness: bounceOnOpen ? bounciness : 1,
+          speed:openAnimationSpeed,
           useNativeDriver: true,
         }).start();
       }
@@ -346,6 +348,7 @@ ActionSheet.defaultProps = {
   bounciness: 8,
   extraScroll: 0,
   closeAnimationDuration: 300,
+  openAnimationSpeed:12,
   springOffset: 50,
   elevation: 5,
   initialOffsetFromBottom: 1,
@@ -373,6 +376,7 @@ ActionSheet.propTypes = {
   springOffset: PropTypes.number,
   defaultOverlayOpacity: PropTypes.number,
   closeAnimationDuration: PropTypes.number,
+  openAnimationSpeed:PropTypes.number,
   elevation: PropTypes.number,
   initialOffsetFromBottom: PropTypes.number,
   indicatorColor: PropTypes.string,

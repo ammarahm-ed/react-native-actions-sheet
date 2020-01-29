@@ -18,6 +18,7 @@ declare module "react-native-actions-sheet" {
     containerStyle?: StyleProp<ViewStyle>,
     footerHeight?:number,
     footerStyle?:StyleProp<ViewStyle>,
+    openAnimationSpeed?:number,
     closeAnimationDuration?:number;
     bounciness?:number;
     closeOnPressBack?: boolean;
