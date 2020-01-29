@@ -158,7 +158,7 @@ export default class ActionSheet extends Component {
   };
 
   _onScrollEndDrag = event => {
-    let {springOffset} = this.props;
+    let {springOffset, extraScroll} = this.props;
 
     let verticalOffset = event.nativeEvent.contentOffset.y;
 
