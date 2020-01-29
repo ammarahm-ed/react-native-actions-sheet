@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, {Component, createRef} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -39,14 +39,12 @@ export default class ActionSheet extends Component {
       scrollable: false,
       layoutHasCalled: false,
     };
-    this.containerOpacity = new Animated.Value(0);
     this.transformValue = new Animated.Value(0);
-    this.opacity = new Animated.Value(0);
     this.customComponentHeight;
     this.prevScroll;
     this.scrollAnimationEndValue;
     this.hasBounced;
-    this.scrollViewRef;
+    this.scrollViewRef = createRef();
     this.layoutHasCalled = false;
     this.isClosing = false;
   }
@@ -67,14 +65,12 @@ export default class ActionSheet extends Component {
     if (this.isClosing) return;
     this.isClosing = true;
 
-    Animated.parallel([
-      Animated.timing(this.transformValue, {
-        toValue: this.customComponentHeight * 2,
-        duration: animated ? closeAnimationDuration : 1,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      this.scrollViewRef.scrollTo({
+    Animated.timing(this.transformValue, {
+      toValue: this.customComponentHeight * 2,
+      duration: animated ? closeAnimationDuration : 1,
+      useNativeDriver: true,
+    }).start(() => {
+      this.scrollViewRef.current.scrollTo({
         x: 0,
         y: 0,
         animated: false,
@@ -131,7 +127,7 @@ export default class ActionSheet extends Component {
           extraScroll
         : this.customComponentHeight + addFactor + extraScroll;
 
-      this.scrollViewRef.scrollTo({
+      this.scrollViewRef.current.scrollTo({
         x: 0,
         y: scrollOffset,
         animated: false,
@@ -139,13 +135,11 @@ export default class ActionSheet extends Component {
 
       if (animated) {
         this.transformValue.setValue(scrollOffset);
-        Animated.parallel([
-          Animated.spring(this.transformValue, {
-            toValue: 0,
-            bounciness: bounceOnOpen ? bounciness : 1,
-            useNativeDriver: true,
-          }).start(),
-        ]).start();
+        Animated.spring(this.transformValue, {
+          toValue: 0,
+          bounciness: bounceOnOpen ? bounciness : 1,
+          useNativeDriver: true,
+        }).start();
       }
 
       this.layoutHasCalled = true;
@@ -180,7 +174,7 @@ export default class ActionSheet extends Component {
 
   _scrollTo = y => {
     this.scrollAnimationEndValue = y;
-    this.scrollViewRef.scrollTo({
+    this.scrollViewRef.current.scrollTo({
       x: 0,
       y: this.scrollAnimationEndValue,
       animated: true,
@@ -239,23 +233,23 @@ export default class ActionSheet extends Component {
           if (closeOnPressBack) this._hideModal();
         }}
         transparent={true}>
-        <Animated.View style={[styles.parentContainer]}>
+        <Animated.View style={styles.parentContainer}>
           <KeyboardAvoidingView
             style={{
               width: '100%',
             }}
-            enabled={Platform.OS === 'ios' ? true : false}
+            enabled={Platform.OS === 'ios'}
             behavior="position">
             <ScrollView
               bounces={false}
-              ref={ref => (this.scrollViewRef = ref)}
+              ref={this.scrollViewRef}
               showsVerticalScrollIndicator={false}
               scrollEnabled={scrollable}
               onScrollBeginDrag={this._onScrollBeginDrag}
               onScrollEndDrag={this._onScrollEndDrag}
               onTouchEnd={this._onTouchEnd}
               overScrollMode="always"
-              style={[styles.scrollview]}>
+              style={styles.scrollView}>
               <Animated.View
                 style={{
                   height: '100%',
