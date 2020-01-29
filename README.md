@@ -247,15 +247,15 @@ Keep footer visible. Currently when you overdraw, the footer appears, however yo
 Default: `true`
 
 #
-#### `openAnimationDuration`
+#### `openAnimationSpeed`
 
-Duration of opening animation.
+Speed of opening animation. Higher means the ActionSheet will open more quickly.
 
 | Type | Required |
 | ---- | -------- |
 | number | no |
 
-Default: `200`
+Default: `12`
 
 
 #
