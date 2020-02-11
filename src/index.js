@@ -61,6 +61,7 @@ export default class ActionSheet extends Component {
   };
 
   _hideModal = () => {
+ 
     let {animated, closeAnimationDuration, onClose} = this.props;
     if (this.isClosing) return;
     this.isClosing = true;
@@ -154,6 +155,7 @@ export default class ActionSheet extends Component {
   };
 
   _onScrollEndDrag = event => {
+
     let {springOffset, extraScroll} = this.props;
 
     let verticalOffset = event.nativeEvent.contentOffset.y;
@@ -166,7 +168,9 @@ export default class ActionSheet extends Component {
         this._scrollTo(this.prevScroll);
       }
     } else {
+     
       if (this.prevScroll - verticalOffset > springOffset) {
+      
         this._hideModal();
       } else {
         this._scrollTo(this.prevScroll);
@@ -184,29 +188,37 @@ export default class ActionSheet extends Component {
   };
 
   _onTouchMove = () => {
-    this._hideModal();
+    if (this.props.closeOnTouchBackdrop) {
+    
+      this._hideModal();
+    }
     this.setState({
       scrollable: false,
     });
   };
 
   _onTouchStart = () => {
-    this._hideModal();
+    if (this.props.closeOnTouchBackdrop){
+    
+      this._hideModal();
+    }
     this.setState({
       scrollable: false,
     });
   };
 
   _onTouchEnd = () => {
+
     if (this.props.gestureEnabled) {
       this.setState({
         scrollable: true,
       });
     }
+
   };
 
   render() {
-    let {scrollable, modalVisible} = this.state;
+    let {scrollable,modalVisible} = this.state;
     let {
       onOpen,
       closeOnPressBack,
@@ -232,6 +244,7 @@ export default class ActionSheet extends Component {
         supportedOrientations={SUPPORTED_ORIENTATIONS}
         onShow={() => onOpen}
         onRequestClose={() => {
+          alert('here nowt');
           if (closeOnPressBack) this._hideModal();
         }}
         transparent={true}>
@@ -246,7 +259,7 @@ export default class ActionSheet extends Component {
               bounces={false}
               ref={this.scrollViewRef}
               showsVerticalScrollIndicator={false}
-              scrollEnabled={scrollable}
+              scrollEnabled={scrollable}    
               onScrollBeginDrag={this._onScrollBeginDrag}
               onScrollEndDrag={this._onScrollEndDrag}
               onTouchEnd={this._onTouchEnd}
@@ -272,8 +285,18 @@ export default class ActionSheet extends Component {
                   zIndex: 10,
                 }}>
                 <TouchableOpacity
-                  onPress={this._hideModal}
-                  onLongPress={this._hideModal}
+                  onPress={() => {
+                    if (this.props.closeOnTouchBackdrop) {
+                      this._hideModal()
+                    }
+                    
+                  }}
+                  onLongPress={() => {
+                    if (this.props.closeOnTouchBackdrop) {
+                      this._hideModal()
+                    }
+                   
+                  }}
                   style={{
                     height: deviceHeight,
                     width: '100%',
@@ -355,6 +378,7 @@ ActionSheet.defaultProps = {
   indicatorColor: 'gray',
   defaultOverlayOpacity: 0.3,
   overlayColor: 'black',
+  closeOnTouchBackdrop: true,
   onClose: () => {},
   onOpen: () => {},
 };
@@ -371,6 +395,7 @@ ActionSheet.propTypes = {
   animated: PropTypes.bool,
   closeOnPressBack: PropTypes.bool,
   gestureEnabled: PropTypes.bool,
+  closeOnTouchBackdrop:PropTypes.bool,
   bounceOnOpen: PropTypes.bool,
   bounciness: PropTypes.number,
   springOffset: PropTypes.number,

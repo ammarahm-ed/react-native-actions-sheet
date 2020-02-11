@@ -4,6 +4,7 @@ import { StyleProp, ViewStyle } from "react-native";
 
 declare module "react-native-actions-sheet" {
   export type ActionSheetProps = {
+   
     animated?: boolean;
     initialOffsetFromBottom?: number;
     springOffset?: number;
@@ -16,6 +17,7 @@ declare module "react-native-actions-sheet" {
     CustomHeaderComponent?:React.ReactNode,
     CustomFooterComponent?:React.ReactNode,
     containerStyle?: StyleProp<ViewStyle>,
+    closeOnTouchBackdrop?:boolean,
     footerHeight?:number,
     footerStyle?:StyleProp<ViewStyle>,
     openAnimationSpeed?:number,
