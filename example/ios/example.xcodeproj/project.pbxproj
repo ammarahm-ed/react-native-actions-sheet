@@ -194,7 +194,6 @@
 				48EE7C255324ED125727C018 /* Pods-exampleTests.debug.xcconfig */,
 				6102F24A6E168475D2E3F3DE /* Pods-exampleTests.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -308,6 +307,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);

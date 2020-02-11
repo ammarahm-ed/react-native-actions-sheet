@@ -1,12 +1,4 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow
- */
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   StatusBar,
@@ -14,11 +6,30 @@ import {
   Text,
   View,
   TextInput,
+  ScrollView,
 } from 'react-native';
-import ActionSheet from 'react-native-actions-sheet';
+import ActionSheet, {addHasReachedTopListener, removeHasReachedTopListener} from 'react-native-actions-sheet';
+
 
 const App = () => {
+  const [nestedScrollEnabled, setNestedScrollEnabled] = useState(false);
+
   let actionSheet;
+
+  const _onHasReachedTop = () => {
+    setNestedScrollEnabled(true);
+  }
+
+  useEffect(() => {
+    addHasReachedTopListener(_onHasReachedTop)
+    return () => {
+        removeHasReachedTopListener(_onHasReachedTop)
+    }
+  },[])
+
+  const _onClose = () => {
+    setNestedScrollEnabled(false);
+  }
 
   return (
     <>
@@ -61,11 +72,14 @@ const App = () => {
           bounceOnOpen={true}
           bounciness={8}
           gestureEnabled={true}
+          onClose={_onClose}
           defaultOverlayOpacity={0.3}>
-          <View
+          <ScrollView
+            nestedScrollEnabled={nestedScrollEnabled}
             style={{
               width: '100%',
               padding: 12,
+              maxHeight:500
             }}>
             <View
               style={{
@@ -105,7 +119,7 @@ const App = () => {
               placeholder="Write your text here"></TextInput>
 
             <View style={{}}>
-              {[100, 60, 150, 200, 170, 80, 40].map(item => (
+              {[100, 60, 150, 200, 170, 80, 41,101, 61, 151, 202, 172, 82, 43,103, 64, 155, 205, 176, 86, 46,106, 66, 152, 203, 173, 81, 42].map(item => (
                 <TouchableOpacity
                   key={item}
                   onPress={() => {
@@ -136,7 +150,8 @@ const App = () => {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          </ScrollView>
+
         </ActionSheet>
       </SafeAreaView>
     </>
