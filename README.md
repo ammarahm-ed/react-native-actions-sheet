@@ -265,6 +265,18 @@ Default: `false`
 
 
 #
+#### `closeOnTouchBackdrop`
+
+Control closing ActionSheet by touching on backdrop.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `true`
+
+
+#
 #### `bounceOnOpen`
 
 Bounces the ActionSheet on open.
