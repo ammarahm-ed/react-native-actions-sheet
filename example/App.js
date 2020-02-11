@@ -73,9 +73,11 @@ const App = () => {
           bounciness={8}
           gestureEnabled={true}
           onClose={_onClose}
+        
           defaultOverlayOpacity={0.3}>
           <ScrollView
-            nestedScrollEnabled={nestedScrollEnabled}
+            nestedScrollEnabled={true}
+            scrollEnabled={nestedScrollEnabled}
             style={{
               width: '100%',
               padding: 12,
@@ -109,13 +111,14 @@ const App = () => {
             <TextInput
               style={{
                 width: '100%',
-                height: 50,
+                minHeight: 50,
                 borderRadius: 5,
                 borderWidth: 1,
                 borderColor: '#f0f0f0',
                 marginBottom: 15,
                 paddingHorizontal: 10,
               }}
+              multiline={true}
               placeholder="Write your text here"></TextInput>
 
             <View style={{}}>
