@@ -265,6 +265,18 @@ Default: `false`
 
 
 #
+#### `closeOnTouchBackdrop`
+
+Control closing ActionSheet by touching on backdrop.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `true`
+
+
+#
 #### `bounceOnOpen`
 
 Bounces the ActionSheet on open.
@@ -394,6 +406,34 @@ ref={ref => this.actionSheet = ref}
 // then later in your function to open the ActionSheet:
 
 this.actionSheet.setModalVisible();
+```
+
+#
+
+## Event Listeners
+Listen to changes in ActionSheet State. 
+
+#### `addHasReachedTopListener`
+Attach a listener to know when ActionSheet is fully opened and has reached top. Use this if you want to use a ScrollView inside the ActionSheet. Check the example for demonstration on how to use nested ScrollViews inside ActionSheet.
+
+```jsx
+import {addOnHasReachedTopListener} from "react-native-actions-sheet";
+
+
+// In your Component
+
+  const _onHasReachedTop = () => {
+    // handle the event
+  }
+
+  useEffect(() => {
+    addHasReachedTopListener(_onHasReachedTop)
+    return () => {
+        removeHasReachedTopListener(_onHasReachedTop)
+    }
+  },[])
+
+
 ```
 
 #
