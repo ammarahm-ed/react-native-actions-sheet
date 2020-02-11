@@ -5,9 +5,24 @@
 align="center"
 style="width:100%;"
 >
-<img href="https://github.com/ammarahm-ed/react-native-actions-sheet/pulls" src="https://img.shields.io/badge/PRs-welcome-green"/>
-<img href="https://www.npmjs.com/package/react-native-actions-sheet" src="https://img.shields.io/npm/v/react-native-actions-sheet?color=green"/>
-<img href="https://www.npmjs.com/package/react-native-actions-sheet" src="https://img.shields.io/npm/dt/react-native-actions-sheet?color=green"/>
+<a
+href="https://github.com/ammarahm-ed/react-native-actions-sheet/pulls"
+target="_blank"
+>
+<img  src="https://img.shields.io/badge/PRs-welcome-green"/>
+</a>
+<a
+href="https://www.npmjs.com/package/react-native-actions-sheet"
+target="_blank"
+>
+<img src="https://img.shields.io/npm/v/react-native-actions-sheet?color=green"/>
+</a>
+<a
+href="https://www.npmjs.com/package/react-native-actions-sheet"
+target="_blank"
+>
+<img  src="https://img.shields.io/npm/dt/react-native-actions-sheet?color=green"/>
+</a> 
 </div>
 <p align="center">
 A highly customizable cross platform ActionSheet for react native. 
