@@ -432,7 +432,7 @@ Listen to changes in ActionSheet State.
 Attach a listener to know when ActionSheet is fully opened and has reached top. Use this if you want to use a ScrollView inside the ActionSheet. Check the example for demonstration on how to use nested ScrollViews inside ActionSheet.
 
 ```jsx
-import {addOnHasReachedTopListener} from "react-native-actions-sheet";
+import ActionSheet, {addHasReachedTopListener, removeHasReachedTopListener} from 'react-native-actions-sheet
 
 
 // In your Component
