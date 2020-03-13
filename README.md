@@ -5,9 +5,24 @@
 align="center"
 style="width:100%;"
 >
-<img href="https://github.com/ammarahm-ed/react-native-actions-sheet/pulls" src="https://img.shields.io/badge/PRs-welcome-green"/>
-<img href="https://www.npmjs.com/package/react-native-actions-sheet" src="https://img.shields.io/npm/v/react-native-actions-sheet?color=green"/>
-<img href="https://www.npmjs.com/package/react-native-actions-sheet" src="https://img.shields.io/npm/dt/react-native-actions-sheet?color=green"/>
+<a
+href="https://github.com/ammarahm-ed/react-native-actions-sheet/pulls"
+target="_blank"
+>
+<img  src="https://img.shields.io/badge/PRs-welcome-green"/>
+</a>
+<a
+href="https://www.npmjs.com/package/react-native-actions-sheet"
+target="_blank"
+>
+<img src="https://img.shields.io/npm/v/react-native-actions-sheet?color=green"/>
+</a>
+<a
+href="https://www.npmjs.com/package/react-native-actions-sheet"
+target="_blank"
+>
+<img  src="https://img.shields.io/npm/dt/react-native-actions-sheet?color=green"/>
+</a> 
 </div>
 <p align="center">
 A highly customizable cross platform ActionSheet for react native. 
@@ -417,7 +432,7 @@ Listen to changes in ActionSheet State.
 Attach a listener to know when ActionSheet is fully opened and has reached top. Use this if you want to use a ScrollView inside the ActionSheet. Check the example for demonstration on how to use nested ScrollViews inside ActionSheet.
 
 ```jsx
-import {addOnHasReachedTopListener} from "react-native-actions-sheet";
+import ActionSheet, {addHasReachedTopListener, removeHasReachedTopListener} from 'react-native-actions-sheet
 
 
 // In your Component
