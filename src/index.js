@@ -281,6 +281,9 @@ export default class ActionSheet extends Component {
               style={styles.scrollView}
             >
               <Animated.View
+                onTouchStart={this._onTouchBackdrop}
+                onTouchMove={this._onTouchBackdrop}
+                onTouchEnd={this._onTouchBackdrop}
                 style={{
                   height: "100%",
                   width: "100%",
