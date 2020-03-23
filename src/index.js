@@ -49,12 +49,19 @@ export default class ActionSheet extends Component {
     this.scrollViewRef = createRef();
     this.layoutHasCalled = false;
     this.isClosing = false;
-    this.isRecoiling = true;
+    this.isRecoiling = false;
   }
 
   /**
    * Open/Close the ActionSheet
    */
+
+  waitAsync = ms => new Promise((resolve,reject) => {
+    setTimeout(() =>{
+      resolve();
+    },ms)
+  })  
+
 
   setModalVisible = () => {
     deviceHeight = Dimensions.get("window").height;
@@ -96,7 +103,7 @@ export default class ActionSheet extends Component {
     });
   };
 
-  _showModal = event => {
+ _showModal = async event => {
     let {
       gestureEnabled,
       bounciness,
@@ -144,12 +151,13 @@ export default class ActionSheet extends Component {
           extraScroll
         : this.customComponentHeight + addFactor + extraScroll;
 
-      setTimeout(() => {
+      await this.waitAsync(50);
         this.scrollViewRef.current.scrollTo({
           x: 0,
           y: scrollOffset,
           animated: false
         });
+      await this.waitAsync(10);
         if (animated) {
           this.transformValue.setValue(scrollOffset);
           Animated.spring(this.transformValue, {
@@ -159,7 +167,7 @@ export default class ActionSheet extends Component {
             useNativeDriver: true
           }).start();
         }
-      }, 100);
+
 
       if (!gestureEnabled) {
         DeviceEventEmitter.emit("hasReachedTop");
@@ -194,9 +202,9 @@ export default class ActionSheet extends Component {
         }
 
         this._scrollTo(scrollValue);
-        setTimeout(() => {
+        await this.waitAsync(600);
           this.isRecoiling = false;
-        }, 600);
+       
         DeviceEventEmitter.emit("hasReachedTop");
       } else {
         this._scrollTo(this.prevScroll);
@@ -213,9 +221,9 @@ export default class ActionSheet extends Component {
           return;
         }
         this.isRecoiling = true;
-        setTimeout(() => {
+        await this.waitAsync(600);
           this.isRecoiling = false;
-        }, 600);
+       
 
         this._scrollTo(this.prevScroll);
       }
