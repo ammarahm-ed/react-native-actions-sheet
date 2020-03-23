@@ -42,6 +42,7 @@ export default class ActionSheet extends Component {
       layoutHasCalled: false
     };
     this.transformValue = new Animated.Value(0);
+    this.opacityValue = new Animated.Value(0);
     this.customComponentHeight;
     this.prevScroll;
     this.scrollAnimationEndValue;
@@ -52,16 +53,16 @@ export default class ActionSheet extends Component {
     this.isRecoiling = false;
   }
 
+  waitAsync = ms =>
+    new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve();
+      }, ms);
+    });
+
   /**
    * Open/Close the ActionSheet
    */
-
-  waitAsync = ms => new Promise((resolve,reject) => {
-    setTimeout(() =>{
-      resolve();
-    },ms)
-  })  
-
 
   setModalVisible = () => {
     deviceHeight = Dimensions.get("window").height;
@@ -85,7 +86,7 @@ export default class ActionSheet extends Component {
       duration: animated ? closeAnimationDuration : 1,
       useNativeDriver: true
     }).start(() => {
-      this.scrollViewRef.current.scrollTo({
+      this.scrollViewRef.current?.scrollTo({
         x: 0,
         y: 0,
         animated: false
@@ -103,7 +104,7 @@ export default class ActionSheet extends Component {
     });
   };
 
- _showModal = async event => {
+  _showModal = async event => {
     let {
       gestureEnabled,
       bounciness,
@@ -152,22 +153,22 @@ export default class ActionSheet extends Component {
         : this.customComponentHeight + addFactor + extraScroll;
 
       await this.waitAsync(50);
-        this.scrollViewRef.current.scrollTo({
-          x: 0,
-          y: scrollOffset,
-          animated: false
-        });
-      await this.waitAsync(10);
-        if (animated) {
-          this.transformValue.setValue(scrollOffset);
-          Animated.spring(this.transformValue, {
-            toValue: 0,
-            bounciness: bounceOnOpen ? bounciness : 1,
-            speed: openAnimationSpeed,
-            useNativeDriver: true
-          }).start();
-        }
-
+      this.scrollViewRef.current.scrollTo({
+        x: 0,
+        y: scrollOffset,
+        animated: false
+      });
+      await this.waitAsync(20);
+      if (animated) {
+        this.transformValue.setValue(scrollOffset);
+        this.opacityValue.setValue(1);
+        Animated.spring(this.transformValue, {
+          toValue: 0,
+          bounciness: bounceOnOpen ? bounciness : 1,
+          speed: openAnimationSpeed,
+          useNativeDriver: true
+        }).start();
+      }
 
       if (!gestureEnabled) {
         DeviceEventEmitter.emit("hasReachedTop");
@@ -182,9 +183,7 @@ export default class ActionSheet extends Component {
     this.prevScroll = verticalOffset;
   };
 
-
-
-  _onScrollEnd = event => {
+  _onScrollEnd = async event => {
     let { springOffset, extraScroll } = this.props;
 
     let verticalOffset = event.nativeEvent.contentOffset.y;
@@ -202,9 +201,9 @@ export default class ActionSheet extends Component {
         }
 
         this._scrollTo(scrollValue);
-        await this.waitAsync(600);
-          this.isRecoiling = false;
-       
+        await this.waitAsync(450);
+        this.isRecoiling = false;
+
         DeviceEventEmitter.emit("hasReachedTop");
       } else {
         this._scrollTo(this.prevScroll);
@@ -221,9 +220,8 @@ export default class ActionSheet extends Component {
           return;
         }
         this.isRecoiling = true;
-        await this.waitAsync(600);
-          this.isRecoiling = false;
-       
+        await this.waitAsync(450);
+        this.isRecoiling = false;
 
         this._scrollTo(this.prevScroll);
       }
@@ -232,7 +230,7 @@ export default class ActionSheet extends Component {
 
   _scrollTo = y => {
     this.scrollAnimationEndValue = y;
-    this.scrollViewRef.current.scrollTo({
+    this.scrollViewRef.current?.scrollTo({
       x: 0,
       y: this.scrollAnimationEndValue,
       animated: true
@@ -364,6 +362,7 @@ export default class ActionSheet extends Component {
                   {
                     ...getElevation(elevation),
                     zIndex: 11,
+                    opacity: this.opacityValue,
                     transform: [
                       {
                         translateY: this.transformValue
