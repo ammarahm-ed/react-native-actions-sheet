@@ -52,17 +52,19 @@ src="https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/
 <div align="center">
 <h2>Features</h2>
 </div>
-<p align="center">
- ❶ Native Animations & Performance  ❷ Cross Platform (iOS and Android)
- ❸ Identical Working on Android and iOS
-❹ Gesture Control
- ❺ Raw ActionSheet - You can Add Anything
-❻ Allow ActionSheet to be partially shown when opened ➐ Support TextInputs
- ❽ Cool bounce effect on open.
-</p>
- 
- 
 
+1. Cross Platform (iOS and Android)
+2. Native Animations & Performance
+3. Identical Working on Android and iOS
+4. Control ActionSheet with **Gestures**
+5. **Raw ActionSheet** - You can Add Anything
+6. Allow ActionSheet to be partially shown when opened 
+7. Support TextInputs
+8. Cool **bounce effect** on open.
+9. Support for **Tablets and iPads**
+10. Support **Horizontal Layout**
+11. Support for **Nested Scrolling or Scrollable Content.**
+ 
 <div align="center">
 <h2>Run Example</h2>
 </div>
