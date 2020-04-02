@@ -41,12 +41,12 @@ align="center"
 <img
 width='33%'
 height:600
-src="https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/2020_01_12_14_16_30_trim.gif"
+src="https://imgur.com/XdsHb6M.gif"
 />
 <img
 width='30%'
 height:500
-src="https://github.com/ammarahm-ed/react-native-actions-sheet/blob/master/gifs/screen-recording-1.gif"
+src="https://imgur.com/g6LLkl4.gif"
 />
 </p>
 <div align="center">
