@@ -12,8 +12,8 @@ declare module "react-native-actions-sheet" {
     indicatorColor?: string;
     extraScroll?:number;
     overlayColor?: string;
-    footerAlwaysVisible?:false, 
-    headerAlwaysVisible?:false,
+    footerAlwaysVisible?:boolean, 
+    headerAlwaysVisible?:boolean,
     CustomHeaderComponent?:React.ReactNode,
     CustomFooterComponent?:React.ReactNode,
     containerStyle?: StyleProp<ViewStyle>,
