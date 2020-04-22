@@ -425,6 +425,24 @@ ref={ref => this.actionSheet = ref}
 this.actionSheet.setModalVisible();
 ```
 
+#### `setModalVisible(visible)`
+It's also possible to explicitly either show or hide modal.
+
+```jsx
+// First create a ref on your <ActionSheet/> Component.
+
+<ActionSheet
+ref={ref => this.actionSheet = ref}
+/>
+
+// then to show modal use
+this.actionSheet.setModalVisible(true);
+
+// and later you may want to hide it using
+this.actionSheet.setModalVisible(false);
+```
+
+
 #
 
 ## Event Listeners
