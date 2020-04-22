@@ -64,9 +64,16 @@ export default class ActionSheet extends Component {
    * Open/Close the ActionSheet
    */
 
-  setModalVisible = () => {
+  setModalVisible = (visible) => {
     deviceHeight = Dimensions.get("window").height;
-    if (!this.state.modalVisible) {
+    let modalVisible = this.state.modalVisible;
+    if (visible !== undefined) {
+      if (modalVisible === visible) {
+        return;
+      }
+      modalVisible = !visible;
+    }
+    if (!modalVisible) {
       this.setState({
         modalVisible: true,
         scrollable: this.props.gestureEnabled,
