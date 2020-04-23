@@ -185,7 +185,7 @@ Default: `80`
 | ---- | -------- |
 | Object | no |
      */
-    footerStyle?: StyleProp<ViewStyle>;
+    footerStyle?: ViewStyle;
 
     /**
      * Speed of opening animation. Higher means the ActionSheet will open more quickly.
