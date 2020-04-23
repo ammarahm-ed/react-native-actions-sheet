@@ -72,8 +72,6 @@ To run the example app clone the project
 
     git clone https://github.com/ammarahm-ed/react-native-actions-sheet.git
 
-
-
 then run `yarn or npm install` in the example folder and finally to run the example app:
 
     react-native run-android
@@ -95,6 +93,9 @@ For complete usage, see the example project.
 
 ```jsx
 import ActionSheet from "react-native-actions-sheet";
+import React, { createRef } from "react";
+
+const actionSheetRef = createRef();
 
 const App = () => {
   let actionSheet;
@@ -108,13 +109,13 @@ const App = () => {
     >
       <TouchableOpacity
         onPress={() => {
-          actionSheet.setModalVisible();
+          actionSheetRef.current?.setModalVisible();
         }}
       >
         <Text>Open ActionSheet</Text>
       </TouchableOpacity>
 
-      <ActionSheet ref={(ref) => (actionSheet = ref)}>
+      <ActionSheet ref={actionSheetRef}>
         <View>
           <Text>YOUR CUSTOM COMPONENT INSIDE THE ACTIONSHEET</Text>
         </View>
@@ -449,24 +450,30 @@ Methods require you to set a ref on ActionSheet Component.
 ActionSheet can be opened or closed using its ref.
 
 ```jsx
-// First create a ref on your <ActionSheet/> Component.
+import ActionSheet from "react-native-actions-sheet";
+import React, { createRef } from "react";
 
-<ActionSheet ref={(ref) => (this.actionSheet = ref)} />;
+const actionSheetRef = createRef();
+
+// First create a ref on your <ActionSheet/> Component.
+<ActionSheet ref={actionSheetRef} />;
 
 // then later in your function to open the ActionSheet:
 
-this.actionSheet.setModalVisible();
+actionSheetRef.current?.setModalVisible();
 ```
 
 #### `setModalVisible(visible)`
+
 It's also possible to explicitly either show or hide modal.
 
 ```jsx
-// First create a ref on your <ActionSheet/> Component.
+import ActionSheet from "react-native-actions-sheet";
+import React, { createRef } from "react";
 
-<ActionSheet
-ref={ref => this.actionSheet = ref}
-/>
+const actionSheetRef = createRef();
+// First create a ref on your <ActionSheet/> Component.
+<ActionSheet ref={actionSheetRef} />;
 
 // then to show modal use
 this.actionSheet.setModalVisible(true);
@@ -474,7 +481,6 @@ this.actionSheet.setModalVisible(true);
 // and later you may want to hide it using
 this.actionSheet.setModalVisible(false);
 ```
-
 
 #
 
