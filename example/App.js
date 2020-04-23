@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState, createRef} from 'react';
 import {
   SafeAreaView,
   StatusBar,
@@ -8,28 +8,29 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
-import ActionSheet, {addHasReachedTopListener, removeHasReachedTopListener} from 'react-native-actions-sheet';
+import ActionSheet, {
+  addHasReachedTopListener,
+  removeHasReachedTopListener,
+} from 'react-native-actions-sheet';
 
-
+const actionSheetRef = createRef();
 const App = () => {
   const [nestedScrollEnabled, setNestedScrollEnabled] = useState(false);
 
-  let actionSheet;
-
   const _onHasReachedTop = () => {
     setNestedScrollEnabled(true);
-  }
+  };
 
   useEffect(() => {
-    addHasReachedTopListener(_onHasReachedTop)
+    addHasReachedTopListener(_onHasReachedTop);
     return () => {
-        removeHasReachedTopListener(_onHasReachedTop)
-    }
-  },[])
+      removeHasReachedTopListener(_onHasReachedTop);
+    };
+  }, []);
 
   const _onClose = () => {
     setNestedScrollEnabled(false);
-  }
+  };
 
   return (
     <>
@@ -41,7 +42,7 @@ const App = () => {
         }}>
         <TouchableOpacity
           onPress={() => {
-            actionSheet.setModalVisible();
+            actionSheetRef.current?.setModalVisible();
           }}
           style={{
             height: 50,
@@ -68,12 +69,11 @@ const App = () => {
 
         <ActionSheet
           initialOffsetFromBottom={0.5}
-          ref={ref => (actionSheet = ref)}
+          ref={actionSheetRef}
           bounceOnOpen={true}
           bounciness={8}
           gestureEnabled={true}
           onClose={_onClose}
-        
           defaultOverlayOpacity={0.3}>
           <ScrollView
             nestedScrollEnabled={true}
@@ -81,7 +81,7 @@ const App = () => {
             style={{
               width: '100%',
               padding: 12,
-              maxHeight:500
+              maxHeight: 500,
             }}>
             <View
               style={{
@@ -94,7 +94,7 @@ const App = () => {
                 color => (
                   <TouchableOpacity
                     onPress={() => {
-                      actionSheet.setModalVisible();
+                      actionSheetRef.current?.setModalVisible();
                     }}
                     key={color}
                     style={{
@@ -119,14 +119,44 @@ const App = () => {
                 paddingHorizontal: 10,
               }}
               multiline={true}
-              placeholder="Write your text here"></TextInput>
+              placeholder="Write your text here"
+            />
 
             <View style={{}}>
-              {[100, 60, 150, 200, 170, 80, 41,101, 61, 151, 202, 172, 82, 43,103, 64, 155, 205, 176, 86, 46,106, 66, 152, 203, 173, 81, 42].map(item => (
+              {[
+                100,
+                60,
+                150,
+                200,
+                170,
+                80,
+                41,
+                101,
+                61,
+                151,
+                202,
+                172,
+                82,
+                43,
+                103,
+                64,
+                155,
+                205,
+                176,
+                86,
+                46,
+                106,
+                66,
+                152,
+                203,
+                173,
+                81,
+                42,
+              ].map(item => (
                 <TouchableOpacity
                   key={item}
                   onPress={() => {
-                    actionSheet.setModalVisible();
+                    actionSheetRef.current?.setModalVisible();
                   }}
                   style={{
                     flexDirection: 'row',
@@ -140,7 +170,8 @@ const App = () => {
                       backgroundColor: '#f0f0f0',
                       marginVertical: 15,
                       borderRadius: 5,
-                    }}></View>
+                    }}
+                  />
 
                   <View
                     style={{
@@ -154,7 +185,6 @@ const App = () => {
               ))}
             </View>
           </ScrollView>
-
         </ActionSheet>
       </SafeAreaView>
     </>
