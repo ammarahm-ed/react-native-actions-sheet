@@ -326,7 +326,6 @@ export default class ActionSheet extends Component {
     return (
       <Modal
         visible={modalVisible}
-        animated={true}
         animationType="none"
         supportedOrientations={SUPPORTED_ORIENTATIONS}
         onShow={() => onOpen}
