@@ -476,10 +476,10 @@ const actionSheetRef = createRef();
 <ActionSheet ref={actionSheetRef} />;
 
 // then to show modal use
-this.actionSheet.setModalVisible(true);
+actionSheetRef.current?.setModalVisible(true);
 
 // and later you may want to hide it using
-this.actionSheet.setModalVisible(false);
+actionSheetRef.current?.setModalVisible(false);
 ```
 
 #
