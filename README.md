@@ -28,7 +28,7 @@ target="_blank"
 A highly customizable cross platform ActionSheet for react native. 
 </p>
 <p align="center">
-<img src="https://imgur.com/M4etq5F.png"/>
+<img src="https://imgur.com/7dPMBmI.png"/>
 </p>
 
 <div align="center">
