@@ -1,6 +1,6 @@
 {
   "name": "react-native-actions-sheet",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "A Cross Platform(Android & iOS) ActionSheet with a robust and flexible api, native performance and zero dependency code for react native. Create anything you want inside ActionSheet.",
   "main": "index.js",
   "repository": {
@@ -22,7 +22,12 @@
     "modal",
     "drawer",
     "raw-bottom-sheet",
-    "bottom-app-bar"
+    "bottom-app-bar",
+    "react-native-action-sheet",
+    "react",
+    "native",
+    "action",
+    "sheet"
   ],
   "author": "ammarahm-ed",
   "license": "MIT",
