@@ -289,6 +289,6 @@ Event called when the ActionSheet closes.
     /**
      * ActionSheet can be opened or closed using its ref.
      */
-    setModalVisible(): void;
+    setModalVisible(visible?:boolean): void;
   }
 }
