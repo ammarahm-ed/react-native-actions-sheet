@@ -175,6 +175,29 @@ Any custom styles for the container.
 
 
 #
+
+#### `delayActionSheetDraw`
+Delay draw of ActionSheet on open for android.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `false`
+
+#
+
+#### `delayActionSheetDrawTime`
+ Delay draw of ActionSheet on open for android time.
+
+| Type | Required |
+| ---- | -------- |
+| number (ms) | no |
+
+Default: `50`
+
+#   
+
 #### `CustomHeaderComponent`
 
 Your custom header component. Using this will hide the default indicator.
@@ -239,7 +262,7 @@ Default: `false`
 #
 #### `animated`
 
-Keep footer visible. Currently when you overdraw, the footer appears, however you can change this by setting this to `true`.
+Animate the opening and closing of ActionSheet.
 
 | Type | Required |
 | ---- | -------- |
@@ -371,9 +394,6 @@ Default opacity of the overlay/backdrop.
 | number 0 - 1 | no |
 
 Default: `0.3`
-
-
-
 
 #
 #### `closeOnPressBack`
