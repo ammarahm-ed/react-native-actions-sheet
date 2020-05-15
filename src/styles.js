@@ -1,4 +1,4 @@
-import {StyleSheet} from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   scrollView: {
@@ -11,7 +11,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopRightRadius: 10,
     borderTopLeftRadius: 10,
-    alignSelf:'center'
+    alignSelf: 'center'
   },
   indicator: {
     height: 6,

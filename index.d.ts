@@ -263,6 +263,28 @@ Default: `false`
     bounceOnOpen?: boolean;
 
     /**
+     * Indicates if the bottom-sheet can be closed.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `true`
+     */
+    closable?: boolean;
+
+    /**
+     * When the closable flag is set to false, this value is used to determine how far from the bottom of the screen the bottom sheet should appear.
+
+| Type | Required |
+| ---- | -------- |
+| number | no |
+
+Default: `200`
+     */
+    bottomOffset?: number;
+
+    /**
      * 
 Event called when the ActionSheet closes.
 
@@ -289,6 +311,6 @@ Event called when the ActionSheet closes.
     /**
      * ActionSheet can be opened or closed using its ref.
      */
-    setModalVisible(visible?:boolean): void;
+    setModalVisible(visible?: boolean): void;
   }
 }

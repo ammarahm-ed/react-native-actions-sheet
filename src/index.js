@@ -1,15 +1,16 @@
-import React, { Component, createRef } from "react";
 import {
-  View,
-  TouchableOpacity,
-  Dimensions,
-  ScrollView,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
   Animated,
   DeviceEventEmitter,
+  Dimensions,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import React, { Component, createRef } from "react";
+
 import PropTypes from "prop-types";
 import { styles } from "./styles";
 
@@ -94,12 +95,12 @@ export default class ActionSheet extends Component {
 
     Animated.parallel([
       Animated.timing(this.opacityValue, {
-        toValue: 0,
+        toValue: this.props.closable ? 0 : 1,
         duration: animated ? closeAnimationDuration : 1,
         useNativeDriver: true,
       }),
       Animated.timing(this.transformValue, {
-        toValue: this.customComponentHeight * 2,
+        toValue: this.closable ? this.customComponentHeight * 2 : 0,
         duration: animated ? closeAnimationDuration : 1,
         useNativeDriver: true,
       }),
@@ -107,12 +108,14 @@ export default class ActionSheet extends Component {
     this.waitAsync(closeAnimationDuration / 2).then(() => {
       this.scrollViewRef.current?.scrollTo({
         x: 0,
-        y: 0,
-        animated: false,
+        y: this.props.closable ? 0 : (this.customComponentHeight * this.props.initialOffsetFromBottom +
+          deviceHeight * 0.1 +
+          this.props.extraScroll) - this.props.bottomOffset,
+        animated: true,
       });
       this.setState(
         {
-          modalVisible: false,
+          modalVisible: !this.props.closable,
         },
         () => {
           this.layoutHasCalled = false;
@@ -169,8 +172,8 @@ export default class ActionSheet extends Component {
 
       let scrollOffset = gestureEnabled
         ? this.customComponentHeight * initialOffsetFromBottom +
-          addFactor +
-          extraScroll
+        addFactor +
+        extraScroll
         : this.customComponentHeight + addFactor + extraScroll;
 
       if (Platform.OS === "ios") {
@@ -425,13 +428,13 @@ export default class ActionSheet extends Component {
                   CustomHeaderComponent ? (
                     CustomHeaderComponent
                   ) : (
-                    <View
-                      style={[
-                        styles.indicator,
-                        { backgroundColor: indicatorColor },
-                      ]}
-                    />
-                  )
+                      <View
+                        style={[
+                          styles.indicator,
+                          { backgroundColor: indicatorColor },
+                        ]}
+                      />
+                    )
                 ) : null}
 
                 {children}
@@ -484,8 +487,10 @@ ActionSheet.defaultProps = {
   defaultOverlayOpacity: 0.3,
   overlayColor: "black",
   closeOnTouchBackdrop: true,
-  onClose: () => {},
-  onOpen: () => {},
+  closable: true,
+  bottomOffset: 200,
+  onClose: () => { },
+  onOpen: () => { },
 };
 ActionSheet.propTypes = {
   children: PropTypes.node,
