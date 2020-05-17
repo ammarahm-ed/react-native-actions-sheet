@@ -493,6 +493,8 @@ ActionSheet.defaultProps = {
   indicatorColor: "gray",
   defaultOverlayOpacity: 0.3,
   overlayColor: "black",
+  closable: true,
+  bottomOffset: 200,
   closeOnTouchBackdrop: true,
   onClose: () => {},
   onOpen: () => {},
@@ -522,7 +524,10 @@ ActionSheet.propTypes = {
   elevation: PropTypes.number,
   initialOffsetFromBottom: PropTypes.number,
   indicatorColor: PropTypes.string,
+  closable:PropTypes.bool,
+  bottomOffset:PropTypes.number,
   overlayColor: PropTypes.string,
   onClose: PropTypes.func,
+  
   onOpen: PropTypes.func,
 };
