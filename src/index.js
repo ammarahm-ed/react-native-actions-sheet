@@ -255,7 +255,7 @@ export default class ActionSheet extends Component {
         }
 
         this._scrollTo(scrollValue);
-        await this.waitAsync(450);
+        await this.waitAsync(300);
         this.isRecoiling = false;
 
         DeviceEventEmitter.emit("hasReachedTop");
@@ -275,7 +275,7 @@ export default class ActionSheet extends Component {
         }
         this._scrollTo(this.prevScroll);
         this.isRecoiling = true;
-        await this.waitAsync(450);
+        await this.waitAsync(300);
         this.isRecoiling = false;
       }
     }
