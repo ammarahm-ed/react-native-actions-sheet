@@ -53,9 +53,6 @@ export default class ActionSheet extends Component {
     this.isRecoiling = false;
   }
 
-  /**
-   * Open/Close the ActionSheet
-   */
 
   waitAsync = (ms) =>
     new Promise((resolve, reject) => {
@@ -63,6 +60,15 @@ export default class ActionSheet extends Component {
         resolve();
       }, ms);
     });
+
+/**
+ * Snap ActionSheet to Offset
+ */
+
+snapToOffset = (offset) => {
+  this._scrollTo(offset);
+}
+
 
 
   /**
