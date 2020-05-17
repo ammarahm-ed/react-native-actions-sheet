@@ -53,7 +53,6 @@ export default class ActionSheet extends Component {
     this.isRecoiling = false;
   }
 
-
   waitAsync = (ms) =>
     new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -61,14 +60,13 @@ export default class ActionSheet extends Component {
       }, ms);
     });
 
+  /**
+   * Snap ActionSheet to Offset
+   */
 
-/**
- * Snap ActionSheet to Offset
- */
-
-snapToOffset = (offset) => {
-  this._scrollTo(offset);
-}
+  snapToOffset = (offset) => {
+    this._scrollTo(offset);
+  };
 
   /**
    * Open/Close the ActionSheet
@@ -93,7 +91,7 @@ snapToOffset = (offset) => {
   };
 
   _hideAnimation() {
-    let { animated, closeAnimationDuration,closable } = this.props;
+    let { animated, closeAnimationDuration, closable } = this.props;
     Animated.parallel([
       Animated.timing(this.opacityValue, {
         toValue: closable ? 0 : 1,
@@ -124,13 +122,12 @@ snapToOffset = (offset) => {
         }
       );
     });
-    
   }
 
   _hideModal = () => {
     if (this.isClosing) return;
     this.isClosing = true;
-    this._hideAnimation();  
+    this._hideAnimation();
   };
 
   _showModal = async (event) => {
@@ -232,7 +229,10 @@ snapToOffset = (offset) => {
     }
   };
 
-  _onScrollBegin = (event) => {
+  _onScrollBegin = async (event) => {
+    let verticalOffset = event.nativeEvent.contentOffset.y;
+  };
+  _onScrollBeginDrag = async (event) => {
     let verticalOffset = event.nativeEvent.contentOffset.y;
     this.prevScroll = verticalOffset;
   };
@@ -375,7 +375,7 @@ snapToOffset = (offset) => {
               onMomentumScrollBegin={this._onScrollBegin}
               onMomentumScrollEnd={this._onScrollEnd}
               scrollEnabled={scrollable}
-              onScrollBeginDrag={this._onScrollBegin}
+              onScrollBeginDrag={this._onScrollBeginDrag}
               onScrollEndDrag={this._onScrollEnd}
               onTouchEnd={this._onTouchEnd}
               //onScroll={this._onScroll}
@@ -524,10 +524,9 @@ ActionSheet.propTypes = {
   elevation: PropTypes.number,
   initialOffsetFromBottom: PropTypes.number,
   indicatorColor: PropTypes.string,
-  closable:PropTypes.bool,
-  bottomOffset:PropTypes.number,
+  closable: PropTypes.bool,
+  bottomOffset: PropTypes.number,
   overlayColor: PropTypes.string,
   onClose: PropTypes.func,
-  
   onOpen: PropTypes.func,
 };
