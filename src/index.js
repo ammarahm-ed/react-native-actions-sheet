@@ -91,7 +91,15 @@ export default class ActionSheet extends Component {
   };
 
   _hideAnimation() {
-    let { animated, closeAnimationDuration, closable } = this.props;
+    let {
+      animated,
+      closeAnimationDuration,
+      onClose,
+      closable,
+      bottomOffset,
+      initialOffsetFromBottom,
+      extraScroll,
+    } = this.props;
     Animated.parallel([
       Animated.timing(this.opacityValue, {
         toValue: closable ? 0 : 1,
@@ -106,19 +114,25 @@ export default class ActionSheet extends Component {
     ]).start();
 
     this.waitAsync(closeAnimationDuration / 2).then(() => {
-      this.scrollViewRef.current?.scrollTo({
-        x: 0,
-        y: 0,
-        animated: false,
-      });
+      let scrollOffset = closable
+        ? 0
+        : this.customComponentHeight * initialOffsetFromBottom +
+          deviceHeight * 0.1 +
+          extraScroll -
+          bottomOffset;
+
+      this._scrollTo(scrollOffset);
+
       this.setState(
         {
-          modalVisible: false,
+          modalVisible: !closable,
         },
         () => {
-          this.layoutHasCalled = false;
           this.isClosing = false;
-          if (typeof onClose === "function") onClose();
+          if (closable) {
+            this.layoutHasCalled = false;
+            if (typeof onClose === "function") onClose();
+          }
         }
       );
     });
