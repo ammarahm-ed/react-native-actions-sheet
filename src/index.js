@@ -61,6 +61,7 @@ export default class ActionSheet extends Component {
       }, ms);
     });
 
+
 /**
  * Snap ActionSheet to Offset
  */
@@ -68,8 +69,6 @@ export default class ActionSheet extends Component {
 snapToOffset = (offset) => {
   this._scrollTo(offset);
 }
-
-
 
   /**
    * Open/Close the ActionSheet
@@ -93,23 +92,21 @@ snapToOffset = (offset) => {
     }
   };
 
-  _hideModal = () => {
-    let { animated, closeAnimationDuration, onClose } = this.props;
-    if (this.isClosing) return;
-    this.isClosing = true;
-
+  _hideAnimation() {
+    let { animated, closeAnimationDuration,closable } = this.props;
     Animated.parallel([
       Animated.timing(this.opacityValue, {
-        toValue: 0,
+        toValue: closable ? 0 : 1,
         duration: animated ? closeAnimationDuration : 1,
         useNativeDriver: true,
       }),
       Animated.timing(this.transformValue, {
-        toValue: this.customComponentHeight * 2,
+        toValue: closable ? this.customComponentHeight * 2 : 0,
         duration: animated ? closeAnimationDuration : 1,
         useNativeDriver: true,
       }),
     ]).start();
+
     this.waitAsync(closeAnimationDuration / 2).then(() => {
       this.scrollViewRef.current?.scrollTo({
         x: 0,
@@ -127,6 +124,13 @@ snapToOffset = (offset) => {
         }
       );
     });
+    
+  }
+
+  _hideModal = () => {
+    if (this.isClosing) return;
+    this.isClosing = true;
+    this._hideAnimation();  
   };
 
   _showModal = async (event) => {
