@@ -273,11 +273,10 @@ export default class ActionSheet extends Component {
         if (this.isRecoiling) {
           return;
         }
+        this._scrollTo(this.prevScroll);
         this.isRecoiling = true;
         await this.waitAsync(450);
         this.isRecoiling = false;
-
-        this._scrollTo(this.prevScroll);
       }
     }
   };
