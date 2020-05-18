@@ -129,6 +129,7 @@ export default class ActionSheet extends Component {
         },
         () => {
           this.isClosing = false;
+          DeviceEventEmitter.emit("hasReachedTop", false);
           if (closable) {
             this.layoutHasCalled = false;
             if (typeof onClose === "function") onClose();
@@ -272,7 +273,7 @@ export default class ActionSheet extends Component {
         await this.waitAsync(300);
         this.isRecoiling = false;
 
-        DeviceEventEmitter.emit("hasReachedTop");
+        DeviceEventEmitter.emit("hasReachedTop", true);
       } else {
         this._scrollTo(this.prevScroll);
       }
@@ -327,6 +328,16 @@ export default class ActionSheet extends Component {
       this.setState({
         scrollable: true,
       });
+    }
+  };
+
+  _onScroll = (event) => {
+    let offsetY = event.nativeEvent.contentOffset.y;
+    let addFactor = deviceHeight * 0.1;
+    if (this.customComponentHeight + addFactor - offsetY < 50) {
+      DeviceEventEmitter.emit("hasReachedTop", true);
+    } else {
+      DeviceEventEmitter.emit("hasReachedTop", false);
     }
   };
 
@@ -391,7 +402,7 @@ export default class ActionSheet extends Component {
               onScrollBeginDrag={this._onScrollBeginDrag}
               onScrollEndDrag={this._onScrollEnd}
               onTouchEnd={this._onTouchEnd}
-              //onScroll={this._onScroll}
+              onScroll={this._onScroll}
               style={styles.scrollView}
             >
               <Animated.View
