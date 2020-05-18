@@ -28,7 +28,7 @@ target="_blank"
 A highly customizable cross platform ActionSheet for react native. 
 </p>
 <p align="center">
-<img src="https://raw.githubusercontent.com/ammarahm-ed/react-native-actions-sheet/master/gifs/preview3.png"/>
+<img src="https://imgur.com/7dPMBmI.png"/>
 </p>
 
 <div align="center">
