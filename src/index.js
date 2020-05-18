@@ -396,6 +396,7 @@ export default class ActionSheet extends Component {
             <ScrollView
               bounces={false}
               ref={this.scrollViewRef}
+              scrollEventThrottle={1}
               showsVerticalScrollIndicator={false}
               onMomentumScrollBegin={this._onScrollBegin}
               onMomentumScrollEnd={this._onScrollEnd}
