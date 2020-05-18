@@ -515,7 +515,7 @@ ActionSheet.defaultProps = {
   springOffset: 100,
   elevation: 5,
   initialOffsetFromBottom: 1,
-  indicatorColor: "gray",
+  indicatorColor: "#f0f0f0",
   defaultOverlayOpacity: 0.3,
   overlayColor: "black",
   closable: true,
