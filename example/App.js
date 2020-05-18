@@ -17,8 +17,8 @@ const actionSheetRef = createRef();
 const App = () => {
   const [nestedScrollEnabled, setNestedScrollEnabled] = useState(false);
 
-  const _onHasReachedTop = () => {
-    setNestedScrollEnabled(true);
+  const _onHasReachedTop = (hasReachedTop) => {
+    setNestedScrollEnabled(hasReachedTop);
   };
 
   useEffect(() => {
