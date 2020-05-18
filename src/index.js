@@ -9,6 +9,7 @@ import {
   Platform,
   Animated,
   DeviceEventEmitter,
+  ViewPropTypes,
 } from "react-native";
 import PropTypes from "prop-types";
 import { styles } from "./styles";
@@ -494,7 +495,7 @@ export default class ActionSheet extends Component {
 
 ActionSheet.defaultProps = {
   children: <View />,
-  CustomFooterComponent: <View />,
+  CustomFooterComponent: null,
   CustomHeaderComponent: null,
   footerAlwaysVisible: false,
   headerAlwaysVisible: false,
@@ -530,8 +531,8 @@ ActionSheet.propTypes = {
   extraScroll: PropTypes.number,
   footerAlwaysVisible: PropTypes.bool,
   headerAlwaysVisible: PropTypes.bool,
-  containerStyle: PropTypes.object,
-  footerStyle: PropTypes.object,
+  containerStyle: ViewPropTypes.style,
+  footerStyle: ViewPropTypes.style,
   footerHeight: PropTypes.number,
   animated: PropTypes.bool,
   closeOnPressBack: PropTypes.bool,
