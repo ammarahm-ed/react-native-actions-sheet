@@ -263,16 +263,41 @@ Default: `false`
     bounceOnOpen?: boolean;
 
     /**
+     * Prevent ActionSheet from closing on 
+     * gesture or tapping on backdrop. 
+     * Instead snap it to `bottomOffset` location
+     * 
+     * 
+      * | Type | Required |
+| ---- | -------- |
+| boolean | no |
+      */
+    closable?: boolean;
+
+    /**
+     * Snap ActionSheet to this location if `closable` is set to false;
+     * 
+     * 
+      * | Type | Required |
+| ---- | -------- |
+| number | no |
+      */
+
+    bottomOffset?: number;
+
+    /**
      * 
 Event called when the ActionSheet closes.
 
-| Type | Required |
+
+* | Type | Required |
 | ---- | -------- |
 | function | no |
 
 
 #
      */
+
     onClose?: () => void;
 
     /**
@@ -289,6 +314,11 @@ Event called when the ActionSheet closes.
     /**
      * ActionSheet can be opened or closed using its ref.
      */
-    setModalVisible(visible?:boolean): void;
+    setModalVisible(visible?: boolean): void;
+
+    /**
+     * Snap ActionSheet to given offset
+     */
+    snapToOffset(offset: number): void;
   }
 }
