@@ -511,7 +511,7 @@ ActionSheet.defaultProps = {
   delayActionSheetDraw: false,
   delayActionSheetDrawTime: 50,
   openAnimationSpeed: 12,
-  springOffset: 50,
+  springOffset: 100,
   elevation: 5,
   initialOffsetFromBottom: 1,
   indicatorColor: "gray",
