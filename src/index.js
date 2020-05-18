@@ -507,7 +507,7 @@ ActionSheet.defaultProps = {
   defaultOverlayOpacity: 0.3,
   overlayColor: "black",
   closable: true,
-  bottomOffset: 200,
+  bottomOffset: 0,
   closeOnTouchBackdrop: true,
   onClose: () => {},
   onOpen: () => {},
