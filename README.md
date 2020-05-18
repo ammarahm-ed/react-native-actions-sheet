@@ -411,6 +411,34 @@ Default: `0.3`
 
 #
 
+
+#### `closable`
+
+Prevent ActionSheet from closing on gesture or tapping on backdrop. Instead snap it to `bottomOffset` location
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `true`
+
+#
+
+
+#### `bottomOffset`
+
+Snap ActionSheet to this location if `closable` is set to false. By default it will snap to the location on first open.
+
+| Type    | Required |
+| ------- | -------- |
+| number | no       |
+
+Default: `0`
+
+#
+
+
+
 #### `closeOnPressBack`
 
 Will the ActionSheet close on `hardwareBackPress` event.
@@ -484,6 +512,30 @@ actionSheetRef.current?.setModalVisible(false);
 
 #
 
+#### `snapToOffset(offset:number)`
+
+When the ActionSheet is open, you can progammatically snap it to different offsets.
+
+```jsx
+import ActionSheet from "react-native-actions-sheet";
+import React, { createRef } from "react";
+
+const actionSheetRef = createRef();
+// First create a ref on your <ActionSheet/> Component.
+<ActionSheet ref={actionSheetRef} />;
+
+// snap to this location on screen
+actionSheetRef.current?.snapToOffset(200);
+
+actionSheetRef.current?.snapToOffset(150);
+
+actionSheetRef.current?.snapToOffset(300);
+
+```
+
+#
+
+
 ## Event Listeners
 
 Listen to changes in ActionSheet State.
@@ -498,7 +550,7 @@ import ActionSheet, {addHasReachedTopListener, removeHasReachedTopListener} from
 
 // In your Component
 
-  const _onHasReachedTop = () => {
+  const _onHasReachedTop = (hasReached) => {
     // handle the event
   }
 
