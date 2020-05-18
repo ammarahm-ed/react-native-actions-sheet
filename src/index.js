@@ -149,14 +149,10 @@ export default class ActionSheet extends Component {
   _showModal = async (event) => {
     let {
       gestureEnabled,
-      bounciness,
       initialOffsetFromBottom,
-      bounceOnOpen,
-      animated,
       footerHeight,
       footerAlwaysVisible,
       extraScroll,
-      openAnimationSpeed,
       delayActionSheetDraw,
       delayActionSheetDrawTime,
     } = this.props;
@@ -218,24 +214,7 @@ export default class ActionSheet extends Component {
         }
       }
 
-      if (animated) {
-        this.transformValue.setValue(scrollOffset);
-        Animated.parallel([
-          Animated.spring(this.transformValue, {
-            toValue: 0,
-            bounciness: bounceOnOpen ? bounciness : 1,
-            speed: openAnimationSpeed,
-            useNativeDriver: true,
-          }),
-          Animated.timing(this.opacityValue, {
-            toValue: 1,
-            duration: 150,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      } else {
-        this.opacityValue.setValue(1);
-      }
+      this._openAnimation(scrollOffset);
 
       if (!gestureEnabled) {
         DeviceEventEmitter.emit("hasReachedTop");
@@ -245,9 +224,36 @@ export default class ActionSheet extends Component {
     }
   };
 
-  _onScrollBegin = async (event) => {
-    let verticalOffset = event.nativeEvent.contentOffset.y;
-  };
+  _openAnimation = (scrollOffset) => {
+    let {
+      bounciness,
+      bounceOnOpen,
+      animated,
+      openAnimationSpeed,
+    } = this.props;
+
+    if (animated) {
+      this.transformValue.setValue(scrollOffset);
+      Animated.parallel([
+        Animated.spring(this.transformValue, {
+          toValue: 0,
+          bounciness: bounceOnOpen ? bounciness : 1,
+          speed: openAnimationSpeed,
+          useNativeDriver: true,
+        }),
+        Animated.timing(this.opacityValue, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      this.opacityValue.setValue(1);
+    }
+  }
+
+
+  _onScrollBegin = async (event) => {};
   _onScrollBeginDrag = async (event) => {
     let verticalOffset = event.nativeEvent.contentOffset.y;
     this.prevScroll = verticalOffset;
