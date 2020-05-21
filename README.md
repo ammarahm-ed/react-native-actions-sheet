@@ -439,6 +439,20 @@ Default: `0`
 
 
 
+#### `keyboardShouldPersistTaps`
+
+Setting the keyboard persistence of the `ScrollView` component.  Should be one of "never", "always" or "handled"
+
+| Type    | Required |
+| ------- | -------- |
+| string | no       |
+
+Default: `never`
+
+#
+
+
+
 #### `closeOnPressBack`
 
 Will the ActionSheet close on `hardwareBackPress` event.
