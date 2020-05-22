@@ -263,6 +263,17 @@ Default: `false`
     bounceOnOpen?: boolean;
 
     /**
+     * Setting the keyboard persistance of the ScrollView component, should be one of "never", "always", or "handled"
+
+| Type | Required |
+| ---- | -------- |
+| string | no |
+
+Default: `"never"`
+     */
+    keyboardShouldPersistTaps?: string;
+
+    /**
      * Prevent ActionSheet from closing on 
      * gesture or tapping on backdrop. 
      * Instead snap it to `bottomOffset` location

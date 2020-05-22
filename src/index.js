@@ -373,6 +373,7 @@ export default class ActionSheet extends Component {
       CustomHeaderComponent,
       CustomFooterComponent,
       headerAlwaysVisible,
+      keyboardShouldPersistTaps,
     } = this.props;
 
     return (
@@ -401,6 +402,7 @@ export default class ActionSheet extends Component {
           >
             <ScrollView
               bounces={false}
+              keyboardShouldPersistTaps={keyboardShouldPersistTaps}
               ref={this.scrollViewRef}
               scrollEventThrottle={1}
               showsVerticalScrollIndicator={false}
@@ -530,6 +532,7 @@ ActionSheet.defaultProps = {
   closeOnTouchBackdrop: true,
   onClose: () => {},
   onOpen: () => {},
+  keyboardShouldPersistTaps: "never",
 };
 ActionSheet.propTypes = {
   children: PropTypes.node,
@@ -561,4 +564,5 @@ ActionSheet.propTypes = {
   overlayColor: PropTypes.string,
   onClose: PropTypes.func,
   onOpen: PropTypes.func,
+  keyboardShouldPersistTaps: PropTypes.oneOf([ "always", "default", "never" ]),
 };
