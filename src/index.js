@@ -381,7 +381,7 @@ export default class ActionSheet extends Component {
         visible={modalVisible}
         animationType="none"
         supportedOrientations={SUPPORTED_ORIENTATIONS}
-        onShow={() => onOpen}
+        onShow={onOpen}
         onRequestClose={this._onRequestClose}
         transparent={true}
       >
