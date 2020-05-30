@@ -384,6 +384,7 @@ export default class ActionSheet extends Component {
         onShow={onOpen}
         onRequestClose={this._onRequestClose}
         transparent={true}
+        statusBarTranslucent={true}
       >
         <Animated.View
           style={[
