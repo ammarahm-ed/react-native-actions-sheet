@@ -582,6 +582,6 @@ import ActionSheet, {addHasReachedTopListener, removeHasReachedTopListener} from
 
 ## Find this library useful? ❤️
 
-Support it by joining stargazers for this repository. ⭐️ and follow me for my next creations!
+[Support it by donating](https://ko-fi.com/ammarahmed) or joining stargazers for this repository. ⭐️ and follow me for my next creations!
 
 ### MIT Licensed
