@@ -10,6 +10,7 @@ import {
   Animated,
   DeviceEventEmitter,
   ViewPropTypes,
+  FlatList,
 } from "react-native";
 import PropTypes from "prop-types";
 import { styles } from "./styles";
@@ -122,7 +123,7 @@ export default class ActionSheet extends Component {
           extraScroll -
           bottomOffset;
 
-      this._scrollTo(scrollOffset);
+     this._scrollTo(scrollOffset, !closable)
 
       this.setState(
         {
@@ -200,11 +201,7 @@ export default class ActionSheet extends Component {
         }
       }
 
-      this.scrollViewRef.current.scrollTo({
-        x: 0,
-        y: scrollOffset,
-        animated: false,
-      });
+      this._scrollTo(scrollOffset,false)
 
       if (Platform.OS === "ios") {
         await this.waitAsync(delayActionSheetDrawTime / 2);
@@ -303,12 +300,13 @@ export default class ActionSheet extends Component {
     }
   };
 
-  _scrollTo = (y) => {
+  _scrollTo = (y, animated = true) => {
     this.scrollAnimationEndValue = y;
-    this.scrollViewRef.current?.scrollTo({
+
+    this.scrollViewRef.current?._listRef._scrollRef.scrollTo({
       x: 0,
       y: this.scrollAnimationEndValue,
-      animated: true,
+      animated: animated,
     });
   };
 
@@ -401,7 +399,7 @@ export default class ActionSheet extends Component {
             enabled={Platform.OS === "ios"}
             behavior="position"
           >
-            <ScrollView
+            <FlatList
               bounces={false}
               keyboardShouldPersistTaps={keyboardShouldPersistTaps}
               ref={this.scrollViewRef}
@@ -415,87 +413,90 @@ export default class ActionSheet extends Component {
               onTouchEnd={this._onTouchEnd}
               onScroll={this._onScroll}
               style={styles.scrollView}
+              data={["dummy"]}
+              keyExtractor={(item) => item }
+              renderItem={({item,index}) => <View>
+                <Animated.View
+             onTouchStart={this._onTouchBackdrop}
+              onTouchMove={this._onTouchBackdrop}
+              onTouchEnd={this._onTouchBackdrop}
+              style={{
+                height: "100%",
+                width: "100%",
+                opacity: defaultOverlayOpacity,
+                position: "absolute",
+                backgroundColor: overlayColor,
+                zIndex: 1,
+              }}
+            />
+            <View
+              onTouchMove={this._onTouchMove}
+              onTouchStart={this._onTouchStart}
+              onTouchEnd={this._onTouchEnd}
+              style={{
+                height: deviceHeight * 1.1,
+                width: "100%",
+                zIndex: 10,
+              }}
             >
-              <Animated.View
-                onTouchStart={this._onTouchBackdrop}
-                onTouchMove={this._onTouchBackdrop}
-                onTouchEnd={this._onTouchBackdrop}
-                style={{
-                  height: "100%",
-                  width: "100%",
-                  opacity: defaultOverlayOpacity,
-                  position: "absolute",
-                  backgroundColor: overlayColor,
-                  zIndex: 1,
-                }}
-              />
-              <View
-                onTouchMove={this._onTouchMove}
-                onTouchStart={this._onTouchStart}
-                onTouchEnd={this._onTouchEnd}
+              <TouchableOpacity
+                onPress={this._onTouchBackdrop}
+                onLongPress={this._onTouchBackdrop}
                 style={{
                   height: deviceHeight * 1.1,
                   width: "100%",
-                  zIndex: 10,
                 }}
-              >
-                <TouchableOpacity
-                  onPress={this._onTouchBackdrop}
-                  onLongPress={this._onTouchBackdrop}
-                  style={{
-                    height: deviceHeight * 1.1,
-                    width: "100%",
-                  }}
-                />
-              </View>
+              />
+            </View>
 
-              <Animated.View
-                onLayout={this._showModal}
+            <Animated.View
+              onLayout={this._showModal}
+              style={[
+                styles.container,
+                containerStyle,
+                {
+                  ...getElevation(elevation),
+                  zIndex: 11,
+                  opacity: this.opacityValue,
+                  transform: [
+                    {
+                      translateY: this.transformValue,
+                    },
+                  ],
+                },
+              ]}
+            >
+              {gestureEnabled || headerAlwaysVisible ? (
+                CustomHeaderComponent ? (
+                  CustomHeaderComponent
+                ) : (
+                  <View
+                    style={[
+                      styles.indicator,
+                      { backgroundColor: indicatorColor }
+                    ]}
+                  />
+                )
+              ) : null}
+
+              {children}
+              <View
                 style={[
-                  styles.container,
-                  containerStyle,
                   {
-                    ...getElevation(elevation),
-                    zIndex: 11,
-                    opacity: this.opacityValue,
-                    transform: [
-                      {
-                        translateY: this.transformValue,
-                      },
-                    ],
+                    width: "100%",
+                    backgroundColor: "transparent",
+                  },
+                  footerStyle,
+                  {
+                    height: footerHeight,
                   },
                 ]}
               >
-                {gestureEnabled || headerAlwaysVisible ? (
-                  CustomHeaderComponent ? (
-                    CustomHeaderComponent
-                  ) : (
-                    <View
-                      style={[
-                        styles.indicator,
-                        { backgroundColor: indicatorColor },
-                      ]}
-                    />
-                  )
-                ) : null}
-
-                {children}
-                <View
-                  style={[
-                    {
-                      width: "100%",
-                      backgroundColor: "transparent",
-                    },
-                    footerStyle,
-                    {
-                      height: footerHeight,
-                    },
-                  ]}
-                >
-                  {CustomFooterComponent}
-                </View>
-              </Animated.View>
-            </ScrollView>
+                {CustomFooterComponent}
+              </View>
+            </Animated.View></View>
+      }/>
+    
           </KeyboardAvoidingView>
         </Animated.View>
       </Modal>
