@@ -64,6 +64,7 @@ src="https://imgur.com/g6LLkl4.gif"
 9. Support for **Tablets and iPads**
 10. Support **Horizontal Layout**
 11. Support for **Nested Scrolling or Scrollable Content.**
+12. Virtualization Support
 
 <div align="center">
 <h2>Run Example</h2>
