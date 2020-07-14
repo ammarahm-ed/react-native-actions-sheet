@@ -11,11 +11,22 @@ import {
   DeviceEventEmitter,
   ViewPropTypes,
   FlatList,
+  StatusBar,
 } from "react-native";
 import PropTypes from "prop-types";
 import { styles } from "./styles";
 
-var deviceHeight = Dimensions.get("window").height;
+var deviceHeight = getDeviceHeight();
+
+function getDeviceHeight(){
+  var height = Dimensions.get("window").height;
+
+  if (Platform.OS === 'android') {
+    return height - StatusBar.currentHeight;
+  }
+
+  return height;
+}
 
 const getElevation = (elevation) => {
   return {
@@ -74,7 +85,7 @@ export default class ActionSheet extends Component {
    * Open/Close the ActionSheet
    */
   setModalVisible = (visible) => {
-    deviceHeight = Dimensions.get("window").height;
+    deviceHeight = getDeviceHeight();
     let modalVisible = this.state.modalVisible;
     if (visible !== undefined) {
       if (modalVisible === visible) {
