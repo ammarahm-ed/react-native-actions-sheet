@@ -274,6 +274,17 @@ Default: `"never"`
     keyboardShouldPersistTaps?: string;
 
     /**
+     * Determine whether the modal should go under the system statusbar.
+
+| Type | Required |
+| ---- | -------- |
+| boolean | no |
+
+Default: `true`
+     */
+    statusBarTranslucent?: boolean;
+
+    /**
      * Prevent ActionSheet from closing on 
      * gesture or tapping on backdrop. 
      * Instead snap it to `bottomOffset` location

@@ -453,6 +453,18 @@ Default: `never`
 #
 
 
+#### `statusBarTranslucent`
+
+Determine whether the modal should go under the system statusbar.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `true`
+
+#
+
 
 #### `closeOnPressBack`
 

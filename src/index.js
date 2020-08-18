@@ -18,10 +18,10 @@ import { styles } from "./styles";
 
 var deviceHeight = getDeviceHeight();
 
-function getDeviceHeight(){
+function getDeviceHeight(statusBarTranslucent){
   var height = Dimensions.get("window").height;
 
-  if (Platform.OS === 'android') {
+  if (Platform.OS === 'android' && !statusBarTranslucent) {
     return height - StatusBar.currentHeight;
   }
 
@@ -85,7 +85,7 @@ export default class ActionSheet extends Component {
    * Open/Close the ActionSheet
    */
   setModalVisible = (visible) => {
-    deviceHeight = getDeviceHeight();
+    deviceHeight = getDeviceHeight(this.props.statusBarTranslucent);
     let modalVisible = this.state.modalVisible;
     if (visible !== undefined) {
       if (modalVisible === visible) {
@@ -383,6 +383,7 @@ export default class ActionSheet extends Component {
       CustomFooterComponent,
       headerAlwaysVisible,
       keyboardShouldPersistTaps,
+      statusBarTranslucent,
     } = this.props;
 
     return (
@@ -393,7 +394,7 @@ export default class ActionSheet extends Component {
         onShow={onOpen}
         onRequestClose={this._onRequestClose}
         transparent={true}
-        statusBarTranslucent={true}
+        statusBarTranslucent={statusBarTranslucent}
       >
         <Animated.View
           style={[
@@ -546,6 +547,7 @@ ActionSheet.defaultProps = {
   onClose: () => {},
   onOpen: () => {},
   keyboardShouldPersistTaps: "never",
+  statusBarTranslucent: true,
 };
 ActionSheet.propTypes = {
   children: PropTypes.node,
@@ -578,4 +580,5 @@ ActionSheet.propTypes = {
   onClose: PropTypes.func,
   onOpen: PropTypes.func,
   keyboardShouldPersistTaps: PropTypes.oneOf([ "always", "default", "never" ]),
+  statusBarTranslucent: PropTypes.bool,
 };
