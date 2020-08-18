@@ -1,16 +1,18 @@
 import PropTypes from "prop-types";
 import React, { Component, createRef } from "react";
 import {
-  Animated,
-  DeviceEventEmitter,
+  View,
+  TouchableOpacity,
   Dimensions,
-  FlatList,
   Modal,
   Platform,
-  StatusBar,
-  TouchableOpacity,
-  View,
+  Animated,
+  DeviceEventEmitter,
   ViewPropTypes,
+  FlatList,
+  Keyboard,
+  TextInput,
+  UIManager,
 } from "react-native";
 import { styles } from "./styles";
 
