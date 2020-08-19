@@ -13,6 +13,7 @@ import {
   Keyboard,
   TextInput,
   UIManager,
+  StatusBar
 } from "react-native";
 import { styles } from "./styles";
 
