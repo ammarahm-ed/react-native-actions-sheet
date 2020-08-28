@@ -13,7 +13,8 @@ import {
   Keyboard,
   TextInput,
   UIManager,
-  StatusBar
+  StatusBar,
+  findNodeHandle
 } from "react-native";
 import { styles } from "./styles";
 
@@ -389,8 +390,12 @@ export default class ActionSheet extends Component {
       const { height: windowHeight } = Dimensions.get("window");
 
       const currentlyFocusedField = TextInput.State.currentlyFocusedInput
-        ? TextInput.State.currentlyFocusedInput()._nativeTag
+        ? findNodeHandle(TextInput.State.currentlyFocusedInput())
         : TextInput.State.currentlyFocusedField();
+
+      if (!currentlyFocusedField) {
+        return;
+      }
 
       UIManager.measure(
         currentlyFocusedField,
