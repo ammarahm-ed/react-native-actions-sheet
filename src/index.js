@@ -14,7 +14,7 @@ import {
   TextInput,
   UIManager,
   StatusBar,
-  findNodeHandle
+  findNodeHandle,
 } from "react-native";
 import { styles } from "./styles";
 
@@ -448,6 +448,7 @@ export default class ActionSheet extends Component {
   render() {
     let { scrollable, modalVisible, keyboard } = this.state;
     let {
+      testID,
       onOpen,
       overlayColor,
       gestureEnabled,
@@ -474,6 +475,7 @@ export default class ActionSheet extends Component {
         onRequestClose={this._onRequestClose}
         transparent={true}
         statusBarTranslucent={statusBarTranslucent}
+        testID={testID}
       >
         <Animated.View
           style={[
@@ -590,6 +592,7 @@ export default class ActionSheet extends Component {
 }
 
 ActionSheet.defaultProps = {
+  testID: "actionSheetTest",
   children: <View />,
   CustomFooterComponent: null,
   CustomHeaderComponent: null,
@@ -623,6 +626,7 @@ ActionSheet.defaultProps = {
   statusBarTranslucent: true,
 };
 ActionSheet.propTypes = {
+  testID: PropTypes.string,
   children: PropTypes.node,
   CustomHeaderComponent: PropTypes.node,
   CustomFooterComponent: PropTypes.node,
