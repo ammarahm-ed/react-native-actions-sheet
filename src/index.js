@@ -84,6 +84,16 @@ export default class ActionSheet extends Component {
     this._scrollTo(offset);
   };
 
+  // Open the ActionSheet
+  show = () => {
+    this.setModalVisible(true);
+  };
+
+  // Close the ActionSheet
+  hide = () => {
+    this.setModalVisible(false);
+  };
+
   /**
    * Open/Close the ActionSheet
    */

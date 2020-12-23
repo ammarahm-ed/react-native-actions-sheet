@@ -334,9 +334,19 @@ Event called when the ActionSheet closes.
 
   export default class ActionSheet extends Component<ActionSheetProps> {
     /**
-     * ActionSheet can be opened or closed using its ref.
+     * Open or close the ActionSheet.
      */
     setModalVisible(visible?: boolean): void;
+
+     /**
+     * Open the Action Sheet.
+     */
+    show(): void;
+
+     /**
+     * Close the ActionSheet.
+     */
+    hide(): void;
 
     /**
      * Snap ActionSheet to given offset
