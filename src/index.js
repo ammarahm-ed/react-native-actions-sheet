@@ -155,7 +155,7 @@ export default class ActionSheet extends Component {
           bottomOffset;
 
       this._scrollTo(scrollOffset, !closable);
-
+      this.currentOffsetFromBottom = initialOffsetFromBottom;
       this.setState(
         {
           modalVisible: !closable,
@@ -190,7 +190,6 @@ export default class ActionSheet extends Component {
     let height = event.nativeEvent.layout.height;
 
     if (this.layoutHasCalled) {
-
       this._returnToPrevScrollPosition(height);
       this.customComponentHeight = height;
     
