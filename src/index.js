@@ -69,6 +69,10 @@ export default class ActionSheet extends Component {
     this.layoutHasCalled = false;
     this.isClosing = false;
     this.isRecoiling = false;
+    this.targetId = null;
+    this.offsetY = 0;
+    this.borderRadius = new Animated.Value(10);
+    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
   }
 
   waitAsync = (ms) =>
@@ -342,13 +346,19 @@ export default class ActionSheet extends Component {
     }
   };
 
+  getTarget = () => {
+    return this.targetId;
+  };
+
   _onScroll = (event) => {
-    let offsetY = event.nativeEvent.contentOffset.y;
-    let addFactor = deviceHeight * 0.1;
-    if (this.customComponentHeight + addFactor - offsetY < 50) {
-      DeviceEventEmitter.emit("hasReachedTop", true);
+    this.targetId = event.nativeEvent.target;
+    this.offsetY = event.nativeEvent.contentOffset.y;
+
+    let correction = this.state.deviceHeight * 0.1;
+    if (this.customComponentHeight + correction - this.offsetY < 50) {
+      DeviceEventEmitter.emit('hasReachedTop', true);
     } else {
-      DeviceEventEmitter.emit("hasReachedTop", false);
+      DeviceEventEmitter.emit('hasReachedTop', false);
     }
   };
 
@@ -480,10 +490,7 @@ export default class ActionSheet extends Component {
       defaultOverlayOpacity,
       children,
       containerStyle,
-      footerStyle,
-      footerHeight,
       CustomHeaderComponent,
-      CustomFooterComponent,
       headerAlwaysVisible,
       keyboardShouldPersistTaps,
       statusBarTranslucent,
@@ -493,22 +500,22 @@ export default class ActionSheet extends Component {
       <Modal
         visible={modalVisible}
         animationType="none"
+        testID={testID}
         supportedOrientations={SUPPORTED_ORIENTATIONS}
         onShow={onOpen}
         onRequestClose={this._onRequestClose}
         transparent={true}
-        statusBarTranslucent={statusBarTranslucent}
-        testID={testID}
-      >
+        statusBarTranslucent={statusBarTranslucent}>
         <Animated.View
           onLayout={this._onDeviceLayout}
           style={[
             styles.parentContainer,
             {
               opacity: this.opacityValue,
+              width: '100%',
             },
-          ]}
-        >
+          ]}>
+          {this.props.premium}
           <FlatList
             bounces={false}
             keyboardShouldPersistTaps={keyboardShouldPersistTaps}
@@ -523,21 +530,28 @@ export default class ActionSheet extends Component {
             onTouchEnd={this._onTouchEnd}
             onScroll={this._onScroll}
             style={styles.scrollView}
-            data={["dummy"]}
+            contentContainerStyle={{
+              width: dWidth,
+            }}
+            data={['dummy']}
             keyExtractor={(item) => item}
-            renderItem={({ item, index }) => (
-              <View>
+            renderItem={({item, index}) => (
+              <View
+                style={{
+                  width: '100%',
+                }}>
                 <Animated.View
                   onTouchStart={this._onTouchBackdrop}
                   onTouchMove={this._onTouchBackdrop}
                   onTouchEnd={this._onTouchBackdrop}
+                  testID={notesnook.ids.default.actionsheetBackdrop}
                   style={{
-                    height: "100%",
-                    width: "100%",
-                    opacity: defaultOverlayOpacity,
-                    position: "absolute",
-                    backgroundColor: overlayColor,
+                    height: '100%',
+                    width: '100%',
+                    position: 'absolute',
                     zIndex: 1,
+                    backgroundColor: overlayColor,
+                    opacity: defaultOverlayOpacity,
                   }}
                 />
                 <View
@@ -546,16 +560,15 @@ export default class ActionSheet extends Component {
                   onTouchEnd={this._onTouchEnd}
                   style={{
                     height: deviceHeight * 1.1,
-                    width: "100%",
+                    width: '100%',
                     zIndex: 10,
-                  }}
-                >
+                  }}>
                   <TouchableOpacity
                     onPress={this._onTouchBackdrop}
                     onLongPress={this._onTouchBackdrop}
                     style={{
                       height: deviceHeight * 1.1,
-                      width: "100%",
+                      width: '100%',
                     }}
                   />
                 </View>
@@ -574,9 +587,11 @@ export default class ActionSheet extends Component {
                           translateY: this.transformValue,
                         },
                       ],
+                      borderTopRightRadius: this.borderRadius,
+                      borderTopLeftRadius: this.borderRadius,
+                      maxHeight: deviceHeight,
                     },
-                  ]}
-                >
+                  ]}>
                   {gestureEnabled || headerAlwaysVisible ? (
                     CustomHeaderComponent ? (
                       CustomHeaderComponent
@@ -584,27 +599,13 @@ export default class ActionSheet extends Component {
                       <View
                         style={[
                           styles.indicator,
-                          { backgroundColor: indicatorColor },
+                          {backgroundColor: indicatorColor},
                         ]}
                       />
                     )
                   ) : null}
 
                   {children}
-                  <View
-                    style={[
-                      {
-                        width: "100%",
-                        backgroundColor: "transparent",
-                      },
-                      footerStyle,
-                      {
-                        height: footerHeight,
-                      },
-                    ]}
-                  >
-                    {CustomFooterComponent}
-                  </View>
                 </Animated.View>
               </View>
             )}
