@@ -248,7 +248,7 @@ export default class ActionSheet extends Component {
   };
 
   _openAnimation = (scrollOffset) => {
-    let { bounciness, bounceOnOpen, animated, openAnimationSpeed } = this.props;
+    let {bounciness, bounceOnOpen, animated, openAnimationSpeed} = this.props;
 
     if (animated) {
       this.transformValue.setValue(scrollOffset);
