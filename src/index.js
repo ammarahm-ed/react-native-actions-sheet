@@ -57,7 +57,7 @@ export default class ActionSheet extends Component {
       layoutHasCalled: false,
       keyboard: false,
       deviceHeight: getDeviceHeight(this.props.statusBarTranslucent),
-      deviceWidth: Dimensions.get('window').width,
+      deviceWidth: Dimensions.get("window").width,
     };
     this.transformValue = new Animated.Value(0);
     this.opacityValue = new Animated.Value(0);
@@ -434,6 +434,20 @@ export default class ActionSheet extends Component {
     }
   };
 
+  /**
+   * Attach this to any child ScrollView Component's onScrollEndDrag,
+   * onMomentumScrollEnd,onScrollAnimationEnd callbacks to handle the ActionSheet
+   * closing and bouncing back properly.
+   */
+
+  handleChildScrollEnd = () => {
+    if (this.prevScroll - 200 > this.offsetY) {
+      this._hideModal();
+    } else {
+      this._scrollTo(this.prevScroll);
+    }
+  };
+
   _onKeyboardHide = () => {
     this.setState({
       keyboard: false,
@@ -459,7 +473,7 @@ export default class ActionSheet extends Component {
 
   _onDeviceLayout = (event) => {
     let height = event.nativeEvent.layout.height;
-    if (this.props.statusBarTranslucent && Platform.OS === 'android') {
+    if (this.props.statusBarTranslucent && Platform.OS === "android") {
       height = height - StatusBar.currentHeight;
     }
     this.setState({
