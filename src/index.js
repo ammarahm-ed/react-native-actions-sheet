@@ -58,6 +58,7 @@ export default class ActionSheet extends Component {
       keyboard: false,
       deviceHeight: getDeviceHeight(this.props.statusBarTranslucent),
       deviceWidth: Dimensions.get("window").width,
+      portrait:true
     };
     this.transformValue = new Animated.Value(0);
     this.opacityValue = new Animated.Value(0);
@@ -127,11 +128,12 @@ export default class ActionSheet extends Component {
       animated,
       closeAnimationDuration,
       onClose,
-      closable,
       bottomOffset,
       initialOffsetFromBottom,
       extraScroll,
+      closable
     } = this.props;
+
     Animated.parallel([
       Animated.timing(this.opacityValue, {
         toValue: closable ? 0 : 1,
@@ -145,7 +147,7 @@ export default class ActionSheet extends Component {
       }),
     ]).start();
 
-    this.waitAsync(closeAnimationDuration / 2).then(() => {
+    this.waitAsync(closeAnimationDuration / 1.5).then(() => {
       let scrollOffset = closable
         ? 0
         : this.customComponentHeight * initialOffsetFromBottom +
@@ -185,12 +187,14 @@ export default class ActionSheet extends Component {
       delayActionSheetDraw,
       delayActionSheetDrawTime,
     } = this.props;
-
+    
     let height = event.nativeEvent.layout.height;
+
     if (this.layoutHasCalled) {
+
       this._returnToPrevScrollPosition(height);
       this.customComponentHeight = height;
-
+    
       return;
     } else {
       this.customComponentHeight = height;
@@ -202,7 +206,7 @@ export default class ActionSheet extends Component {
           correction +
           extraScroll
         : this.customComponentHeight + correction + extraScroll;
-
+      
       if (Platform.OS === 'ios') {
         await this.waitAsync(delayActionSheetDrawTime);
       } else {
@@ -441,7 +445,11 @@ export default class ActionSheet extends Component {
     if (this.prevScroll - this.props.springOffset > this.offsetY) {
       this._hideModal();
     } else {
+      this.isRecoiling = true;
       this._scrollTo(this.prevScroll,true);
+      setTimeout(() => {
+        this.isRecoiling = false;
+      },150);
     }
   };
 
@@ -473,10 +481,12 @@ export default class ActionSheet extends Component {
     if (this.props.statusBarTranslucent && Platform.OS === "android") {
       height = height - StatusBar.currentHeight;
     }
+    let width = event.nativeEvent.layout.width
 
     this.setState({
       deviceHeight: height,
-      deviceWidth: event.nativeEvent.layout.width,
+      deviceWidth: width,
+      portrait: height > width ,
     });
   };
 
@@ -560,7 +570,7 @@ export default class ActionSheet extends Component {
                   onTouchStart={this._onTouchStart}
                   onTouchEnd={this._onTouchEnd}
                   style={{
-                    height: deviceHeight * 1.1,
+                    height: this.state.deviceHeight * 1.1,
                     width: '100%',
                     zIndex: 10,
                   }}>
@@ -568,7 +578,7 @@ export default class ActionSheet extends Component {
                     onPress={this._onTouchBackdrop}
                     onLongPress={this._onTouchBackdrop}
                     style={{
-                      height: deviceHeight * 1.1,
+                      height: this.state.deviceHeight * 1.1,
                       width: '100%',
                     }}
                   />
@@ -590,7 +600,7 @@ export default class ActionSheet extends Component {
                       ],
                       borderTopRightRadius: this.borderRadius,
                       borderTopLeftRadius: this.borderRadius,
-                      maxHeight: deviceHeight,
+                      maxHeight: this.state.deviceHeight,
                     },
                   ]}>
                   {gestureEnabled || headerAlwaysVisible ? (
