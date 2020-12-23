@@ -58,7 +58,6 @@ export default class ActionSheet extends Component {
       keyboard: false,
       deviceHeight: getDeviceHeight(this.props.statusBarTranslucent),
       deviceWidth: Dimensions.get("window").width,
-      portrait:true
     };
     this.transformValue = new Animated.Value(0);
     this.opacityValue = new Animated.Value(0);
@@ -486,7 +485,6 @@ export default class ActionSheet extends Component {
     this.setState({
       deviceHeight: height,
       deviceWidth: width,
-      portrait: height > width ,
     });
   };
 
