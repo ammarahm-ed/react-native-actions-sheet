@@ -18,7 +18,6 @@ import {
 } from "react-native";
 import { styles } from "./styles";
 
-var deviceHeight = getDeviceHeight();
 
 function getDeviceHeight(statusBarTranslucent) {
   var height = Dimensions.get("window").height;
@@ -58,6 +57,7 @@ export default class ActionSheet extends Component {
       keyboard: false,
       deviceHeight: getDeviceHeight(this.props.statusBarTranslucent),
       deviceWidth: Dimensions.get("window").width,
+      portrait:true
     };
     this.transformValue = new Animated.Value(0);
     this.opacityValue = new Animated.Value(0);
@@ -104,7 +104,6 @@ export default class ActionSheet extends Component {
    * Open/Close the ActionSheet
    */
   setModalVisible = (visible) => {
-    deviceHeight = getDeviceHeight(this.props.statusBarTranslucent);
     let modalVisible = this.state.modalVisible;
     if (visible !== undefined) {
       if (modalVisible === visible) {
@@ -484,6 +483,7 @@ export default class ActionSheet extends Component {
     this.setState({
       deviceHeight: height,
       deviceWidth: width,
+      portrait: height > width ,
     });
   };
 
