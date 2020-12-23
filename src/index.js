@@ -177,72 +177,48 @@ export default class ActionSheet extends Component {
     let {
       gestureEnabled,
       initialOffsetFromBottom,
-      footerHeight,
-      footerAlwaysVisible,
       extraScroll,
       delayActionSheetDraw,
       delayActionSheetDrawTime,
     } = this.props;
 
-    let addFactor = deviceHeight * 0.1;
     let height = event.nativeEvent.layout.height;
     if (this.layoutHasCalled) {
-      let diff;
-      if (height > this.customComponentHeight) {
-        diff = height - this.customComponentHeight;
-        this._scrollTo(this.prevScroll + diff);
+      this._returnToPrevScrollPosition(height);
+      this.customComponentHeight = height;
 
-        this.customComponentHeight = height;
-      } else {
-        diff = this.customComponentHeight - height;
-        this._scrollTo(this.prevScroll - diff);
-        this.customComponentHeight = height;
-      }
       return;
     } else {
-      if (footerAlwaysVisible) {
-        this.customComponentHeight = height;
-      } else {
-        this.customComponentHeight = height - footerHeight;
-      }
-
-      if (this.customComponentHeight > deviceHeight) {
-        this.customComponentHeight =
-          (this.customComponentHeight -
-            (this.customComponentHeight - deviceHeight)) *
-          0.9;
-      }
+      this.customComponentHeight = height;
+      this._applyHeightLimiter();
+      let correction = this.state.deviceHeight * 0.1;
 
       let scrollOffset = gestureEnabled
         ? this.customComponentHeight * initialOffsetFromBottom +
-          addFactor +
+          correction +
           extraScroll
-        : this.customComponentHeight + addFactor + extraScroll;
+        : this.customComponentHeight + correction + extraScroll;
 
-      if (Platform.OS === "ios") {
+      if (Platform.OS === 'ios') {
         await this.waitAsync(delayActionSheetDrawTime);
       } else {
         if (delayActionSheetDraw) {
           await this.waitAsync(delayActionSheetDrawTime);
         }
       }
-
       this._scrollTo(scrollOffset, false);
-
-      if (Platform.OS === "ios") {
+      this.prevScroll = scrollOffset;
+      if (Platform.OS === 'ios') {
         await this.waitAsync(delayActionSheetDrawTime / 2);
       } else {
         if (delayActionSheetDraw) {
           await this.waitAsync(delayActionSheetDrawTime / 2);
         }
       }
-
       this._openAnimation(scrollOffset);
-
       if (!gestureEnabled) {
-        DeviceEventEmitter.emit("hasReachedTop");
+        DeviceEventEmitter.emit('hasReachedTop');
       }
-
       this.layoutHasCalled = true;
     }
   };
