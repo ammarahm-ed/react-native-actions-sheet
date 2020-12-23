@@ -276,49 +276,59 @@ export default class ActionSheet extends Component {
     this.prevScroll = verticalOffset;
   };
 
-  _onScrollEnd = async (event) => {
-    let { springOffset, extraScroll } = this.props;
+  
+  _applyHeightLimiter() {
+    if (this.customComponentHeight > this.state.deviceHeight) {
+      this.customComponentHeight =
+        (this.customComponentHeight -
+          (this.customComponentHeight - this.state.deviceHeight)) *
+        1;
+    }
+  }
 
+  _onScrollEnd = async (event) => {
+    let {springOffset, extraScroll} = this.props;
     let verticalOffset = event.nativeEvent.contentOffset.y;
+    if (this.isRecoiling) return;
 
     if (this.prevScroll < verticalOffset) {
-      if (this.isRecoiling) return;
       if (verticalOffset - this.prevScroll > springOffset * 0.75) {
         this.isRecoiling = true;
-        let addFactor = deviceHeight * 0.1;
 
-        let scrollValue = this.customComponentHeight + addFactor + extraScroll;
-
-        if (scrollValue > deviceHeight) {
-          scrollValue = (scrollValue - (scrollValue - deviceHeight)) * 1;
-        }
+        this._applyHeightLimiter();
+        let correction = this.state.deviceHeight * 0.1;
+        let scrollValue = this.customComponentHeight + correction + extraScroll;
 
         this._scrollTo(scrollValue);
         await this.waitAsync(300);
         this.isRecoiling = false;
-
-        DeviceEventEmitter.emit("hasReachedTop", true);
+        this.currentOffsetFromBottom = 1;
+        DeviceEventEmitter.emit('hasReachedTop', true);
       } else {
-        this._scrollTo(this.prevScroll);
+        this._returnToPrevScrollPosition(this.customComponentHeight);
       }
     } else {
       if (this.prevScroll - verticalOffset > springOffset) {
-        if (this.isRecoiling) {
-          return;
-        }
-
         this._hideModal();
       } else {
         if (this.isRecoiling) {
           return;
         }
-        this._scrollTo(this.prevScroll);
         this.isRecoiling = true;
+        this._returnToPrevScrollPosition(this.customComponentHeight);
         await this.waitAsync(300);
         this.isRecoiling = false;
       }
     }
   };
+
+  _returnToPrevScrollPosition(height) {
+    let offset =
+      height * this.currentOffsetFromBottom +
+      this.state.deviceHeight * 0.1 +
+      this.props.extraScroll;
+    this._scrollTo(offset);
+  }
 
   _scrollTo = (y, animated = true) => {
     this.scrollAnimationEndValue = y;
