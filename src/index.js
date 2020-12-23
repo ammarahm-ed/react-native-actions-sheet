@@ -145,7 +145,7 @@ export default class ActionSheet extends Component {
       let scrollOffset = closable
         ? 0
         : this.customComponentHeight * initialOffsetFromBottom +
-          deviceHeight * 0.1 +
+          this.state.deviceHeight * 0.1 +
           extraScroll -
           bottomOffset;
 
@@ -157,12 +157,12 @@ export default class ActionSheet extends Component {
         },
         () => {
           this.isClosing = false;
-          DeviceEventEmitter.emit("hasReachedTop", false);
+          DeviceEventEmitter.emit('hasReachedTop', false);
           if (closable) {
             this.layoutHasCalled = false;
-            if (typeof onClose === "function") onClose();
+            if (typeof onClose === 'function') onClose();
           }
-        }
+        },
       );
     });
   }
