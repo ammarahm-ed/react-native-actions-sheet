@@ -56,6 +56,8 @@ export default class ActionSheet extends Component {
       scrollable: false,
       layoutHasCalled: false,
       keyboard: false,
+      deviceHeight: getDeviceHeight(this.props.statusBarTranslucent),
+      deviceWidth: Dimensions.get('window').width,
     };
     this.transformValue = new Animated.Value(0);
     this.opacityValue = new Animated.Value(0);
@@ -455,6 +457,17 @@ export default class ActionSheet extends Component {
     );
   }
 
+  _onDeviceLayout = (event) => {
+    let height = event.nativeEvent.layout.height;
+    if (this.props.statusBarTranslucent && Platform.OS === 'android') {
+      height = height - StatusBar.currentHeight;
+    }
+    this.setState({
+      deviceHeight: height,
+      deviceWidth: event.nativeEvent.layout.width,
+    });
+  };
+
   render() {
     let { scrollable, modalVisible, keyboard } = this.state;
     let {
@@ -488,6 +501,7 @@ export default class ActionSheet extends Component {
         testID={testID}
       >
         <Animated.View
+          onLayout={this._onDeviceLayout}
           style={[
             styles.parentContainer,
             {
