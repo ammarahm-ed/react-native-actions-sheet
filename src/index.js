@@ -312,7 +312,7 @@ export default class ActionSheet extends Component {
 
   _scrollTo = (y, animated = true) => {
     this.scrollAnimationEndValue = y;
-
+    this.prevScroll = y;
     this.scrollViewRef.current?._listRef._scrollRef.scrollTo({
       x: 0,
       y: this.scrollAnimationEndValue,
@@ -437,10 +437,11 @@ export default class ActionSheet extends Component {
    */
 
   handleChildScrollEnd = () => {
-    if (this.prevScroll - 200 > this.offsetY) {
+    if (this.offsetY > this.prevScroll) return;
+    if (this.prevScroll - this.props.springOffset > this.offsetY) {
       this._hideModal();
     } else {
-      this._scrollTo(this.prevScroll);
+      this._scrollTo(this.prevScroll,true);
     }
   };
 
@@ -472,6 +473,7 @@ export default class ActionSheet extends Component {
     if (this.props.statusBarTranslucent && Platform.OS === "android") {
       height = height - StatusBar.currentHeight;
     }
+
     this.setState({
       deviceHeight: height,
       deviceWidth: event.nativeEvent.layout.width,
@@ -531,7 +533,7 @@ export default class ActionSheet extends Component {
             onScroll={this._onScroll}
             style={styles.scrollView}
             contentContainerStyle={{
-              width: dWidth,
+              width: this.state.deviceWidth,
             }}
             data={['dummy']}
             keyExtractor={(item) => item}
@@ -544,7 +546,6 @@ export default class ActionSheet extends Component {
                   onTouchStart={this._onTouchBackdrop}
                   onTouchMove={this._onTouchBackdrop}
                   onTouchEnd={this._onTouchBackdrop}
-                  testID={notesnook.ids.default.actionsheetBackdrop}
                   style={{
                     height: '100%',
                     width: '100%',
