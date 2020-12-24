@@ -1,4 +1,4 @@
-import React, {useEffect, useState, createRef} from 'react';
+import React, {useEffect, useState, createRef, useRef} from 'react';
 import {
   SafeAreaView,
   StatusBar,
@@ -13,12 +13,16 @@ import ActionSheet, {
   removeHasReachedTopListener,
 } from 'react-native-actions-sheet';
 
+const initialOffsetFromBottom = 0.5;
 const actionSheetRef = createRef();
 const App = () => {
   const [nestedScrollEnabled, setNestedScrollEnabled] = useState(false);
-
-  const _onHasReachedTop = (hasReachedTop) => {
-    setNestedScrollEnabled(hasReachedTop);
+  const scrollViewRef = useRef();
+  const _onHasReachedTop = hasReachedTop => {
+    if (hasReachedTop)
+      scrollViewRef.current?.setNativeProps({
+        scrollEnabled: hasReachedTop,
+      });
   };
 
   useEffect(() => {
@@ -68,16 +72,30 @@ const App = () => {
         </TouchableOpacity>
 
         <ActionSheet
-          initialOffsetFromBottom={0.5}
+          initialOffsetFromBottom={initialOffsetFromBottom}
           ref={actionSheetRef}
+          onOpen={() => {
+            scrollViewRef.current?.setNativeProps({
+              scrollEnabled: false,
+            });
+          }}
           bounceOnOpen={true}
           bounciness={8}
           gestureEnabled={true}
           onClose={_onClose}
           defaultOverlayOpacity={0.3}>
           <ScrollView
+            ref={scrollViewRef}
             nestedScrollEnabled={true}
-            scrollEnabled={nestedScrollEnabled}
+            onScrollEndDrag={() =>
+              actionSheetRef.current?.handleChildScrollEnd()
+            }
+            onScrollAnimationEnd={() =>
+              actionSheetRef.current?.handleChildScrollEnd()
+            }
+            onMomentumScrollEnd={() =>
+              actionSheetRef.current?.handleChildScrollEnd()
+            }
             style={{
               width: '100%',
               padding: 12,
