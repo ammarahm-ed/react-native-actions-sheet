@@ -13,10 +13,8 @@ import ActionSheet, {
   removeHasReachedTopListener,
 } from 'react-native-actions-sheet';
 
-const initialOffsetFromBottom = 0.5;
 const actionSheetRef = createRef();
 const App = () => {
-  const [nestedScrollEnabled, setNestedScrollEnabled] = useState(false);
   const scrollViewRef = useRef();
   const _onHasReachedTop = hasReachedTop => {
     if (hasReachedTop)
@@ -33,7 +31,9 @@ const App = () => {
   }, []);
 
   const _onClose = () => {
-    setNestedScrollEnabled(false);
+    scrollViewRef.current?.setNativeProps({
+      scrollEnabled: false,
+    });
   };
 
   return (
@@ -72,15 +72,16 @@ const App = () => {
         </TouchableOpacity>
 
         <ActionSheet
-          initialOffsetFromBottom={initialOffsetFromBottom}
+          initialOffsetFromBottom={0.6}
           ref={actionSheetRef}
           onOpen={() => {
             scrollViewRef.current?.setNativeProps({
               scrollEnabled: false,
             });
           }}
+          statusBarTranslucent
           bounceOnOpen={true}
-          bounciness={8}
+          bounciness={4}
           gestureEnabled={true}
           onClose={_onClose}
           defaultOverlayOpacity={0.3}>
@@ -99,7 +100,6 @@ const App = () => {
             style={{
               width: '100%',
               padding: 12,
-              maxHeight: 500,
             }}>
             <View
               style={{
