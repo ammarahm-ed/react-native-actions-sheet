@@ -15,9 +15,15 @@ import {
   UIManager,
   StatusBar,
   findNodeHandle,
+  SafeAreaView,
 } from "react-native";
 import { styles } from "./styles";
-import { getDeviceHeight, SUPPORTED_ORIENTATIONS, getElevation,waitAsync } from "./utils";
+import {
+  getDeviceHeight,
+  SUPPORTED_ORIENTATIONS,
+  getElevation,
+  waitAsync,
+} from "./utils";
 
 export default class ActionSheet extends Component {
   constructor(props) {
@@ -47,9 +53,9 @@ export default class ActionSheet extends Component {
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
     this.underlayTranslateY = new Animated.Value(100);
     this.underlayScale = new Animated.Value(1);
+    this.safeareaHeight = getDeviceHeight(this.props.statusBarTranslucent);
+    this.innerViewHeight = getDeviceHeight(this.props.statusBarTranslucent);
   }
-
- 
 
   /**
    * Snap ActionSheet to Offset
@@ -240,6 +246,12 @@ export default class ActionSheet extends Component {
   _onScrollEnd = async (event) => {
     let { springOffset, extraScroll } = this.props;
     let verticalOffset = event.nativeEvent.contentOffset.y;
+    
+    let correction = this.state.deviceHeight * 0.1;
+    let distanceFromTop =
+      this.customComponentHeight + correction - this.offsetY;
+    this._showHideTopUnderlay(distanceFromTop);
+
     if (this.isRecoiling) return;
 
     if (this.prevScroll < verticalOffset) {
@@ -328,8 +340,8 @@ export default class ActionSheet extends Component {
         ? this.customComponentHeight - this.state.deviceHeight
         : this.state.deviceHeight - this.customComponentHeight;
     if (diff < 1) {
-      this.underlayTranslateY.setValue(-(60 - distanceFromTop));
-      this.underlayScale.setValue(1 + (60 - distanceFromTop) / 60);
+      this.underlayTranslateY.setValue(-(100 - distanceFromTop));
+      this.underlayScale.setValue(1 + (100 - distanceFromTop) / 100);
     }
   }
 
@@ -345,7 +357,7 @@ export default class ActionSheet extends Component {
       this._showHideTopUnderlay(distanceFromTop);
       DeviceEventEmitter.emit("hasReachedTop", true);
     } else {
-      if (distanceFromTop < 70) {
+      if (distanceFromTop < 100) {
         this._showHideTopUnderlay(distanceFromTop);
       }
 
@@ -464,9 +476,10 @@ export default class ActionSheet extends Component {
   }
 
   _onDeviceLayout = (event) => {
+    let topSafeAreaPadding = (this.safeareaHeight - this.innerViewHeight) / 2;
     let height =
       Platform.OS === "ios"
-        ? event.nativeEvent.layout.height
+        ? event.nativeEvent.layout.height - topSafeAreaPadding
         : event.nativeEvent.layout.height + StatusBar.currentHeight;
     if (this.props.statusBarTranslucent && Platform.OS === "android") {
       height = height - StatusBar.currentHeight;
@@ -478,6 +491,16 @@ export default class ActionSheet extends Component {
       deviceWidth: width,
       portrait: height > width,
     });
+  };
+
+  _getSafeAreaHeight = (event) => {
+    this.safeareaHeight = event.nativeEvent.layout.height;
+  };
+
+  _getSafeAreaChildHeight = (event) => {
+    this.innerViewHeight = event.nativeEvent.layout.height;
+    event.nativeEvent.layout.height = this.safeareaHeight;
+    this._onDeviceLayout(event);
   };
 
   render() {
@@ -496,7 +519,7 @@ export default class ActionSheet extends Component {
       headerAlwaysVisible,
       keyboardShouldPersistTaps,
       statusBarTranslucent,
-      hideUnderlay
+      hideUnderlay,
     } = this.props;
 
     return (
@@ -520,11 +543,29 @@ export default class ActionSheet extends Component {
             },
           ]}
         >
+          <SafeAreaView
+            onLayout={this._getSafeAreaHeight}
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "absolute",
+              backgroundColor: "transparent",
+            }}
+          >
+            <View
+              onLayout={this._getSafeAreaChildHeight}
+              style={{
+                width: "100%",
+                height: "100%",
+              }}
+            />
+          </SafeAreaView>
+
           <FlatList
             bounces={false}
             keyboardShouldPersistTaps={keyboardShouldPersistTaps}
             ref={this.scrollViewRef}
-            scrollEventThrottle={1}
+            scrollEventThrottle={5}
             showsVerticalScrollIndicator={false}
             onMomentumScrollBegin={this._onScrollBegin}
             onMomentumScrollEnd={this._onScrollEnd}
