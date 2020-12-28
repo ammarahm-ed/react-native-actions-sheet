@@ -16,7 +16,7 @@ import ActionSheet, {
 const actionSheetRef = createRef();
 const App = () => {
   const scrollViewRef = useRef();
-  const _onHasReachedTop = hasReachedTop => {
+  const onHasReachedTop = hasReachedTop => {
     if (hasReachedTop)
       scrollViewRef.current?.setNativeProps({
         scrollEnabled: hasReachedTop,
@@ -24,9 +24,9 @@ const App = () => {
   };
 
   useEffect(() => {
-    addHasReachedTopListener(_onHasReachedTop);
+    addHasReachedTopListener(onHasReachedTop);
     return () => {
-      removeHasReachedTopListener(_onHasReachedTop);
+      removeHasReachedTopListener(onHasReachedTop);
     };
   }, []);
 
