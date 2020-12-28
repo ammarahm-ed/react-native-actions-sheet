@@ -1,7 +1,8 @@
-import React, {createRef, useEffect, useRef} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {
   SafeAreaView,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -12,9 +13,10 @@ import ActionSheet, {
   removeHasReachedTopListener,
 } from 'react-native-actions-sheet';
 
-const actionSheetRef = createRef();
 const App = () => {
+  const actionSheetRef = useRef();
   const scrollViewRef = useRef();
+
   const onHasReachedTop = hasReachedTop => {
     if (hasReachedTop)
       scrollViewRef.current?.setNativeProps({
@@ -29,7 +31,13 @@ const App = () => {
     };
   }, []);
 
-  const _onClose = () => {
+  const onClose = () => {
+    scrollViewRef.current?.setNativeProps({
+      scrollEnabled: false,
+    });
+  };
+
+  const onOpen = () => {
     scrollViewRef.current?.setNativeProps({
       scrollEnabled: false,
     });
@@ -37,51 +45,24 @@ const App = () => {
 
   return (
     <>
-      <SafeAreaView
-        style={{
-          justifyContent: 'center',
-          flex: 1,
-        }}>
+      <SafeAreaView style={styles.safeareview}>
         <TouchableOpacity
           onPress={() => {
-            actionSheetRef.current?.setModalVisible();
+            actionSheetRef.current?.show();
           }}
-          style={{
-            height: 50,
-            justifyContent: 'center',
-            alignItems: 'center',
-            alignSelf: 'center',
-            backgroundColor: '#fe8a71',
-            paddingHorizontal: 10,
-            borderRadius: 5,
-            elevation: 5,
-            shadowColor: 'black',
-            shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
-            shadowOpacity: 0.2,
-            shadowRadius: 0.7 * 4,
-          }}>
-          <Text
-            style={{
-              color: 'white',
-              fontWeight: 'bold',
-            }}>
-            Open ActionSheet
-          </Text>
+          style={styles.btn}>
+          <Text style={styles.btnTitle}>Open ActionSheet</Text>
         </TouchableOpacity>
 
         <ActionSheet
           initialOffsetFromBottom={0.6}
           ref={actionSheetRef}
-          onOpen={() => {
-            scrollViewRef.current?.setNativeProps({
-              scrollEnabled: false,
-            });
-          }}
+          onOpen={onOpen}
           statusBarTranslucent
           bounceOnOpen={true}
           bounciness={4}
           gestureEnabled={true}
-          onClose={_onClose}
+          onClose={onClose}
           defaultOverlayOpacity={0.3}>
           <ScrollView
             ref={scrollViewRef}
@@ -95,22 +76,13 @@ const App = () => {
             onMomentumScrollEnd={() =>
               actionSheetRef.current?.handleChildScrollEnd()
             }
-            style={{
-              width: '100%',
-              padding: 12,
-            }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 15,
-              }}>
+            style={styles.scrollview}>
+            <View style={styles.container}>
               {['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'].map(
                 color => (
                   <TouchableOpacity
                     onPress={() => {
-                      actionSheetRef.current?.setModalVisible();
+                      actionSheetRef.current?.hide();
                     }}
                     key={color}
                     style={{
@@ -125,60 +97,19 @@ const App = () => {
             </View>
 
             <TextInput
-              style={{
-                width: '100%',
-                minHeight: 50,
-                borderRadius: 5,
-                borderWidth: 1,
-                borderColor: '#f0f0f0',
-                marginBottom: 15,
-                paddingHorizontal: 10,
-              }}
+              style={styles.input}
               multiline={true}
               placeholder="Write your text here"
             />
 
-            <View style={{}}>
-              {[
-                100,
-                60,
-                150,
-                200,
-                170,
-                80,
-                41,
-                101,
-                61,
-                151,
-                202,
-                172,
-                82,
-                43,
-                103,
-                64,
-                155,
-                205,
-                176,
-                86,
-                46,
-                106,
-                66,
-                152,
-                203,
-                173,
-                81,
-                42,
-              ].map(item => (
+            <View>
+              {items.map(item => (
                 <TouchableOpacity
                   key={item}
                   onPress={() => {
-                    actionSheetRef.current?.setModalVisible();
+                    actionSheetRef.current?.hide();
                   }}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}>
+                  style={styles.listItem}>
                   <View
                     style={{
                       width: item,
@@ -189,17 +120,13 @@ const App = () => {
                     }}
                   />
 
-                  <View
-                    style={{
-                      width: 30,
-                      height: 30,
-                      backgroundColor: '#f0f0f0',
-                      borderRadius: 100,
-                    }}
-                  />
+                  <View style={styles.btnLeft} />
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/*  Add a Small Footer at Bottom */}
+            <View style={styles.footer} />
           </ScrollView>
         </ActionSheet>
       </SafeAreaView>
@@ -208,3 +135,92 @@ const App = () => {
 };
 
 export default App;
+
+const items = [
+  100,
+  60,
+  150,
+  200,
+  170,
+  80,
+  41,
+  101,
+  61,
+  151,
+  202,
+  172,
+  82,
+  43,
+  103,
+  64,
+  155,
+  205,
+  176,
+  86,
+  46,
+  106,
+  66,
+  152,
+  203,
+  173,
+  81,
+  42,
+];
+
+const styles = StyleSheet.create({
+  footer: {
+    height: 100,
+  },
+  listItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  btnLeft: {
+    width: 30,
+    height: 30,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 100,
+  },
+  input: {
+    width: '100%',
+    minHeight: 50,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    marginBottom: 15,
+    paddingHorizontal: 10,
+  },
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  scrollview: {
+    width: '100%',
+    padding: 12,
+  },
+  btn: {
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#fe8a71',
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    elevation: 5,
+    shadowColor: 'black',
+    shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
+    shadowOpacity: 0.2,
+    shadowRadius: 0.7 * 4,
+  },
+  safeareview: {
+    justifyContent: 'center',
+    flex: 1,
+  },
+  btnTitle: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+});
