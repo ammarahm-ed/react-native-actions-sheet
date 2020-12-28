@@ -224,50 +224,6 @@ Default: `false`
 
 #
 
-#### `CustomFooterComponent`
-
-A footer component if you want to add some info at the bottom.
-
-| Type            | Required |
-| --------------- | -------- |
-| React.Component | no       |
-
-**Note:** Remember to give footer a fixed height and provide ActionSheet the `footerHeight` prop with same value. If you have added margins etc, add those values to `footerHeight` also.
-
-#
-
-#### `footerHeight`
-
-Height of the footer
-
-| Type   | Required |
-| ------ | -------- |
-| number | no       |
-
-Default: `80`
-
-#
-
-#### `footerStyle`
-
-Custom Styles for the footer container.
-
-| Type   | Required |
-| ------ | -------- |
-| Object | no       |
-
-#### `footerAlwaysVisible`
-
-Keep footer visible. Currently when you overdraw, the footer appears, however you can change this by setting this to `true`.
-
-| Type    | Required |
-| ------- | -------- |
-| boolean | no       |
-
-Default: `false`
-
-#
-
 #### `animated`
 
 Animate the opening and closing of ActionSheet.
@@ -412,7 +368,6 @@ Default: `0.3`
 
 #
 
-
 #### `closable`
 
 Prevent ActionSheet from closing on gesture or tapping on backdrop. Instead snap it to `bottomOffset` location
@@ -425,33 +380,29 @@ Default: `true`
 
 #
 
-
 #### `bottomOffset`
 
 Snap ActionSheet to this location if `closable` is set to false. By default it will snap to the location on first open.
 
-| Type    | Required |
-| ------- | -------- |
+| Type   | Required |
+| ------ | -------- |
 | number | no       |
 
 Default: `0`
 
 #
 
-
-
 #### `keyboardShouldPersistTaps`
 
-Setting the keyboard persistence of the `ScrollView` component.  Should be one of "never", "always" or "handled"
+Setting the keyboard persistence of the `ScrollView` component. Should be one of "never", "always" or "handled"
 
-| Type    | Required |
-| ------- | -------- |
+| Type   | Required |
+| ------ | -------- |
 | string | no       |
 
 Default: `never`
 
 #
-
 
 #### `statusBarTranslucent`
 
@@ -465,7 +416,6 @@ Default: `true`
 
 #
 
-
 #### `closeOnPressBack`
 
 Will the ActionSheet close on `hardwareBackPress` event.
@@ -475,6 +425,18 @@ Will the ActionSheet close on `hardwareBackPress` event.
 | boolean | no       |
 
 Default: `true`
+
+#
+
+#### `hideUnderlay`
+
+Hide the top underlay when ActionSheet is fullscreen.
+        
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `false`
 
 #
 
@@ -499,6 +461,65 @@ An event called when the ActionSheet Opens.
 ## Methods
 
 Methods require you to set a ref on ActionSheet Component.
+
+#### `handleChildScrollEnd()`
+
+If your component includes any child ScrollView/FlatList you must attach this method to all scroll end callbacks.
+
+```jsx
+
+<ScrollView
+            ref={scrollViewRef}
+            nestedScrollEnabled={true}
+            onScrollEndDrag={() =>
+              actionSheetRef.current?.handleChildScrollEnd()
+            }
+            onScrollAnimationEnd={() =>
+              actionSheetRef.current?.handleChildScrollEnd()
+            }
+            onMomentumScrollEnd={() =>
+              actionSheetRef.current?.handleChildScrollEnd()
+            }
+.....
+
+
+```
+
+#### `show()`
+
+Opens the ActionSheet.
+
+```jsx
+import ActionSheet from "react-native-actions-sheet";
+import React, { createRef } from "react";
+
+const actionSheetRef = createRef();
+
+// First create a ref on your <ActionSheet/> Component.
+<ActionSheet ref={actionSheetRef} />;
+
+// then later in your function to open the ActionSheet:
+
+actionSheetRef.current?.show();
+```
+
+#### `hide()`
+
+Closes the ActionSheet.
+
+```jsx
+import ActionSheet from "react-native-actions-sheet";
+import React, { createRef } from "react";
+
+const actionSheetRef = createRef();
+
+// First create a ref on your <ActionSheet/> Component.
+<ActionSheet ref={actionSheetRef} />;
+
+// then later in your function to open the ActionSheet:
+
+actionSheetRef.current?.hide();
+```
 
 #### `setModalVisible`
 
@@ -557,38 +578,64 @@ actionSheetRef.current?.snapToOffset(200);
 actionSheetRef.current?.snapToOffset(150);
 
 actionSheetRef.current?.snapToOffset(300);
-
 ```
 
 #
-
 
 ## Event Listeners
 
 Listen to changes in ActionSheet State.
 
-#### `addHasReachedTopListener`
+#### `addHasReachedTopListener(callback)`
 
 Attach a listener to know when ActionSheet is fully opened and has reached top. Use this if you want to use a ScrollView inside the ActionSheet. Check the example for demonstration on how to use nested ScrollViews inside ActionSheet.
 
 ```jsx
-import ActionSheet, {addHasReachedTopListener, removeHasReachedTopListener} from 'react-native-actions-sheet
+import ActionSheet, {
+  addHasReachedTopListener,
+  removeHasReachedTopListener,
+} from "react-native-actions-sheet";
 
+const App = () => {
+  const scrollViewRef = useRef();
+  const actionSheetRef = useRef();
 
-// In your Component
-
-  const _onHasReachedTop = (hasReached) => {
-    // handle the event
-  }
+  const onHasReachedTop = (hasReachedTop) => {
+    if (hasReachedTop)
+      scrollViewRef.current?.setNativeProps({
+        scrollEnabled: hasReachedTop,
+      });
+  };
 
   useEffect(() => {
-    addHasReachedTopListener(_onHasReachedTop)
+    addHasReachedTopListener(onHasReachedTop);
     return () => {
-        removeHasReachedTopListener(_onHasReachedTop)
-    }
-  },[])
+      removeHasReachedTopListener(onHasReachedTop);
+    };
+  }, []);
 
+  const onClose = () => {
+    scrollViewRef.current?.setNativeProps({
+      scrollEnabled: false,
+    });
+  };
 
+  return (
+    <ActionSheet ref={actionSheetRef}>
+      <ScrollView
+        ref={scrollViewRef}
+        nestedScrollEnabled={true}
+        onScrollEndDrag={() => actionSheetRef.current?.handleChildScrollEnd()}
+        onScrollAnimationEnd={() =>
+          actionSheetRef.current?.handleChildScrollEnd()
+        }
+        onMomentumScrollEnd={() =>
+          actionSheetRef.current?.handleChildScrollEnd()
+        }
+      />
+    </ActionSheet>
+  );
+};
 ```
 
 #
