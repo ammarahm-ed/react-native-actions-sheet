@@ -1,12 +1,12 @@
-import React, {useEffect, useState, createRef, useRef} from 'react';
+import React, {createRef, useEffect, useRef} from 'react';
 import {
   SafeAreaView,
-  StatusBar,
-  TouchableOpacity,
-  Text,
-  View,
-  TextInput,
   ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import ActionSheet, {
   addHasReachedTopListener,
