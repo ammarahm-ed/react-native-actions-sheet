@@ -357,7 +357,8 @@ export default class ActionSheet extends Component {
       this._showHideTopUnderlay(distanceFromTop);
       DeviceEventEmitter.emit("hasReachedTop", true);
     } else {
-      if (distanceFromTop < 100) {
+      console.log(distanceFromTop)
+      if (distanceFromTop < 300) {
         this._showHideTopUnderlay(distanceFromTop);
       }
 
