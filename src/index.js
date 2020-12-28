@@ -611,7 +611,7 @@ export default class ActionSheet extends Component {
                   style={[
                     styles.container,
                     {
-                      borderRadius: 5,
+                      borderRadius: 10,
                     },
                     containerStyle,
                     {

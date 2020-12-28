@@ -9,8 +9,6 @@ export const styles = StyleSheet.create({
   container: {
     width: "100%",
     backgroundColor: "white",
-    borderTopRightRadius: 10,
-    borderTopLeftRadius: 10,
     alignSelf: "center",
   },
   indicator: {
