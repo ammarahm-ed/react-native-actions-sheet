@@ -18,7 +18,6 @@ import {
 } from "react-native";
 import { styles } from "./styles";
 
-
 function getDeviceHeight(statusBarTranslucent) {
   var height = Dimensions.get("window").height;
 
@@ -57,7 +56,7 @@ export default class ActionSheet extends Component {
       keyboard: false,
       deviceHeight: getDeviceHeight(this.props.statusBarTranslucent),
       deviceWidth: Dimensions.get("window").width,
-      portrait:true
+      portrait: true,
     };
     this.transformValue = new Animated.Value(0);
     this.opacityValue = new Animated.Value(0);
@@ -73,6 +72,8 @@ export default class ActionSheet extends Component {
     this.offsetY = 0;
     this.borderRadius = new Animated.Value(10);
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
+    this.underlayTranslateY = new Animated.Value(100);
+    this.underlayScale = new Animated.Value(1);
   }
 
   waitAsync = (ms) =>
@@ -129,7 +130,7 @@ export default class ActionSheet extends Component {
       bottomOffset,
       initialOffsetFromBottom,
       extraScroll,
-      closable
+      closable,
     } = this.props;
 
     Animated.parallel([
@@ -161,12 +162,12 @@ export default class ActionSheet extends Component {
         },
         () => {
           this.isClosing = false;
-          DeviceEventEmitter.emit('hasReachedTop', false);
+          DeviceEventEmitter.emit("hasReachedTop", false);
           if (closable) {
             this.layoutHasCalled = false;
-            if (typeof onClose === 'function') onClose();
+            if (typeof onClose === "function") onClose();
           }
-        },
+        }
       );
     });
   }
@@ -185,13 +186,13 @@ export default class ActionSheet extends Component {
       delayActionSheetDraw,
       delayActionSheetDrawTime,
     } = this.props;
-    
+
     let height = event.nativeEvent.layout.height;
 
     if (this.layoutHasCalled) {
       this._returnToPrevScrollPosition(height);
       this.customComponentHeight = height;
-    
+
       return;
     } else {
       this.customComponentHeight = height;
@@ -203,8 +204,8 @@ export default class ActionSheet extends Component {
           correction +
           extraScroll
         : this.customComponentHeight + correction + extraScroll;
-      
-      if (Platform.OS === 'ios') {
+
+      if (Platform.OS === "ios") {
         await this.waitAsync(delayActionSheetDrawTime);
       } else {
         if (delayActionSheetDraw) {
@@ -213,7 +214,7 @@ export default class ActionSheet extends Component {
       }
       this._scrollTo(scrollOffset, false);
       this.prevScroll = scrollOffset;
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === "ios") {
         await this.waitAsync(delayActionSheetDrawTime / 2);
       } else {
         if (delayActionSheetDraw) {
@@ -222,14 +223,14 @@ export default class ActionSheet extends Component {
       }
       this._openAnimation(scrollOffset);
       if (!gestureEnabled) {
-        DeviceEventEmitter.emit('hasReachedTop');
+        DeviceEventEmitter.emit("hasReachedTop");
       }
       this.layoutHasCalled = true;
     }
   };
 
   _openAnimation = (scrollOffset) => {
-    let {bounciness, bounceOnOpen, animated, openAnimationSpeed} = this.props;
+    let { bounciness, bounceOnOpen, animated, openAnimationSpeed } = this.props;
 
     if (animated) {
       this.transformValue.setValue(scrollOffset);
@@ -257,7 +258,6 @@ export default class ActionSheet extends Component {
     this.prevScroll = verticalOffset;
   };
 
-  
   _applyHeightLimiter() {
     if (this.customComponentHeight > this.state.deviceHeight) {
       this.customComponentHeight =
@@ -268,7 +268,7 @@ export default class ActionSheet extends Component {
   }
 
   _onScrollEnd = async (event) => {
-    let {springOffset, extraScroll} = this.props;
+    let { springOffset, extraScroll } = this.props;
     let verticalOffset = event.nativeEvent.contentOffset.y;
     if (this.isRecoiling) return;
 
@@ -284,7 +284,7 @@ export default class ActionSheet extends Component {
         await this.waitAsync(300);
         this.isRecoiling = false;
         this.currentOffsetFromBottom = 1;
-        DeviceEventEmitter.emit('hasReachedTop', true);
+        DeviceEventEmitter.emit("hasReachedTop", true);
       } else {
         this._returnToPrevScrollPosition(this.customComponentHeight);
       }
@@ -351,15 +351,35 @@ export default class ActionSheet extends Component {
     return this.targetId;
   };
 
+  _showHideTopUnderlay(distanceFromTop) {
+    if (this.props.hideUnderlay) return;
+    let diff =
+      this.customComponentHeight > this.state.deviceHeight
+        ? this.customComponentHeight - this.state.deviceHeight
+        : this.state.deviceHeight - this.customComponentHeight;
+    if (diff < 1) {
+      this.underlayTranslateY.setValue(-(60 - distanceFromTop));
+      this.underlayScale.setValue(1 + (60 - distanceFromTop) / 60);
+    }
+  }
+
   _onScroll = (event) => {
     this.targetId = event.nativeEvent.target;
     this.offsetY = event.nativeEvent.contentOffset.y;
 
     let correction = this.state.deviceHeight * 0.1;
-    if (this.customComponentHeight + correction - this.offsetY < 50) {
-      DeviceEventEmitter.emit('hasReachedTop', true);
+    let distanceFromTop =
+      this.customComponentHeight + correction - this.offsetY;
+
+    if (distanceFromTop < 50) {
+      this._showHideTopUnderlay(distanceFromTop);
+      DeviceEventEmitter.emit("hasReachedTop", true);
     } else {
-      DeviceEventEmitter.emit('hasReachedTop', false);
+      if (distanceFromTop < 70) {
+        this._showHideTopUnderlay(distanceFromTop);
+      }
+
+      DeviceEventEmitter.emit("hasReachedTop", false);
     }
   };
 
@@ -443,10 +463,10 @@ export default class ActionSheet extends Component {
       this._hideModal();
     } else {
       this.isRecoiling = true;
-      this._scrollTo(this.prevScroll,true);
+      this._scrollTo(this.prevScroll, true);
       setTimeout(() => {
         this.isRecoiling = false;
-      },150);
+      }, 150);
     }
   };
 
@@ -474,16 +494,16 @@ export default class ActionSheet extends Component {
   }
 
   _onDeviceLayout = (event) => {
-    let height = event.nativeEvent.layout.height;
+    let height = Platform.OS === "ios" ? event.nativeEvent.layout.height : event.nativeEvent.layout.height + StatusBar.currentHeight;
     if (this.props.statusBarTranslucent && Platform.OS === "android") {
       height = height - StatusBar.currentHeight;
     }
-    let width = event.nativeEvent.layout.width
+    let width = event.nativeEvent.layout.width;
 
     this.setState({
       deviceHeight: height,
       deviceWidth: width,
-      portrait: height > width ,
+      portrait: height > width,
     });
   };
 
@@ -514,17 +534,18 @@ export default class ActionSheet extends Component {
         onShow={onOpen}
         onRequestClose={this._onRequestClose}
         transparent={true}
-        statusBarTranslucent={statusBarTranslucent}>
+        statusBarTranslucent={statusBarTranslucent}
+      >
         <Animated.View
           onLayout={this._onDeviceLayout}
           style={[
             styles.parentContainer,
             {
               opacity: this.opacityValue,
-              width: '100%',
+              width: "100%",
             },
-          ]}>
-          {this.props.premium}
+          ]}
+        >
           <FlatList
             bounces={false}
             keyboardShouldPersistTaps={keyboardShouldPersistTaps}
@@ -542,21 +563,22 @@ export default class ActionSheet extends Component {
             contentContainerStyle={{
               width: this.state.deviceWidth,
             }}
-            data={['dummy']}
+            data={["dummy"]}
             keyExtractor={(item) => item}
-            renderItem={({item, index}) => (
+            renderItem={({ item, index }) => (
               <View
                 style={{
-                  width: '100%',
-                }}>
+                  width: "100%",
+                }}
+              >
                 <Animated.View
                   onTouchStart={this._onTouchBackdrop}
                   onTouchMove={this._onTouchBackdrop}
                   onTouchEnd={this._onTouchBackdrop}
                   style={{
-                    height: '100%',
-                    width: '100%',
-                    position: 'absolute',
+                    height: "100%",
+                    width: "100%",
+                    position: "absolute",
                     zIndex: 1,
                     backgroundColor: overlayColor,
                     opacity: defaultOverlayOpacity,
@@ -568,15 +590,16 @@ export default class ActionSheet extends Component {
                   onTouchEnd={this._onTouchEnd}
                   style={{
                     height: this.state.deviceHeight * 1.1,
-                    width: '100%',
+                    width: "100%",
                     zIndex: 10,
-                  }}>
+                  }}
+                >
                   <TouchableOpacity
                     onPress={this._onTouchBackdrop}
                     onLongPress={this._onTouchBackdrop}
                     style={{
                       height: this.state.deviceHeight * 1.1,
-                      width: '100%',
+                      width: "100%",
                     }}
                   />
                 </View>
@@ -585,6 +608,9 @@ export default class ActionSheet extends Component {
                   onLayout={this._showModal}
                   style={[
                     styles.container,
+                    {
+                      borderRadius: 5,
+                    },
                     containerStyle,
                     {
                       ...getElevation(elevation),
@@ -595,11 +621,35 @@ export default class ActionSheet extends Component {
                           translateY: this.transformValue,
                         },
                       ],
-                      borderTopRightRadius: this.borderRadius,
-                      borderTopLeftRadius: this.borderRadius,
                       maxHeight: this.state.deviceHeight,
                     },
-                  ]}>
+                  ]}
+                >
+                  {!this.props.hideUnderlay && (
+                    <Animated.View
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        width: "100%",
+                        height: this.state.deviceHeight / 1.5,
+                        backgroundColor:
+                          containerStyle?.backgroundColor || "white",
+                        borderRadius: containerStyle?.borderRadius || 10,
+                        borderTopLeftRadius:
+                          containerStyle?.borderTopLeftRadius || 10,
+                        borderTopRightRadius:
+                          containerStyle?.borderTopRightRadius || 10,
+                        transform: [
+                          {
+                            translateY: this.underlayTranslateY,
+                          },
+                          {
+                            scaleX: this.underlayScale,
+                          },
+                        ],
+                      }}
+                    />
+                  )}
                   {gestureEnabled || headerAlwaysVisible ? (
                     CustomHeaderComponent ? (
                       CustomHeaderComponent
@@ -607,7 +657,7 @@ export default class ActionSheet extends Component {
                       <View
                         style={[
                           styles.indicator,
-                          {backgroundColor: indicatorColor},
+                          { backgroundColor: indicatorColor },
                         ]}
                       />
                     )
@@ -636,6 +686,7 @@ ActionSheet.defaultProps = {
   bounceOnOpen: false,
   bounciness: 8,
   extraScroll: 0,
+  hideUnderlay:false,
   closeAnimationDuration: 300,
   delayActionSheetDraw: false,
   delayActionSheetDrawTime: 50,
@@ -662,6 +713,7 @@ ActionSheet.propTypes = {
   headerAlwaysVisible: PropTypes.bool,
   containerStyle: ViewPropTypes.style,
   animated: PropTypes.bool,
+  hideUnderlay:PropTypes.bool,
   closeOnPressBack: PropTypes.bool,
   delayActionSheetDraw: PropTypes.bool,
   delayActionSheetDrawTime: PropTypes.number,
