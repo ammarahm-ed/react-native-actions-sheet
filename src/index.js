@@ -222,6 +222,8 @@ export default class ActionSheet extends Component {
         }
       }
       this._openAnimation(scrollOffset);
+      this.underlayScale.setValue(1);
+      this.underlayTranslateY.setValue(100);
       if (!gestureEnabled) {
         DeviceEventEmitter.emit("hasReachedTop");
       }
