@@ -2,7 +2,6 @@ import React, {createRef, useEffect, useRef} from 'react';
 import {
   SafeAreaView,
   ScrollView,
-  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
