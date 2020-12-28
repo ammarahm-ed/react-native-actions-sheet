@@ -246,7 +246,7 @@ export default class ActionSheet extends Component {
   _onScrollEnd = async (event) => {
     let { springOffset, extraScroll } = this.props;
     let verticalOffset = event.nativeEvent.contentOffset.y;
-    
+
     let correction = this.state.deviceHeight * 0.1;
     let distanceFromTop =
       this.customComponentHeight + correction - this.offsetY;
@@ -357,7 +357,6 @@ export default class ActionSheet extends Component {
       this._showHideTopUnderlay(distanceFromTop);
       DeviceEventEmitter.emit("hasReachedTop", true);
     } else {
-      console.log(distanceFromTop)
       if (distanceFromTop < 300) {
         this._showHideTopUnderlay(distanceFromTop);
       }
