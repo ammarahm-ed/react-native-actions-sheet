@@ -534,7 +534,6 @@ export default class ActionSheet extends Component {
         statusBarTranslucent={statusBarTranslucent}
       >
         <Animated.View
-          onLayout={this._onDeviceLayout}
           style={[
             styles.parentContainer,
             {
@@ -560,7 +559,6 @@ export default class ActionSheet extends Component {
               }}
             />
           </SafeAreaView>
-
           <FlatList
             bounces={false}
             keyboardShouldPersistTaps={keyboardShouldPersistTaps}
