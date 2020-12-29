@@ -505,7 +505,11 @@ export default class ActionSheet extends Component {
       );
 
       // Do not update state if the device height is same as before.
-      if (height === calculatedDeviceHeight) return;
+      if (
+        height?.toFixed(0) === calculatedDeviceHeight?.toFixed(0) &&
+        width?.toFixed(0) === this.state.deviceWidth?.toFixed(0)
+      )
+        return;
       calculatedDeviceHeight = height;
       this.setState({
         deviceHeight: height,
@@ -517,10 +521,12 @@ export default class ActionSheet extends Component {
 
   _getSafeAreaHeight = (event) => {
     safeareaHeight = event.nativeEvent.layout.height;
+
     this._getSafeAreaChildHeight({
       nativeEvent: {
         layout: {
           height: innerViewHeight,
+          width: event.nativeEvent.layout.width,
           init: true,
         },
       },
@@ -604,7 +610,12 @@ export default class ActionSheet extends Component {
             onScrollEndDrag={this._onScrollEnd}
             onTouchEnd={this._onTouchEnd}
             onScroll={this._onScroll}
-            style={styles.scrollView}
+            style={[
+              styles.scrollView,
+              {
+                width: this.state.deviceWidth,
+              },
+            ]}
             contentContainerStyle={{
               width: this.state.deviceWidth,
             }}
