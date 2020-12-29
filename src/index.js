@@ -25,8 +25,9 @@ import {
   waitAsync,
 } from "./utils";
 
-let safeareaHeight = 0;
-let innerViewHeight = 0;
+let safeareaHeight;
+let innerViewHeight;
+let calculatedDeviceHeight;
 
 export default class ActionSheet extends Component {
   constructor(props) {
@@ -36,7 +37,9 @@ export default class ActionSheet extends Component {
       scrollable: false,
       layoutHasCalled: false,
       keyboard: false,
-      deviceHeight: getDeviceHeight(this.props.statusBarTranslucent),
+      deviceHeight:
+        calculatedDeviceHeight ||
+        getDeviceHeight(this.props.statusBarTranslucent),
       deviceWidth: Dimensions.get("window").width,
       portrait: true,
     };
@@ -56,8 +59,10 @@ export default class ActionSheet extends Component {
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
     this.underlayTranslateY = new Animated.Value(100);
     this.underlayScale = new Animated.Value(1);
-    safeareaHeight = getDeviceHeight(this.props.statusBarTranslucent);
-    innerViewHeight = getDeviceHeight(this.props.statusBarTranslucent);
+    safeareaHeight =
+      safeareaHeight || getDeviceHeight(this.props.statusBarTranslucent);
+    innerViewHeight =
+      innerViewHeight || getDeviceHeight(this.props.statusBarTranslucent);
     this.layoutTime = null;
   }
 
@@ -479,8 +484,6 @@ export default class ActionSheet extends Component {
     );
   }
 
- 
-
   _onDeviceLayout = (event) => {
     if (this.layoutTime) {
       clearTimeout(this.layoutTime);
@@ -496,28 +499,32 @@ export default class ActionSheet extends Component {
         height = height - StatusBar.currentHeight;
       }
       let width = event.nativeEvent.layout.width;
-  
-      this._showHideTopUnderlay(this.customComponentHeight * this.currentOffsetFromBottom);
-    
+
+      this._showHideTopUnderlay(
+        this.customComponentHeight * this.currentOffsetFromBottom
+      );
+
+      // Do not update state if the device height is same as before.
+      if (height === calculatedDeviceHeight) return;
+      calculatedDeviceHeight = height;
       this.setState({
         deviceHeight: height,
         deviceWidth: width,
         portrait: height > width,
       });
-    },20)
-   
+    }, 20);
   };
 
   _getSafeAreaHeight = (event) => {
     safeareaHeight = event.nativeEvent.layout.height;
     this._getSafeAreaChildHeight({
-      nativeEvent:{
-        layout:{
-          height:innerViewHeight,
-          init:true
-        }
-      }
-    })
+      nativeEvent: {
+        layout: {
+          height: innerViewHeight,
+          init: true,
+        },
+      },
+    });
   };
 
   _getSafeAreaChildHeight = (event) => {
