@@ -25,6 +25,9 @@ import {
   waitAsync,
 } from "./utils";
 
+let safeareaHeight = 0;
+let innerViewHeight = 0;
+
 export default class ActionSheet extends Component {
   constructor(props) {
     super(props);
@@ -53,8 +56,9 @@ export default class ActionSheet extends Component {
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
     this.underlayTranslateY = new Animated.Value(100);
     this.underlayScale = new Animated.Value(1);
-    this.safeareaHeight = getDeviceHeight(this.props.statusBarTranslucent);
-    this.innerViewHeight = getDeviceHeight(this.props.statusBarTranslucent);
+    safeareaHeight = getDeviceHeight(this.props.statusBarTranslucent);
+    innerViewHeight = getDeviceHeight(this.props.statusBarTranslucent);
+    this.layoutTime = null;
   }
 
   /**
@@ -475,31 +479,51 @@ export default class ActionSheet extends Component {
     );
   }
 
-  _onDeviceLayout = (event) => {
-    let topSafeAreaPadding = (this.safeareaHeight - this.innerViewHeight) / 2;
-    let height =
-      Platform.OS === "ios"
-        ? event.nativeEvent.layout.height - topSafeAreaPadding
-        : event.nativeEvent.layout.height + StatusBar.currentHeight;
-    if (this.props.statusBarTranslucent && Platform.OS === "android") {
-      height = height - StatusBar.currentHeight;
-    }
-    let width = event.nativeEvent.layout.width;
+ 
 
-    this.setState({
-      deviceHeight: height,
-      deviceWidth: width,
-      portrait: height > width,
-    });
+  _onDeviceLayout = (event) => {
+    if (this.layoutTime) {
+      clearTimeout(this.layoutTime);
+      this.layoutTime = null;
+    }
+    this.layoutTime = setTimeout(() => {
+      let topSafeAreaPadding = (safeareaHeight - innerViewHeight) / 2;
+      let height =
+        Platform.OS === "ios"
+          ? event.nativeEvent.layout.height - topSafeAreaPadding
+          : event.nativeEvent.layout.height + StatusBar.currentHeight;
+      if (this.props.statusBarTranslucent && Platform.OS === "android") {
+        height = height - StatusBar.currentHeight;
+      }
+      let width = event.nativeEvent.layout.width;
+  
+      this._showHideTopUnderlay(this.customComponentHeight * this.currentOffsetFromBottom);
+    
+      this.setState({
+        deviceHeight: height,
+        deviceWidth: width,
+        portrait: height > width,
+      });
+    },20)
+   
   };
 
   _getSafeAreaHeight = (event) => {
-    this.safeareaHeight = event.nativeEvent.layout.height;
+    safeareaHeight = event.nativeEvent.layout.height;
+    this._getSafeAreaChildHeight({
+      nativeEvent:{
+        layout:{
+          height:innerViewHeight,
+          init:true
+        }
+      }
+    })
   };
 
   _getSafeAreaChildHeight = (event) => {
-    this.innerViewHeight = event.nativeEvent.layout.height;
-    event.nativeEvent.layout.height = this.safeareaHeight;
+    innerViewHeight = event.nativeEvent.layout.height;
+    event.nativeEvent.layout.height = safeareaHeight;
+    if (!event.nativeEvent.layout.init) return;
     this._onDeviceLayout(event);
   };
 
@@ -534,6 +558,7 @@ export default class ActionSheet extends Component {
         statusBarTranslucent={statusBarTranslucent}
       >
         <Animated.View
+          onLayout={this._getSafeAreaHeight}
           style={[
             styles.parentContainer,
             {
