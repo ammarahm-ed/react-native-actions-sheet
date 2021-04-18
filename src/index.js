@@ -27,7 +27,7 @@ import {
 
 let safeAreaInnerHeight = 0;
 let calculatedDeviceHeight = Dimensions.get("window").height;
-const AnimatedSafeAreaView = Animated.createAnimatedComponent(SafeAreaView)
+const AnimatedSafeAreaView = Animated.createAnimatedComponent(SafeAreaView);
 export default class ActionSheet extends Component {
   constructor(props) {
     super(props);
@@ -43,7 +43,7 @@ export default class ActionSheet extends Component {
       portrait: true,
       safeAreaInnerHeight,
     };
-  
+
     this.actionSheetHeight;
     this.prevScroll;
     this.scrollAnimationEndValue;
@@ -61,11 +61,19 @@ export default class ActionSheet extends Component {
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
     this.underlayTranslateY = new Animated.Value(100);
     this.underlayScale = new Animated.Value(1);
-    this.indicatorTranslateY = new Animated.Value(Platform.OS === "ios" ? this.actionSheetHeight - safeAreaInnerHeight > 30 ? 10 : -5 : - StatusBar.currentHeight);
+    this.indicatorTranslateY = new Animated.Value(
+      Platform.OS === "ios"
+        ? this.actionSheetHeight - safeAreaInnerHeight > 30
+          ? 10
+          : -5
+        : -StatusBar.currentHeight
+    );
   }
 
   getSafeAreaPadding() {
-    return this.actionSheetHeight - safeAreaInnerHeight > 30 ? (this.state.deviceHeight - safeAreaInnerHeight) : 5;
+    return this.actionSheetHeight - safeAreaInnerHeight > 30
+      ? this.state.deviceHeight - safeAreaInnerHeight
+      : 5;
   }
 
   /**
@@ -148,8 +156,15 @@ export default class ActionSheet extends Component {
         () => {
           this.isClosing = false;
           DeviceEventEmitter.emit("hasReachedTop", false);
-        
-          this.indicatorTranslateY.setValue(Platform.OS === "ios" ? this.actionSheetHeight - safeAreaInnerHeight > 30 ? 10 : -5 : - StatusBar.currentHeight);
+          this.props.onPositionChanged && this.props.onPositionChanged(false)
+
+          this.indicatorTranslateY.setValue(
+            Platform.OS === "ios"
+              ? this.actionSheetHeight - safeAreaInnerHeight > 30
+                ? 10
+                : -5
+              : -StatusBar.currentHeight
+          );
           if (closable) {
             this.layoutHasCalled = false;
             if (typeof onClose === "function") onClose();
@@ -203,6 +218,7 @@ export default class ActionSheet extends Component {
       this.underlayTranslateY.setValue(100);
       if (!gestureEnabled) {
         DeviceEventEmitter.emit("hasReachedTop");
+        this.props.onPositionChanged && this.props.onPositionChanged(true)
       }
       this.layoutHasCalled = true;
       this.updateActionSheetPosition(scrollOffset);
@@ -266,8 +282,9 @@ export default class ActionSheet extends Component {
         this.isRecoiling = false;
         this.currentOffsetFromBottom = 1;
 
-        this.updateActionSheetPosition(scrollOffset)
+        this.updateActionSheetPosition(scrollOffset);
         DeviceEventEmitter.emit("hasReachedTop", true);
+        this.props.onPositionChanged && this.props.onPositionChanged(true)
       } else {
         this._returnToPrevScrollPosition(this.actionSheetHeight);
       }
@@ -278,7 +295,7 @@ export default class ActionSheet extends Component {
         if (this.isRecoiling) {
           return;
         }
-        
+
         this.isRecoiling = true;
         this._returnToPrevScrollPosition(this.actionSheetHeight);
         await waitAsync(300);
@@ -287,12 +304,19 @@ export default class ActionSheet extends Component {
     }
   };
 
-
   updateActionSheetPosition(scrollPosition) {
     if (scrollPosition > this.state.deviceHeight) {
-      this.indicatorTranslateY.setValue(Platform.OS === "ios" ? this.getSafeAreaPadding() : 0);
+      this.indicatorTranslateY.setValue(
+        Platform.OS === "ios" ? this.getSafeAreaPadding() : 0
+      );
     } else {
-      this.indicatorTranslateY.setValue(Platform.OS === "ios" ? this.actionSheetHeight - safeAreaInnerHeight > 30 ? 10 : -5 : - StatusBar.currentHeight);
+      this.indicatorTranslateY.setValue(
+        Platform.OS === "ios"
+          ? this.actionSheetHeight - safeAreaInnerHeight > 30
+            ? 10
+            : -5
+          : -StatusBar.currentHeight
+      );
     }
   }
 
@@ -301,7 +325,7 @@ export default class ActionSheet extends Component {
       height * this.currentOffsetFromBottom +
       this.state.deviceHeight * 0.1 +
       this.props.extraScroll;
-      this.updateActionSheetPosition(scrollOffset)
+    this.updateActionSheetPosition(scrollOffset);
     this._scrollTo(scrollOffset);
   }
 
@@ -341,36 +365,43 @@ export default class ActionSheet extends Component {
     }
   };
 
-  
-
   _onScroll = (event) => {
     this.targetId = event.nativeEvent.target;
     this.offsetY = event.nativeEvent.contentOffset.y;
 
     let correction = this.state.deviceHeight * 0.1;
-    let distanceFromTop =
-      this.actionSheetHeight + correction - this.offsetY;
-    
+    let distanceFromTop = this.actionSheetHeight + correction - this.offsetY;
+
     if (this.actionSheetHeight >= this.state.deviceHeight) {
-      if (distanceFromTop < StatusBar.currentHeight && Platform.OS === 'android' && this.props.statusBarTranslucent){
-        this.indicatorTranslateY.setValue(-(distanceFromTop))
+      if (
+        distanceFromTop < StatusBar.currentHeight &&
+        Platform.OS === "android" &&
+        this.props.statusBarTranslucent
+      ) {
+        this.indicatorTranslateY.setValue(-distanceFromTop);
       }
 
-      if (distanceFromTop < this.getSafeAreaPadding() && Platform.OS === 'ios' ){
-      this.indicatorTranslateY.setValue(((this.getSafeAreaPadding() - distanceFromTop)))
-    } else if (Platform.OS === 'ios') {
-      this.indicatorTranslateY.setValue(this.actionSheetHeight - safeAreaInnerHeight > 30? 10 : -5)
+      if (
+        distanceFromTop < this.getSafeAreaPadding() &&
+        Platform.OS === "ios"
+      ) {
+        this.indicatorTranslateY.setValue(
+          this.getSafeAreaPadding() - distanceFromTop
+        );
+      } else if (Platform.OS === "ios") {
+        this.indicatorTranslateY.setValue(
+          this.actionSheetHeight - safeAreaInnerHeight > 30 ? 10 : -5
+        );
+      }
     }
-     
-    }  
 
     if (distanceFromTop < 50) {
       DeviceEventEmitter.emit("hasReachedTop", true);
+      this.props.onPositionChanged && this.props.onPositionChanged(true)
     } else {
-     
       DeviceEventEmitter.emit("hasReachedTop", false);
+      this.props.onPositionChanged && this.props.onPositionChanged(false)
     }
-
   };
 
   _onRequestClose = () => {
@@ -395,7 +426,6 @@ export default class ActionSheet extends Component {
     );
   }
 
- 
   _onKeyboardShow = (e) => {
     this.setState({
       keyboard: true,
@@ -448,7 +478,7 @@ export default class ActionSheet extends Component {
    * closing and bouncing back properly.
    */
 
-   handleChildScrollEnd = async () => {
+  handleChildScrollEnd = async () => {
     if (this.offsetY > this.prevScroll) return;
     if (this.prevScroll - this.props.springOffset > this.offsetY) {
       let scrollOffset = this.getInitialScrollPosition();
@@ -491,36 +521,35 @@ export default class ActionSheet extends Component {
   }
 
   _onDeviceLayout = (_event) => {
-    let event = {..._event};
-      let height = event.nativeEvent.layout.height;
-      let width = event.nativeEvent.layout.width;
-     
+    let event = { ..._event };
+    let height = event.nativeEvent.layout.height;
+    let width = event.nativeEvent.layout.width;
 
-      if (
-        height?.toFixed(0) === calculatedDeviceHeight?.toFixed(0) &&
-        width?.toFixed(0) === this.state.deviceWidth?.toFixed(0)
-      )
-        return;
-      calculatedDeviceHeight = height;
-      this.setState({
-        deviceHeight: height,
-        deviceWidth: width,
-        portrait: height > width,
-      });
+    if (
+      height?.toFixed(0) === calculatedDeviceHeight?.toFixed(0) &&
+      width?.toFixed(0) === this.state.deviceWidth?.toFixed(0)
+    )
+      return;
+    calculatedDeviceHeight = height;
+    this.setState({
+      deviceHeight: height,
+      deviceWidth: width,
+      portrait: height > width,
+    });
   };
 
   getInitialScrollPosition() {
-      this._applyHeightLimiter();
-      let correction = this.state.deviceHeight * 0.1;
-      let scrollPosition = this.props.gestureEnabled
+    this._applyHeightLimiter();
+    let correction = this.state.deviceHeight * 0.1;
+    let scrollPosition = this.props.gestureEnabled
       ? this.actionSheetHeight * this.props.initialOffsetFromBottom +
-          correction +
-          this.props.extraScroll
+        correction +
+        this.props.extraScroll
       : this.actionSheetHeight + correction + this.props.extraScroll;
-      this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
-      this.updateActionSheetPosition(scrollPosition)
-      return scrollPosition
-    }
+    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
+    this.updateActionSheetPosition(scrollPosition);
+    return scrollPosition;
+  }
 
   render() {
     let { scrollable, modalVisible, keyboard } = this.state;
@@ -561,7 +590,6 @@ export default class ActionSheet extends Component {
             },
           ]}
         >
-      
           <FlatList
             bounces={false}
             keyboardShouldPersistTaps={keyboardShouldPersistTaps}
@@ -631,7 +659,7 @@ export default class ActionSheet extends Component {
                     styles.container,
                     {
                       borderRadius: 10,
-                      paddingTop:5
+                      paddingTop: 5,
                     },
                     containerStyle,
                     {
@@ -644,52 +672,48 @@ export default class ActionSheet extends Component {
                         },
                       ],
                       maxHeight: this.state.deviceHeight,
-                
                     },
                   ]}
                 >
-                 
-                 {
-                   statusBarTranslucent && Platform.OS === "android" && <View
-                   style={{
-                     height:StatusBar.currentHeight,
-                   }}
-                   >
-                   </View>
-                 } 
+                  {statusBarTranslucent && Platform.OS === "android" && (
+                    <View
+                      style={{
+                        height: StatusBar.currentHeight,
+                      }}
+                    ></View>
+                  )}
                   <Animated.View
-                  onLayout={(event) => {
-                    safeAreaInnerHeight = event.nativeEvent.layout.height
-                    
-                  }}
-                  style={{
-                    maxHeight:'100%',
-                    transform:[
-                      {
-                        translateY:(statusBarTranslucent && Platform.OS === "android") ||  Platform.OS === "ios" ? this.indicatorTranslateY :0,
-                    
-                      }
-                    ]
-                  }}
+                    onLayout={(event) => {
+                      safeAreaInnerHeight = event.nativeEvent.layout.height;
+                    }}
+                    style={{
+                      maxHeight: "100%",
+                      transform: [
+                        {
+                          translateY:
+                            (statusBarTranslucent &&
+                              Platform.OS === "android") ||
+                            Platform.OS === "ios"
+                              ? this.indicatorTranslateY
+                              : 0,
+                        },
+                      ],
+                    }}
                   >
-                  {gestureEnabled || headerAlwaysVisible ? (
-                    CustomHeaderComponent ? (
-                      CustomHeaderComponent
-                    ) : (
-                      <Animated.View
-                        style={[
-                          styles.indicator,
-                          { backgroundColor: indicatorColor,
-                           },
-                          
-                        ]}
-                      />
-                    )
-                  ) : null}
-                 
+                    {gestureEnabled || headerAlwaysVisible ? (
+                      CustomHeaderComponent ? (
+                        CustomHeaderComponent
+                      ) : (
+                        <Animated.View
+                          style={[
+                            styles.indicator,
+                            { backgroundColor: indicatorColor },
+                          ]}
+                        />
+                      )
+                    ) : null}
 
-              
-                  {children}
+                    {children}
                   </Animated.View>
                 </AnimatedSafeAreaView>
               </View>
@@ -729,6 +753,7 @@ ActionSheet.defaultProps = {
   closeOnTouchBackdrop: true,
   onClose: () => {},
   onOpen: () => {},
+  onPositionChanged: () => {},
   keyboardShouldPersistTaps: "never",
   statusBarTranslucent: true,
 };
@@ -760,6 +785,7 @@ ActionSheet.propTypes = {
   overlayColor: PropTypes.string,
   onClose: PropTypes.func,
   onOpen: PropTypes.func,
+  onPositionChanged: PropTypes.func,
   keyboardShouldPersistTaps: PropTypes.oneOf(["always", "handled", "never"]),
   statusBarTranslucent: PropTypes.bool,
 };

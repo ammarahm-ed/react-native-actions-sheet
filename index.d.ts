@@ -3,9 +3,9 @@ import { StyleProp, ViewStyle } from "react-native";
 
 declare module "react-native-actions-sheet" {
 
-     export const addHasReachedTopListener:(callback:()=> void)=>void
-     export const removeHasReachedTopListener:(callback:()=>void)=>void
-     
+     export const addHasReachedTopListener: (callback: () => void) => void
+     export const removeHasReachedTopListener: (callback: () => void) => void
+
      export type ActionSheetProps = {
           /**
            * Animate the opening and closing of ActionSheet.
@@ -300,7 +300,16 @@ declare module "react-native-actions-sheet" {
           onOpen?: () => void;
 
           /**
+           * Event called when position of ActionSheet changes.
+           */
+          onPositionChanged: (hasReachedTop: boolean) => void;
+
+          /**
            * Hide the top underlay when ActionSheet is fullscreen.
+           * 
+      | Type | Required |
+      | ---- | -------- |
+      | function | no |
            */
 
           hideUnderlay?: boolean;
