@@ -789,6 +789,6 @@ ActionSheet.propTypes = {
   overlayColor: PropTypes.string,
   onClose: PropTypes.func,
   onOpen: PropTypes.func,
-  keyboardShouldPersistTaps: PropTypes.oneOf(["always", "default", "never"]),
+  keyboardShouldPersistTaps: PropTypes.oneOf(["always", "handled", "never"]),
   statusBarTranslucent: PropTypes.bool,
 };
