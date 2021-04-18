@@ -449,7 +449,6 @@ export default class ActionSheet extends Component {
    */
 
    handleChildScrollEnd = async () => {
-     console.log('child')
     if (this.offsetY > this.prevScroll) return;
     if (this.prevScroll - this.props.springOffset > this.offsetY) {
       let scrollOffset = this.getInitialScrollPosition();
