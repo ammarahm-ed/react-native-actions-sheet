@@ -8,10 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import ActionSheet, {
-  addHasReachedTopListener,
-  removeHasReachedTopListener,
-} from 'react-native-actions-sheet';
+import ActionSheet from 'react-native-actions-sheet';
 
 const App = () => {
   const actionSheetRef = useRef();
@@ -24,12 +21,7 @@ const App = () => {
       });
   };
 
-  useEffect(() => {
-    addHasReachedTopListener(onHasReachedTop);
-    return () => {
-      removeHasReachedTopListener(onHasReachedTop);
-    };
-  }, []);
+  
 
   const onClose = () => {
     scrollViewRef.current?.setNativeProps({
@@ -62,6 +54,7 @@ const App = () => {
           containerStyle={{
             paddingTop:10
           }}
+          onPositionChanged={onHasReachedTop}
           bounceOnOpen={true}
           bounciness={4}
           gestureEnabled={true}
