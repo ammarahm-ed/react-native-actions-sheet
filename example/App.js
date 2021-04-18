@@ -59,6 +59,9 @@ const App = () => {
           ref={actionSheetRef}
           onOpen={onOpen}
           statusBarTranslucent
+          containerStyle={{
+            paddingTop:10
+          }}
           bounceOnOpen={true}
           bounciness={4}
           gestureEnabled={true}
