@@ -2,6 +2,10 @@ import { Component } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 
 declare module "react-native-actions-sheet" {
+
+     export const addHasReachedTopListener:(callback:()=> void)=>void
+     export const removeHasReachedTopListener:(callback:()=>void)=>void
+     
      export type ActionSheetProps = {
           /**
            * Animate the opening and closing of ActionSheet.
