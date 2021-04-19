@@ -302,7 +302,7 @@ declare module "react-native-actions-sheet" {
           /**
            * Event called when position of ActionSheet changes.
            */
-          onPositionChanged: (hasReachedTop: boolean) => void;
+          onPositionChanged?: (hasReachedTop: boolean) => void;
 
           /**
            * Hide the top underlay when ActionSheet is fullscreen.
