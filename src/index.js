@@ -349,11 +349,20 @@ export default class ActionSheet extends Component {
   };
 
   _onScroll = (event) => {
+  
     this.targetId = event.nativeEvent.target;
     this.offsetY = event.nativeEvent.contentOffset.y;
 
     let correction = this.state.deviceHeight * 0.1;
     let distanceFromTop = this.actionSheetHeight + correction - this.offsetY;
+
+    if (distanceFromTop < 5) {
+      DeviceEventEmitter.emit("hasReachedTop", true);
+      this.props.onPositionChanged && this.props.onPositionChanged(true)
+    } else {
+      DeviceEventEmitter.emit("hasReachedTop", false);
+      this.props.onPositionChanged && this.props.onPositionChanged(false)
+    }
 
     if (this.actionSheetHeight >= this.state.deviceHeight) {
       if (!this.props.drawUnderStatusBar) return;
@@ -377,13 +386,7 @@ export default class ActionSheet extends Component {
       }
     }
 
-    if (distanceFromTop < 50) {
-      DeviceEventEmitter.emit("hasReachedTop", true);
-      this.props.onPositionChanged && this.props.onPositionChanged(true)
-    } else {
-      DeviceEventEmitter.emit("hasReachedTop", false);
-      this.props.onPositionChanged && this.props.onPositionChanged(false)
-    }
+   
   };
 
   _onRequestClose = () => {
@@ -469,12 +472,14 @@ export default class ActionSheet extends Component {
         this._scrollTo(scrollOffset);
         this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
         this.prevScroll = scrollOffset;
+        setTimeout(()=> {this.isRecoiling = false},500)
       } else {
         this._hideModal();
       }
     } else {
       this.isRecoiling = true;
       this._scrollTo(this.prevScroll, true);
+      setTimeout(()=> {this.isRecoiling = false},500)
     }
   };
 
