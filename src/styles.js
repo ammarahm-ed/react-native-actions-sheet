@@ -16,8 +16,7 @@ export const styles = StyleSheet.create({
     width: 45,
     borderRadius: 100,
     backgroundColor: "#f0f0f0",
-    marginVertical: 0,
-    marginTop: 3,
+    marginVertical: 5,
     alignSelf: "center",
   },
   parentContainer: {

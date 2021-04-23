@@ -61,19 +61,13 @@ export default class ActionSheet extends Component {
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
     this.underlayTranslateY = new Animated.Value(100);
     this.underlayScale = new Animated.Value(1);
-    this.indicatorTranslateY = new Animated.Value(
-      Platform.OS === "ios"
-        ? this.actionSheetHeight - safeAreaInnerHeight > 30
-          ? 10
-          : -5
-        : -StatusBar.currentHeight
-    );
+    this.indicatorTranslateY = new Animated.Value(0);
   }
 
   getSafeAreaPadding() {
-    return this.actionSheetHeight - safeAreaInnerHeight > 30
+    return this.state.deviceHeight - safeAreaInnerHeight > 30
       ? this.state.deviceHeight - safeAreaInnerHeight
-      : 5;
+      : 20;
   }
 
   /**
@@ -158,13 +152,7 @@ export default class ActionSheet extends Component {
           DeviceEventEmitter.emit("hasReachedTop", false);
           this.props.onPositionChanged && this.props.onPositionChanged(false)
 
-          this.indicatorTranslateY.setValue(
-            Platform.OS === "ios"
-              ? this.actionSheetHeight - safeAreaInnerHeight > 30
-                ? 10
-                : -5
-              : -StatusBar.currentHeight
-          );
+          this.indicatorTranslateY.setValue(0);
           if (closable) {
             this.layoutHasCalled = false;
             if (typeof onClose === "function") onClose();
@@ -307,16 +295,10 @@ export default class ActionSheet extends Component {
   updateActionSheetPosition(scrollPosition) {
     if (scrollPosition > this.state.deviceHeight) {
       this.indicatorTranslateY.setValue(
-        Platform.OS === "ios" ? this.getSafeAreaPadding() : 0
+        Platform.OS === "ios" ? this.getSafeAreaPadding() : StatusBar.currentHeight
       );
     } else {
-      this.indicatorTranslateY.setValue(
-        Platform.OS === "ios"
-          ? this.actionSheetHeight - safeAreaInnerHeight > 30
-            ? 10
-            : -5
-          : -StatusBar.currentHeight
-      );
+      this.indicatorTranslateY.setValue(0);
     }
   }
 
@@ -378,7 +360,7 @@ export default class ActionSheet extends Component {
         Platform.OS === "android" &&
         this.props.statusBarTranslucent
       ) {
-        this.indicatorTranslateY.setValue(-distanceFromTop);
+        this.indicatorTranslateY.setValue(StatusBar.currentHeight  -distanceFromTop);
       }
 
       if (
@@ -389,9 +371,7 @@ export default class ActionSheet extends Component {
           this.getSafeAreaPadding() - distanceFromTop
         );
       } else if (Platform.OS === "ios") {
-        this.indicatorTranslateY.setValue(
-          this.actionSheetHeight - safeAreaInnerHeight > 30 ? 10 : -5
-        );
+        this.indicatorTranslateY.setValue(0);
       }
     }
 
@@ -509,6 +489,7 @@ export default class ActionSheet extends Component {
   };
 
   componentWillUnmount() {
+    
     Keyboard.removeListener(
       Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
       this._onKeyboardShow
@@ -675,13 +656,7 @@ export default class ActionSheet extends Component {
                     },
                   ]}
                 >
-                  {statusBarTranslucent && Platform.OS === "android" && (
-                    <View
-                      style={{
-                        height: StatusBar.currentHeight,
-                      }}
-                    ></View>
-                  )}
+                  
                   <Animated.View
                     onLayout={(event) => {
                       safeAreaInnerHeight = event.nativeEvent.layout.height;
@@ -690,13 +665,7 @@ export default class ActionSheet extends Component {
                       maxHeight: "100%",
                       transform: [
                         {
-                          translateY:
-                            (statusBarTranslucent &&
-                              Platform.OS === "android") ||
-                            Platform.OS === "ios"
-                              ? this.indicatorTranslateY
-                              : 0,
-                        },
+                          translateY:this.indicatorTranslateY},
                       ],
                     }}
                   >
