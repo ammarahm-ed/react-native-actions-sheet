@@ -80,7 +80,7 @@ const App = () => {
                 (color) => (
                   <TouchableOpacity
                     onPress={() => {
-                      //actionSheetRef.current?.hide();
+                      actionSheetRef.current?.hide();
                     }}
                     key={color}
                     style={{
@@ -96,7 +96,7 @@ const App = () => {
 
             <ScrollView
               ref={scrollViewRef}
-              //nestedScrollEnabled={false} // Disabled unlike old example.
+              //nestedScrollEnabled={false} 
               onScroll={onScroll}
               onStartShouldSetResponder={() => {
                 changeScrollEnabled(false, true);
