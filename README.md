@@ -428,15 +428,25 @@ Default: `true`
 
 #
 
-#### `hideUnderlay`
+#### `drawUnderStatusBar`
 
-Hide the top underlay when ActionSheet is fullscreen.
-        
+Allow ActionSheet to draw under the StatusBar. This is enabled by default.
+
 | Type    | Required |
 | ------- | -------- |
 | boolean | no       |
 
 Default: `false`
+
+#
+
+#### `onPositionChanged(onReachedTop:boolean)`
+
+Event called when position of ActionSheet changes.
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |
 
 #
 
