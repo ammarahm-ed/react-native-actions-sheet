@@ -1,5 +1,7 @@
 import React, {useEffect, useRef} from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -13,15 +15,27 @@ import ActionSheet from 'react-native-actions-sheet';
 const App = () => {
   const actionSheetRef = useRef();
   const scrollViewRef = useRef();
+  const actionSheetScrollRef = actionSheetRef.current?.scrollViewRef;
 
-  const onHasReachedTop = hasReachedTop => {
-    if (hasReachedTop)
-      scrollViewRef.current?.setNativeProps({
-        scrollEnabled: hasReachedTop,
-      });
+  function changeScrollEnabled(parent, child) {
+    // We only need this on Android, iOS works great with Child Scroll Views.
+    if (Platform.OS !== 'android') return;
+    actionSheetScrollRef?.current?.setNativeProps({
+      scrollEnabled: parent,
+    });
+    scrollViewRef.current?.setNativeProps({
+      scrollEnabled: child,
+      nestedScrollEnabled: false,
+    });
+  }
+
+  const onScroll = (event) => {
+    changeScrollEnabled(false, true);
   };
 
-  
+  const onHasReachedTop = (hasReachedTop) => {
+    changeScrollEnabled(!hasReachedTop, hasReachedTop);
+  };
 
   const onClose = () => {
     scrollViewRef.current?.setNativeProps({
@@ -31,7 +45,7 @@ const App = () => {
 
   const onOpen = () => {
     scrollViewRef.current?.setNativeProps({
-      scrollEnabled: false,
+      scrollEnabled: true,
     });
   };
 
@@ -51,34 +65,22 @@ const App = () => {
           ref={actionSheetRef}
           onOpen={onOpen}
           statusBarTranslucent
-          containerStyle={{
-            paddingTop:10
-          }}
           onPositionChanged={onHasReachedTop}
           bounceOnOpen={true}
           bounciness={4}
           gestureEnabled={true}
           onClose={onClose}
           defaultOverlayOpacity={0.3}>
-          <ScrollView
-            ref={scrollViewRef}
-            nestedScrollEnabled={true}
-            onScrollEndDrag={() =>
-              actionSheetRef.current?.handleChildScrollEnd()
-            }
-            onScrollAnimationEnd={() =>
-              actionSheetRef.current?.handleChildScrollEnd()
-            }
-            onMomentumScrollEnd={() =>
-              actionSheetRef.current?.handleChildScrollEnd()
-            }
-            style={styles.scrollview}>
+          <View
+            style={{
+              paddingHorizontal: 12,
+            }}>
             <View style={styles.container}>
               {['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'].map(
-                color => (
+                (color) => (
                   <TouchableOpacity
                     onPress={() => {
-                      actionSheetRef.current?.hide();
+                      //actionSheetRef.current?.hide();
                     }}
                     key={color}
                     style={{
@@ -92,38 +94,64 @@ const App = () => {
               )}
             </View>
 
-            <TextInput
-              style={styles.input}
-              multiline={true}
-              placeholder="Write your text here"
-            />
+            <ScrollView
+              ref={scrollViewRef}
+              //nestedScrollEnabled={false} // Disabled unlike old example.
+              onScroll={onScroll}
+              onStartShouldSetResponder={() => {
+                changeScrollEnabled(false, true);
+                return false;
+              }}
+              onScrollEndDrag={() => {
+                changeScrollEnabled(true, false);
+                actionSheetRef.current?.handleChildScrollEnd();
+              }}
+              onTouchEnd={() => {
+                changeScrollEnabled(true, false);
+              }}
+              onScrollAnimationEnd={() => {
+                changeScrollEnabled(true, false);
+                actionSheetRef.current?.handleChildScrollEnd();
+              }}
+              onMomentumScrollEnd={() => {
+                changeScrollEnabled(true, false);
+                actionSheetRef.current?.handleChildScrollEnd();
+              }}
+              scrollEventThrottle={2}
+              style={styles.scrollview}>
+              <TextInput
+                style={styles.input}
+                multiline={true}
+                placeholder="Write your text here"
+              />
 
-            <View>
-              {items.map(item => (
-                <TouchableOpacity
-                  key={item}
-                  onPress={() => {
-                    actionSheetRef.current?.hide();
-                  }}
-                  style={styles.listItem}>
-                  <View
-                    style={{
-                      width: item,
-                      height: 15,
-                      backgroundColor: '#f0f0f0',
-                      marginVertical: 15,
-                      borderRadius: 5,
+              <View>
+                {items.map((item) => (
+                  <TouchableOpacity
+                    key={item}
+                    onPress={() => {
+                      actionSheetRef.current?.hide();
                     }}
-                  />
+                    style={styles.listItem}>
+                    <View
+                      style={{
+                        width: item,
+                        height: 15,
+                        backgroundColor: '#f0f0f0',
+                        marginVertical: 15,
+                        borderRadius: 5,
+                      }}
+                    />
 
-                  <View style={styles.btnLeft} />
-                </TouchableOpacity>
-              ))}
-            </View>
+                    <View style={styles.btnLeft} />
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-            {/*  Add a Small Footer at Bottom */}
-            <View style={styles.footer} />
-          </ScrollView>
+              {/*  Add a Small Footer at Bottom */}
+              <View style={styles.footer} />
+            </ScrollView>
+          </View>
         </ActionSheet>
       </SafeAreaView>
     </>
