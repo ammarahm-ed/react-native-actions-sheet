@@ -9,19 +9,19 @@ style="width:100%;"
 href="https://github.com/ammarahm-ed/react-native-actions-sheet/pulls"
 target="_blank"
 >
-<img  src="https://img.shields.io/badge/PRs-welcome-green"/>
+<img  src="https://img.shields.io/badge/PRs-welcome?color=blue&style=flat-square"/>
 </a>
 <a
 href="https://www.npmjs.com/package/react-native-actions-sheet"
 target="_blank"
 >
-<img src="https://img.shields.io/npm/v/react-native-actions-sheet?color=green"/>
+<img src="https://img.shields.io/npm/v/react-native-actions-sheet?color=orange&style=flat-square"/>
 </a>
 <a
 href="https://www.npmjs.com/package/react-native-actions-sheet"
 target="_blank"
 >
-<img  src="https://img.shields.io/npm/dt/react-native-actions-sheet?color=green"/>
+<img  src="https://img.shields.io/npm/dt/react-native-actions-sheet?color=darkgreen&style=flat-square"/>
 </a> 
 </div>
 <p align="center">
