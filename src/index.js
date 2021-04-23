@@ -508,6 +508,7 @@ export default class ActionSheet extends Component {
 
     let safeMarginFromTop = 0;
     if (!this.props.drawUnderStatusBar) {
+      if (Platform.OS === "android" && !this.props.statusBarTranslucent) return;
       safeMarginFromTop =  Platform.OS === "ios" ? this.getSafeAreaPadding() : StatusBar.currentHeight
     }
     
