@@ -293,6 +293,7 @@ export default class ActionSheet extends Component {
   };
 
   updateActionSheetPosition(scrollPosition) {
+    if (!this.props.drawUnderStatusBar) return;
     if (scrollPosition > this.state.deviceHeight) {
       this.indicatorTranslateY.setValue(
         Platform.OS === "ios" ? this.getSafeAreaPadding() : StatusBar.currentHeight
@@ -355,6 +356,7 @@ export default class ActionSheet extends Component {
     let distanceFromTop = this.actionSheetHeight + correction - this.offsetY;
 
     if (this.actionSheetHeight >= this.state.deviceHeight) {
+      if (!this.props.drawUnderStatusBar) return;
       if (
         distanceFromTop < StatusBar.currentHeight &&
         Platform.OS === "android" &&
@@ -503,7 +505,13 @@ export default class ActionSheet extends Component {
 
   _onDeviceLayout = (_event) => {
     let event = { ..._event };
-    let height = event.nativeEvent.layout.height;
+
+    let safeMarginFromTop = 0;
+    if (!this.props.drawUnderStatusBar) {
+      safeMarginFromTop =  Platform.OS === "ios" ? this.getSafeAreaPadding() : StatusBar.currentHeight
+    }
+    
+    let height = event.nativeEvent.layout.height - safeMarginFromTop;
     let width = event.nativeEvent.layout.width;
 
     if (
@@ -723,6 +731,7 @@ ActionSheet.defaultProps = {
   onClose: () => {},
   onOpen: () => {},
   onPositionChanged: () => {},
+  drawUnderStatusBar:true,
   keyboardShouldPersistTaps: "never",
   statusBarTranslucent: true,
 };
@@ -740,6 +749,7 @@ ActionSheet.propTypes = {
   delayActionSheetDrawTime: PropTypes.number,
   gestureEnabled: PropTypes.bool,
   closeOnTouchBackdrop: PropTypes.bool,
+  drawUnderStatusBar:PropTypes.bool,
   bounceOnOpen: PropTypes.bool,
   bounciness: PropTypes.number,
   springOffset: PropTypes.number,

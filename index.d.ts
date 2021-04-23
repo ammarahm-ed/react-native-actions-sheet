@@ -265,6 +265,18 @@ declare module "react-native-actions-sheet" {
           closable?: boolean;
 
           /**
+          * Allow ActionSheet to draw under the StatusBar. 
+          * This is enabled by default.
+          * 
+          * 
+           * | Type | Required |
+     | ---- | -------- |
+     | boolean | no |
+     Default: `true`
+           */
+          drawUnderStatusBar?: boolean;
+
+          /**
            * Snap ActionSheet to this location if `closable` is set to false;
            * 
            * 
@@ -302,7 +314,7 @@ declare module "react-native-actions-sheet" {
           /**
            * Event called when position of ActionSheet changes.
            */
-          onPositionChanged?: (hasReachedTop: boolean) => void;
+          onPositionChanged: (hasReachedTop: boolean) => void;
 
           /**
            * Hide the top underlay when ActionSheet is fullscreen.
