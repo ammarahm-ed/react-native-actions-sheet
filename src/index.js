@@ -269,7 +269,7 @@ export default class ActionSheet extends Component {
     if (this.prevScroll < verticalOffset) {
       if (verticalOffset - this.prevScroll > springOffset * 0.75) {
         this.isRecoiling = true;
-      
+
         this._applyHeightLimiter();
         this.currentOffsetFromBottom = this.currentOffsetFromBottom < this.props.initialOffsetFromBottom ? this.props.initialOffsetFromBottom : 1;
         let scrollOffset = this.actionSheetHeight * this.currentOffsetFromBottom + correction + extraScroll;
@@ -282,7 +282,7 @@ export default class ActionSheet extends Component {
         DeviceEventEmitter.emit("hasReachedTop", true);
         this.props.onPositionChanged && this.props.onPositionChanged(true)
       } else {
-       
+
         this._returnToPrevScrollPosition(this.actionSheetHeight);
       }
     } else {
@@ -317,7 +317,7 @@ export default class ActionSheet extends Component {
     let scrollOffset =
       height * this.currentOffsetFromBottom +
       correction +
-      this.props.extraScroll;     
+      this.props.extraScroll;
     this.updateActionSheetPosition(scrollOffset);
     this._scrollTo(scrollOffset);
   }
@@ -359,7 +359,7 @@ export default class ActionSheet extends Component {
   };
 
   _onScroll = (event) => {
-  
+
     this.targetId = event.nativeEvent.target;
     this.offsetY = event.nativeEvent.contentOffset.y;
 
@@ -396,7 +396,7 @@ export default class ActionSheet extends Component {
       }
     }
 
-   
+
   };
 
   _onRequestClose = () => {
@@ -506,7 +506,7 @@ export default class ActionSheet extends Component {
   };
 
   componentWillUnmount() {
-    
+
     Keyboard.removeListener(
       Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
       this._onKeyboardShow
@@ -526,7 +526,7 @@ export default class ActionSheet extends Component {
       if (Platform.OS === "android" && !this.props.statusBarTranslucent) return;
       safeMarginFromTop =  Platform.OS === "ios" ? this.getSafeAreaPadding() : StatusBar.currentHeight
     }
-    
+
     let height = event.nativeEvent.layout.height - safeMarginFromTop;
     let width = event.nativeEvent.layout.width;
 
@@ -677,11 +677,11 @@ export default class ActionSheet extends Component {
                           translateY: this.transformValue,
                         },
                       ],
-                      maxHeight: this.state.deviceHeight,
+                      maxHeight: this.props.containerMaxHeight,
                     },
                   ]}
                 >
-                  
+
                   <Animated.View
                     onLayout={(event) => {
                       safeAreaInnerHeight = event.nativeEvent.layout.height;
@@ -725,6 +725,8 @@ ActionSheet.defaultProps = {
   CustomHeaderComponent: null,
   headerAlwaysVisible: false,
   containerStyle: {},
+  containerMaxHeight: calculatedDeviceHeight ||
+    getDeviceHeight(this.props.statusBarTranslucent),
   animated: true,
   closeOnPressBack: true,
   gestureEnabled: false,
@@ -759,6 +761,7 @@ ActionSheet.propTypes = {
   extraScroll: PropTypes.number,
   headerAlwaysVisible: PropTypes.bool,
   containerStyle: ViewPropTypes.style,
+  containerMaxHeight: PropTypes.number,
   animated: PropTypes.bool,
   hideUnderlay: PropTypes.bool,
   closeOnPressBack: PropTypes.bool,
