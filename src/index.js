@@ -598,6 +598,7 @@ export default class ActionSheet extends Component {
             onScrollEndDrag={this._onScrollEnd}
             onTouchEnd={this._onTouchEnd}
             onScroll={this._onScroll}
+            scrollsToTop={false}
             style={[
               styles.scrollView,
               {
