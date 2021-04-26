@@ -74,10 +74,18 @@ export default class ActionSheet extends Component {
    * Snap ActionSheet to Offset
    */
 
-  snapToOffset = (offset) => {
-    this._scrollTo(offset);
-  };
+   snapToOffset = (offset) => {
 
+    let correction = this.state.deviceHeight * 0.1;
+    let scrollOffset = this.props.gestureEnabled
+      ? offset + correction +
+        this.props.extraScroll
+      : offset + correction + this.props.extraScroll;
+
+    this.currentOffsetFromBottom = offset/this.actionSheetHeight;
+    this._scrollTo(scrollOffset);
+    this.updateActionSheetPosition(scrollOffset)
+  };
   // Open the ActionSheet
   show = () => {
     this.setModalVisible(true);
@@ -261,19 +269,20 @@ export default class ActionSheet extends Component {
     if (this.prevScroll < verticalOffset) {
       if (verticalOffset - this.prevScroll > springOffset * 0.75) {
         this.isRecoiling = true;
-
+      
         this._applyHeightLimiter();
-        let scrollOffset = this.actionSheetHeight + correction + extraScroll;
+        this.currentOffsetFromBottom = this.currentOffsetFromBottom < this.props.initialOffsetFromBottom ? this.props.initialOffsetFromBottom : 1;
+        let scrollOffset = this.actionSheetHeight * this.currentOffsetFromBottom + correction + extraScroll;
 
         this._scrollTo(scrollOffset);
         await waitAsync(300);
         this.isRecoiling = false;
-        this.currentOffsetFromBottom = 1;
 
         this.updateActionSheetPosition(scrollOffset);
         DeviceEventEmitter.emit("hasReachedTop", true);
         this.props.onPositionChanged && this.props.onPositionChanged(true)
       } else {
+       
         this._returnToPrevScrollPosition(this.actionSheetHeight);
       }
     } else {
@@ -304,10 +313,11 @@ export default class ActionSheet extends Component {
   }
 
   _returnToPrevScrollPosition(height) {
+    let correction = this.state.deviceHeight * 0.1;
     let scrollOffset =
       height * this.currentOffsetFromBottom +
-      this.state.deviceHeight * 0.1 +
-      this.props.extraScroll;
+      correction +
+      this.props.extraScroll;     
     this.updateActionSheetPosition(scrollOffset);
     this._scrollTo(scrollOffset);
   }
