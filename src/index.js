@@ -1,31 +1,31 @@
 import PropTypes from "prop-types";
 import React, { Component, createRef } from "react";
 import {
-  View,
-  TouchableOpacity,
-  Dimensions,
-  Modal,
-  Platform,
   Animated,
-  DeviceEventEmitter,
-  ViewPropTypes,
+  Dimensions,
+  findNodeHandle,
   FlatList,
   Keyboard,
-  TextInput,
-  UIManager,
-  StatusBar,
-  findNodeHandle,
+  Modal,
+  Platform,
   SafeAreaView,
+  StatusBar,
+  TextInput,
+  TouchableOpacity,
+  UIManager,
+  View,
+  ViewPropTypes,
 } from "react-native";
 import { styles } from "./styles";
 import {
   getDeviceHeight,
-  SUPPORTED_ORIENTATIONS,
   getElevation,
+  SUPPORTED_ORIENTATIONS,
   waitAsync,
 } from "./utils";
 
 let safeAreaInnerHeight = 0;
+const dummyData = ["dummy"];
 let calculatedDeviceHeight = Dimensions.get("window").height;
 const AnimatedSafeAreaView = Animated.createAnimatedComponent(SafeAreaView);
 export default class ActionSheet extends Component {
@@ -54,7 +54,7 @@ export default class ActionSheet extends Component {
     this.isRecoiling = false;
     this.targetId = null;
     this.offsetY = 0;
-
+    this.safeAreaViewRef = createRef();
     this.transformValue = new Animated.Value(0);
     this.opacityValue = new Animated.Value(0);
     this.borderRadius = new Animated.Value(10);
@@ -62,6 +62,7 @@ export default class ActionSheet extends Component {
     this.underlayTranslateY = new Animated.Value(100);
     this.underlayScale = new Animated.Value(1);
     this.indicatorTranslateY = new Animated.Value(0);
+    this.isReachedTop = false;
   }
 
   getSafeAreaPadding() {
@@ -144,12 +145,15 @@ export default class ActionSheet extends Component {
         if (bottomOffset > 0) {
           this.snapToOffset(bottomOffset);
         } else {
-          this._scrollTo(this.actionSheetHeight * initialOffsetFromBottom +
-            this.state.deviceHeight * 0.1 +
-            extraScroll, true);
-            this.currentOffsetFromBottom = initialOffsetFromBottom;
+          this._scrollTo(
+            this.actionSheetHeight * initialOffsetFromBottom +
+              this.state.deviceHeight * 0.1 +
+              extraScroll,
+            true
+          );
+          this.currentOffsetFromBottom = initialOffsetFromBottom;
         }
-        
+
         this.isClosing = false;
       } else {
         this._scrollTo(0, false);
@@ -160,7 +164,8 @@ export default class ActionSheet extends Component {
           },
           () => {
             this.isClosing = false;
-            DeviceEventEmitter.emit("hasReachedTop", false);
+            this.isReachedTop = false;
+            //DeviceEventEmitter.emit("hasReachedTop", false);
             this.props.onPositionChanged && this.props.onPositionChanged(false);
             this.indicatorTranslateY.setValue(0);
             this.layoutHasCalled = false;
@@ -177,6 +182,19 @@ export default class ActionSheet extends Component {
     this._hideAnimation();
   };
 
+  measure = (async = () => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        UIManager.measureInWindow(
+          this.safeAreaViewRef.current._nativeTag,
+          (x, y, width, height) => {
+            resolve(height);
+          }
+        );
+      }, 5);
+    });
+  });
+
   _showModal = async (event) => {
     let {
       gestureEnabled,
@@ -184,8 +202,9 @@ export default class ActionSheet extends Component {
       delayActionSheetDrawTime,
     } = this.props;
     if (!event?.nativeEvent) return;
-    let height = event.nativeEvent.layout.height;
-
+    safeAreaInnerHeight = event.nativeEvent.layout.height;
+    let height = await this.measure();
+    height = height;
     if (this.layoutHasCalled) {
       this._returnToPrevScrollPosition(height);
       this.actionSheetHeight = height;
@@ -214,7 +233,7 @@ export default class ActionSheet extends Component {
       this.underlayScale.setValue(1);
       this.underlayTranslateY.setValue(100);
       if (!gestureEnabled) {
-        DeviceEventEmitter.emit("hasReachedTop");
+        //DeviceEventEmitter.emit("hasReachedTop");
         this.props.onPositionChanged && this.props.onPositionChanged(true);
       }
       this.layoutHasCalled = true;
@@ -286,7 +305,7 @@ export default class ActionSheet extends Component {
         this.isRecoiling = false;
 
         this.updateActionSheetPosition(scrollOffset);
-        DeviceEventEmitter.emit("hasReachedTop", true);
+        //DeviceEventEmitter.emit("hasReachedTop", true);
         this.props.onPositionChanged && this.props.onPositionChanged(true);
       } else {
         this._returnToPrevScrollPosition(this.actionSheetHeight);
@@ -373,14 +392,17 @@ export default class ActionSheet extends Component {
     let correction = this.state.deviceHeight * 0.1;
     let distanceFromTop = this.actionSheetHeight + correction - this.offsetY;
 
-    if (distanceFromTop < 5) {
-      DeviceEventEmitter.emit("hasReachedTop", true);
-      this.props.onPositionChanged && this.props.onPositionChanged(true);
+    if (distanceFromTop < 3) {
+      if (this.isReachedTop) {
+        this.isReachedTop = true;
+        this.props.onPositionChanged && this.props.onPositionChanged(true);
+      }
     } else {
-      DeviceEventEmitter.emit("hasReachedTop", false);
-      this.props.onPositionChanged && this.props.onPositionChanged(false);
+      if (!this.isReachedTop) {
+        this.isReachedTop = false;
+        this.props.onPositionChanged && this.props.onPositionChanged(false);
+      }
     }
-
     if (this.actionSheetHeight >= this.state.deviceHeight) {
       if (!this.props.drawUnderStatusBar) return;
       if (
@@ -541,7 +563,7 @@ export default class ActionSheet extends Component {
     }
 
     let height = event.nativeEvent.layout.height - safeMarginFromTop;
-    let width = event.nativeEvent.layout.width;
+    let width = Dimensions.get("window").width;
 
     if (
       height?.toFixed(0) === calculatedDeviceHeight?.toFixed(0) &&
@@ -568,6 +590,8 @@ export default class ActionSheet extends Component {
     this.updateActionSheetPosition(scrollPosition);
     return scrollPosition;
   }
+
+  _keyExtractor = (item) => item;
 
   render() {
     let { scrollable, modalVisible, keyboard } = this.state;
@@ -604,7 +628,7 @@ export default class ActionSheet extends Component {
             styles.parentContainer,
             {
               opacity: this.opacityValue,
-              width: "100%",
+              width: this.state.deviceWidth,
             },
           ]}
         >
@@ -631,9 +655,9 @@ export default class ActionSheet extends Component {
             contentContainerStyle={{
               width: this.state.deviceWidth,
             }}
-            data={["dummy"]}
-            keyExtractor={(item) => item}
-            renderItem={({ item, index }) => (
+            data={dummyData}
+            keyExtractor={this._keyExtractor}
+            renderItem={() => (
               <View
                 style={{
                   width: "100%",
@@ -673,7 +697,7 @@ export default class ActionSheet extends Component {
                 </View>
 
                 <AnimatedSafeAreaView
-                  onLayout={this._showModal}
+                  ref={this.safeAreaViewRef}
                   style={[
                     styles.container,
                     {
@@ -695,9 +719,7 @@ export default class ActionSheet extends Component {
                   ]}
                 >
                   <Animated.View
-                    onLayout={(event) => {
-                      safeAreaInnerHeight = event.nativeEvent.layout.height;
-                    }}
+                    onLayout={this._showModal}
                     style={{
                       maxHeight: "100%",
                       transform: [
@@ -747,7 +769,7 @@ ActionSheet.defaultProps = {
   hideUnderlay: false,
   closeAnimationDuration: 300,
   delayActionSheetDraw: false,
-  delayActionSheetDrawTime: 50,
+  delayActionSheetDrawTime: 0,
   openAnimationSpeed: 12,
   springOffset: 100,
   elevation: 5,
