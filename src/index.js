@@ -1,26 +1,27 @@
 import PropTypes from "prop-types";
 import React, { Component, createRef } from "react";
 import {
-  Animated,
+  View,
+  TouchableOpacity,
   Dimensions,
-  findNodeHandle,
-  FlatList,
-  Keyboard,
   Modal,
   Platform,
-  SafeAreaView,
-  StatusBar,
-  TextInput,
-  TouchableOpacity,
-  UIManager,
-  View,
+  Animated,
+  DeviceEventEmitter,
   ViewPropTypes,
+  FlatList,
+  Keyboard,
+  TextInput,
+  UIManager,
+  StatusBar,
+  findNodeHandle,
+  SafeAreaView,
 } from "react-native";
 import { styles } from "./styles";
 import {
   getDeviceHeight,
-  getElevation,
   SUPPORTED_ORIENTATIONS,
+  getElevation,
   waitAsync,
 } from "./utils";
 
@@ -625,14 +626,7 @@ export default class ActionSheet extends Component {
             },
           ]}
         >
-          <SafeAreaView
-            ref={this.safeAreaViewRef}
-            style={{
-              position: "absolute",
-              top: 999999,
-              left: 999999,
-            }}
-          >
+          <SafeAreaView ref={this.safeAreaViewRef} style={styles.safearea}>
             <View />
           </SafeAreaView>
 

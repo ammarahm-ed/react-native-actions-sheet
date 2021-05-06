@@ -11,6 +11,11 @@ export const styles = StyleSheet.create({
     backgroundColor: "white",
     alignSelf: "center",
   },
+  safearea: {
+    position: "absolute",
+    top: 999999,
+    left: 999999,
+  },
   indicator: {
     height: 6,
     width: 45,
