@@ -1,9 +1,24 @@
 import { Component } from "react";
-import { StyleProp, ViewStyle } from "react-native";
+import { ViewStyle } from "react-native";
 
 declare module "react-native-actions-sheet" {
 
+     /**
+ * Adds an event listener for when ActionSheet reach its maximum height.
+ *
+ * @param callback Function to execute.
+ * @deprecated Use `onPositionChanged` prop instead.
+ */
      export const addHasReachedTopListener: (callback: () => void) => void
+
+
+     /**
+      * Remove addHasReachedTopListener.
+      *
+      * @deprecated Use `onPositionChanged` prop instead.
+      * @param callback Function to execute.
+      *
+      */
      export const removeHasReachedTopListener: (callback: () => void) => void
 
      export type ActionSheetProps = {
@@ -315,16 +330,6 @@ declare module "react-native-actions-sheet" {
            * Event called when position of ActionSheet changes.
            */
           onPositionChanged?: (hasReachedTop: boolean) => void;
-
-          /**
-           * Hide the top underlay when ActionSheet is fullscreen.
-           * 
-      | Type | Required |
-      | ---- | -------- |
-      | function | no |
-           */
-
-          hideUnderlay?: boolean;
      };
 
      export default class ActionSheet extends Component<ActionSheetProps> {
