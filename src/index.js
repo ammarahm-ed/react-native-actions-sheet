@@ -178,7 +178,7 @@ export default class ActionSheet extends Component {
     this._hideAnimation();
   };
 
-  measure = (async = () => {
+  measure = async () => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         UIManager.measureInWindow(
@@ -190,14 +190,11 @@ export default class ActionSheet extends Component {
         );
       }, 50);
     });
-  });
+  };
 
   _showModal = async (event) => {
-    let {
-      gestureEnabled,
-      delayActionSheetDraw,
-      delayActionSheetDrawTime,
-    } = this.props;
+    let { gestureEnabled, delayActionSheetDraw, delayActionSheetDrawTime } =
+      this.props;
     if (!event?.nativeEvent) return;
 
     let height = event.nativeEvent.layout.height;
