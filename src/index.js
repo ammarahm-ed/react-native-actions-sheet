@@ -188,7 +188,7 @@ export default class ActionSheet extends Component {
             resolve(height === 0 ? 20 : height);
           }
         );
-      }, 50);
+      }, 100);
     });
   };
 
@@ -614,6 +614,7 @@ export default class ActionSheet extends Component {
         statusBarTranslucent={statusBarTranslucent}
       >
         <Animated.View
+          onLayout={this._onDeviceLayout}
           style={[
             styles.parentContainer,
             {
