@@ -614,7 +614,6 @@ export default class ActionSheet extends Component {
         statusBarTranslucent={statusBarTranslucent}
       >
         <Animated.View
-          onLayout={this._onDeviceLayout}
           style={[
             styles.parentContainer,
             {
