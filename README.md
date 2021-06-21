@@ -655,3 +655,8 @@ const App = () => {
 [Support it by donating](https://ko-fi.com/ammarahmed) or joining stargazers for this repository. ⭐️ and follow me for my next creations!
 
 ### MIT Licensed
+
+#
+<a href="https://notesnook.com" target="_blank">
+<img style="align:center;" src="https://i.imgur.com/EMIqXNc.jpg" href="https://notesnook.com" alt="Notesnook Logo" width="50%" />
+</a>
