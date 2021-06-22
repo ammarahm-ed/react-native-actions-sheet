@@ -313,8 +313,8 @@ export default class ActionSheet extends Component {
     }
   };
 
-  updateActionSheetPosition(scrollPosition) {
-    if (scrollPosition >= this.state.deviceHeight - 1) {
+  updateActionSheetPosition() {
+   if (this.actionSheetHeight >= this.state.deviceHeight - 1) {
       if (!this.props.drawUnderStatusBar) return;
       this.indicatorTranslateY.setValue(0);
     } else {
@@ -522,6 +522,7 @@ export default class ActionSheet extends Component {
       this._onKeyboardHide
     );
   }
+  deviceLayoutCalled = false;
   timeout = null;
   _onDeviceLayout = async (_event) => {
     let event = { ..._event };
@@ -543,15 +544,14 @@ export default class ActionSheet extends Component {
 
       let height = event.nativeEvent.layout.height - safeMarginFromTop;
       let width = Dimensions.get("window").width;
-
       if (
         height?.toFixed(0) === calculatedDeviceHeight?.toFixed(0) &&
         width?.toFixed(0) === this.state.deviceWidth?.toFixed(0) &&
-        safeAreaPaddingTop !== 0
+        this.deviceLayoutCalled
       )
         return;
-
-      calculatedDeviceHeight = height;
+      this.deviceLayoutCalled = true;
+      deviceLayoutCalled = height;
       this.setState({
         deviceHeight: height,
         deviceWidth: width,
@@ -571,6 +571,7 @@ export default class ActionSheet extends Component {
       : this.actionSheetHeight + correction + this.props.extraScroll;
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
     this.updateActionSheetPosition(scrollPosition);
+
     return scrollPosition;
   }
 
