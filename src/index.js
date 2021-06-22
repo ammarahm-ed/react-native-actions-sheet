@@ -80,7 +80,7 @@ export default class ActionSheet extends Component {
 
     this.currentOffsetFromBottom = offset / this.actionSheetHeight;
     this._scrollTo(scrollOffset);
-    this.updateActionSheetPosition(scrollOffset);
+    this.updateActionSheetPosition();
   };
   // Open the ActionSheet
   show = () => {
@@ -232,7 +232,7 @@ export default class ActionSheet extends Component {
       if (!gestureEnabled) {
         this.props.onPositionChanged && this.props.onPositionChanged(true);
       }
-      this.updateActionSheetPosition(scrollOffset);
+      this.updateActionSheetPosition();
     }
   };
 
@@ -334,7 +334,7 @@ export default class ActionSheet extends Component {
       correction +
       this.props.extraScroll;
 
-    this.updateActionSheetPosition(scrollOffset);
+    this.updateActionSheetPosition();
     this._scrollTo(scrollOffset);
   }
 
@@ -573,7 +573,7 @@ export default class ActionSheet extends Component {
         this.props.extraScroll
       : this.actionSheetHeight + correction + this.props.extraScroll;
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
-    this.updateActionSheetPosition(scrollPosition);
+    this.updateActionSheetPosition();
 
     return scrollPosition;
   }
