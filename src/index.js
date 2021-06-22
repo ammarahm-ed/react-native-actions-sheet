@@ -101,6 +101,7 @@ export default class ActionSheet extends Component {
       }
       modalVisible = !visible;
     }
+    this.deviceLayoutCalled = false;
     if (!modalVisible) {
       this.setState({
         modalVisible: true,
