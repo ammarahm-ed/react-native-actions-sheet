@@ -64,6 +64,8 @@ export default class ActionSheet extends Component {
     this.underlayScale = new Animated.Value(1);
     this.indicatorTranslateY = new Animated.Value(-this.state.paddingTop);
     this.isReachedTop = false;
+    this.deviceLayoutCalled = false;
+    this.timeout = null;
   }
 
   /**
@@ -101,8 +103,9 @@ export default class ActionSheet extends Component {
       }
       modalVisible = !visible;
     }
-    this.deviceLayoutCalled = false;
+   
     if (!modalVisible) {
+     
       this.setState({
         modalVisible: true,
         scrollable: this.props.gestureEnabled
@@ -164,6 +167,7 @@ export default class ActionSheet extends Component {
             this.props.onPositionChanged && this.props.onPositionChanged(false);
             this.indicatorTranslateY.setValue(-this.state.paddingTop);
             this.layoutHasCalled = false;
+            this.deviceLayoutCalled = false;
             if (typeof onClose === "function") onClose();
           }
         );
@@ -523,8 +527,7 @@ export default class ActionSheet extends Component {
       this._onKeyboardHide
     );
   }
-  deviceLayoutCalled = false;
-  timeout = null;
+
   _onDeviceLayout = async (_event) => {
     let event = { ..._event };
 
@@ -552,7 +555,6 @@ export default class ActionSheet extends Component {
       )
         return;
       this.deviceLayoutCalled = true;
-      deviceLayoutCalled = height;
       this.setState({
         deviceHeight: height,
         deviceWidth: width,
