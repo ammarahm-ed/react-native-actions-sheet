@@ -202,8 +202,8 @@ export default class ActionSheet extends Component {
     if (!event?.nativeEvent) return;
     let height = event.nativeEvent.layout.height;
     if (this.layoutHasCalled) {
-      this._returnToPrevScrollPosition(height);
       this.actionSheetHeight = height;
+      this._returnToPrevScrollPosition(height);
       return;
     } else {
       this.layoutHasCalled = true;
