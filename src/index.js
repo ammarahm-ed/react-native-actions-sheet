@@ -388,7 +388,8 @@ export default class ActionSheet extends Component {
 
     let correction = this.state.deviceHeight * 0.15;
     let distanceFromTop = this.actionSheetHeight + correction - this.offsetY;
-    if (distanceFromTop < 3) {
+
+    if (this.actionSheetHeight < this.offsetY) {
       if (!this.isReachedTop) {
         this.isReachedTop = true;
         this.props.onPositionChanged && this.props.onPositionChanged(true);
@@ -466,8 +467,10 @@ export default class ActionSheet extends Component {
           if (gap >= 0) {
             return;
           }
+          let toValue = this.props.keyboardMode === "position" ? -(keyboardHeight + 15) : gap - 10
+          
           Animated.timing(this.transformValue, {
-            toValue: gap - 10,
+            toValue:toValue,
             duration: 250,
             useNativeDriver: true
           }).start();
@@ -786,7 +789,8 @@ ActionSheet.defaultProps = {
   onPositionChanged: () => {},
   drawUnderStatusBar: true,
   keyboardShouldPersistTaps: "never",
-  statusBarTranslucent: true
+  statusBarTranslucent: true,
+  keyboardMode:"padding"
 };
 ActionSheet.propTypes = {
   testID: PropTypes.string,
