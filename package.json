@@ -37,10 +37,8 @@
     "url": "https://github.com/ammarahm-ed/react-native-actions-sheet/issues/"
   },
   "homepage": "https://github.com/ammarahm-ed/react-native-actions-sheet",
-  "devDependencies": {
-    "react": "^16.8.6",
-    "react-native": "^0.60.5",
-    "prop-types": "^15.7.2"
+  "peerDependencies": {
+    "react-native": "*"
   },
   "directories": {
     "example": "example"
