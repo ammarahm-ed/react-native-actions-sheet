@@ -303,6 +303,18 @@ declare module "react-native-actions-sheet" {
           bottomOffset?: number;
 
           /**
+          * Change how ActionSheet behaves when keyboard is opened.
+          * 
+          * 
+           * | Type | Required |
+     | ---- | -------- |
+     | "padding" | "position" | no |
+     Default:`padding`
+           */
+
+          keyboardMode?: "padding" | "position";
+
+          /**
            * 
       Event called when the ActionSheet closes.
       
