@@ -75,6 +75,7 @@ const App = () => {
         </TouchableOpacity>
 
         <ActionSheet
+          
           initialOffsetFromBottom={0.7}
           ref={actionSheetRef}
           statusBarTranslucent
