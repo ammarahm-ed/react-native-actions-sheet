@@ -656,7 +656,7 @@ export default class ActionSheet extends Component<Props, State, any> {
             showsVerticalScrollIndicator={false}
             onMomentumScrollBegin={this._onScrollBegin}
             onMomentumScrollEnd={this._onScrollEnd}
-            scrollEnabled={scrollable && !keyboard}
+            scrollEnabled={scrollable}
             onScrollBeginDrag={this._onScrollBeginDrag}
             onTouchEnd={this._onTouchEnd}
             onScroll={this._onScroll}
