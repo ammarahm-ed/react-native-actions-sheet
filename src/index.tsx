@@ -244,8 +244,8 @@ export default class ActionSheet extends Component<Props, State, any> {
         UIManager.measureInWindow(
           this.safeAreaViewRef.current._nativeTag,
           (x, y, width, height) => {
-            safeAreaPaddingTop = height;
-            resolve(height === 0 ? 20 : height);
+            safeAreaPaddingTop = height === 0 ? 20 : height;
+            resolve(safeAreaPaddingTop);
           }
         );
       }, 100);
@@ -380,11 +380,11 @@ export default class ActionSheet extends Component<Props, State, any> {
       let correction = this.state.deviceHeight * 0.15;
       let distanceFromTop =
         this.actionSheetHeight + correction - scrollPosition;
-      if (distanceFromTop < safeAreaPaddingTop) {
+      if (distanceFromTop < this.state.paddingTop) {
         if (!this.props.drawUnderStatusBar) return;
         this.indicatorTranslateY.setValue(0);
       } else {
-        this.indicatorTranslateY.setValue(-safeAreaPaddingTop);
+        this.indicatorTranslateY.setValue(-this.state.paddingTop);
       }
     }
   }
