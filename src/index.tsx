@@ -26,6 +26,7 @@ type State = {
   portrait: boolean
   safeAreaInnerHeight: number
   paddingTop: number
+  keyboardPadding:number
 }
 
 
@@ -98,6 +99,7 @@ export default class ActionSheet extends Component<Props, State, any> {
       portrait: true,
       safeAreaInnerHeight,
       paddingTop: safeAreaPaddingTop,
+      keyboardPadding:0
     };
 
     this.actionSheetHeight = 0;
@@ -454,14 +456,14 @@ export default class ActionSheet extends Component<Props, State, any> {
     }
 
     if (this.actionSheetHeight >= this.state.deviceHeight - 1) {
-      if (distanceFromTop < safeAreaPaddingTop) {
+      if (distanceFromTop < this.state.paddingTop) {
         if (!this.props.drawUnderStatusBar) return;
 
         this.indicatorTranslateY.setValue(
-          -this.state.paddingTop + (safeAreaPaddingTop - distanceFromTop)
+          -this.state.paddingTop + (this.state.paddingTop - distanceFromTop)
         );
       } else {
-        this.indicatorTranslateY.setValue(-safeAreaPaddingTop);
+        this.indicatorTranslateY.setValue(-this.state.paddingTop);
       }
     }
   };
@@ -489,54 +491,14 @@ export default class ActionSheet extends Component<Props, State, any> {
   }
 
   _onKeyboardShow = (event: KeyboardEvent) => {
+    this.isRecoiling = true;
     this.setState({
       keyboard: true,
+      keyboardPadding:e.endCoordinates.height + 5
     });
-    const ReactNativeVersion = require("react-native/Libraries/Core/ReactNativeVersion");
-
-    let v = ReactNativeVersion.version.major + ReactNativeVersion.version.minor;
-    v = parseInt(v);
-
-    if (v >= 63 || Platform.OS === "ios") {
-      let keyboardHeight = event.endCoordinates.height;
-      const { height: windowHeight } = Dimensions.get("window");
-
-      const currentlyFocusedField = TextInput.State.currentlyFocusedInput
-        ? findNodeHandle(TextInput.State.currentlyFocusedInput())
-        : TextInput.State.currentlyFocusedField();
-
-      if (!currentlyFocusedField) {
-        return;
-      }
-
-      UIManager.measure(
-        currentlyFocusedField,
-        (originX, originY, width, height, pageX, pageY) => {
-          const fieldHeight = height;
-          const fieldTop = pageY;
-          const gap = windowHeight - keyboardHeight - (fieldTop + fieldHeight);
-          if (gap >= 0) {
-            return;
-          }
-          let toValue =
-            this.props.keyboardMode === "position"
-              ? -(keyboardHeight + 15)
-              : gap - 10;
-
-          Animated.timing(this.transformValue, {
-            toValue: toValue,
-            duration: 250,
-            useNativeDriver: true,
-          }).start();
-        }
-      );
-    } else {
-      Animated.timing(this.transformValue, {
-        toValue: -10,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    }
+    waitAsync(300).then(() => {
+      this.isRecoiling = false;
+    });
   };
 
   /**
@@ -572,13 +534,9 @@ export default class ActionSheet extends Component<Props, State, any> {
   _onKeyboardHide = () => {
     this.setState({
       keyboard: false,
+      keyboardPadding:0
     });
     this.opacityValue.setValue(1);
-    Animated.timing(this.transformValue, {
-      toValue: 0,
-      duration: 100,
-      useNativeDriver: true,
-    }).start();
   };
 
   componentWillUnmount() {
@@ -771,6 +729,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                         },
                       ],
                       maxHeight: this.state.deviceHeight,
+                      paddingBottom:this.state.keyboardPadding
                     },
                   ]}
                 >
