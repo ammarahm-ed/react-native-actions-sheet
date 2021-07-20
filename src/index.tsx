@@ -494,7 +494,7 @@ export default class ActionSheet extends Component<Props, State, any> {
     this.isRecoiling = true;
     this.setState({
       keyboard: true,
-      keyboardPadding:e.endCoordinates.height + 5
+      keyboardPadding:event.endCoordinates.height + 5
     });
     waitAsync(300).then(() => {
       this.isRecoiling = false;
