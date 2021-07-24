@@ -313,18 +313,6 @@ export type ActionSheetProps = {
      bottomOffset?: number;
 
      /**
-     * Change how ActionSheet behaves when keyboard is opened.
-     * 
-     * 
-      * | Type | Required |
- | ---- | -------- |
- | "padding" | "position" | no |
- Default:`padding`
-      */
-
-     keyboardMode?: "padding" | "position";
-
-     /**
       * Test ID for unit testing
       */
      testID?: string

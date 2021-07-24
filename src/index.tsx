@@ -50,7 +50,6 @@ const defaultProps = {
   closeOnTouchBackdrop: true,
   drawUnderStatusBar: true,
   statusBarTranslucent: true,
-  keyboardMode: "padding",
   gestureEnabled: false
 }
 
