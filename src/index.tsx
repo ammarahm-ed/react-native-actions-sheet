@@ -1,8 +1,8 @@
 import React, { Component, createRef } from "react";
 import {
-  Animated, Dimensions, findNodeHandle, FlatList,
+  Animated, Dimensions, FlatList,
   Keyboard, KeyboardEvent, LayoutChangeEvent, Modal, NativeScrollEvent,
-  NativeSyntheticEvent, Platform, SafeAreaView, StatusBar, TextInput, TouchableOpacity, UIManager, View
+  NativeSyntheticEvent, Platform, SafeAreaView, StatusBar, TouchableOpacity, UIManager, View
 } from "react-native";
 import { styles } from "./styles";
 import type { ActionSheetProps } from "./types";
@@ -344,10 +344,6 @@ export default class ActionSheet extends Component<Props, State, any> {
     if (this.prevScroll < verticalOffset || this.initialScrolling) { 
       if (verticalOffset - this.prevScroll > springOffset * 0.75 || this.initialScrolling) {
         this.isRecoiling = true;
-        if (this.initialScrolling) {
-          this.initialScrolling = false;
-          return;
-        }
         this._applyHeightLimiter();
         this.currentOffsetFromBottom =
           this.currentOffsetFromBottom < this.props.initialOffsetFromBottom
@@ -357,6 +353,13 @@ export default class ActionSheet extends Component<Props, State, any> {
           this.actionSheetHeight * this.currentOffsetFromBottom +
           correction +
           extraScroll;
+
+        if (this.initialScrolling) {
+            this.initialScrolling = false;
+            console.log(scrollOffset,this.prevScroll)
+            scrollOffset = this.prevScroll;
+            return;
+        }  
 
         this._scrollTo(scrollOffset);
         await waitAsync(300);
