@@ -267,6 +267,17 @@ export type ActionSheetProps = {
      keyboardShouldPersistTaps?: boolean | "always" | "never" | "handled";
 
      /**
+      * Set how keyboard should behave on tapping the ActionSheet.
+      * | Type | Required |
+ | ---- | -------- |
+ | 'on-drag' | 'none' | 'interactive' | no |
+
+ Default : `'none'`
+      */
+
+     keyboardDismissMode: 'on-drag' | 'none' | 'interactive'
+
+     /**
       * Determine whether the modal should go under the system statusbar.
   
  | Type | Required |
