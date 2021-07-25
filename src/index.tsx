@@ -38,7 +38,7 @@ const defaultProps = {
   extraScroll: 0,
   closeAnimationDuration: 300,
   delayActionSheetDrawTime: 0,
-  openAnimationSpeed: 12,
+  openAnimationSpeed: 8,
   springOffset: 100,
   elevation: 5,
   initialOffsetFromBottom: 1,
@@ -679,6 +679,7 @@ export default class ActionSheet extends Component<Props, State, any> {
               keyboardShouldPersistTaps={keyboardShouldPersistTaps}
               ref={this.scrollViewRef}
               scrollEventThrottle={5}
+              overScrollMode="never"
               showsVerticalScrollIndicator={false}
               onMomentumScrollBegin={this._onScrollBegin}
               onMomentumScrollEnd={this._onScrollEnd}
@@ -785,7 +786,19 @@ export default class ActionSheet extends Component<Props, State, any> {
 
                       {children}
                     </Animated.View>
+
+                    <View
+                      style={{
+                        height: 200,
+                        backgroundColor: 'white',
+                        position: "absolute",
+                        bottom: -195,
+                        width: containerStyle?.width || '100%'
+                      }}
+                    />
+
                   </Animated.View>
+
                 </View>
               )}
             />
