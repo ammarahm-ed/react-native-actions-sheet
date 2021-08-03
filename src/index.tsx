@@ -793,7 +793,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                     <View
                       style={{
                         height: 200,
-                        backgroundColor: 'white',
+                        backgroundColor: containerStyle.backgroundColor || '#ffffff',
                         position: "absolute",
                         bottom: -195,
                         width: containerStyle?.width || '100%'
