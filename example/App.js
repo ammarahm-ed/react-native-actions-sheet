@@ -1,6 +1,5 @@
 import React, {useRef} from 'react';
 import {
-  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -12,56 +11,8 @@ import {
 import ActionSheet from 'react-native-actions-sheet';
 
 const colors = ['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'];
-let _isReachedTop
 const App = () => {
   const actionSheetRef = useRef();
-  const scrollViewRef = useRef();
-  const actionSheetScrollRef = actionSheetRef.current?.scrollViewRef;
-
-  function changeScrollEnabled(parent) {
-    // We only need this on Android, iOS works great with Child Scroll Views.
-    if (Platform.OS !== 'android') return;
-    actionSheetScrollRef?.current?.setNativeProps({
-      scrollEnabled: parent,
-    });
-  }
-
-  const onScroll = () => {
-    changeScrollEnabled(false);
-  };
-
-  /**
-   * If the ActionSheet has not reached top,
-   * we want to keep the parent scroll enabled
-   */
-  const onHasReachedTop = hasReachedTop => {
-
-    if (!hasReachedTop) {
-      _isReachedTop = false;
-      changeScrollEnabled(!hasReachedTop);
-      return;
-    }
-    _isReachedTop = true;
-  };
-
-  /**
-   * If the user has touched the ScrollView Area, disable scroll on ActionSheet
-   * so that child scrollviews can scroll.
-   * @returns
-   */
-  const onMoveShouldSetResponderCapture = () => {
-    if (!_isReachedTop) return;
-    changeScrollEnabled(false);
-    return false;
-  };
-
-  /**
-   * Whenever the scroll ends we want to enable scrolling for ActionSheet.
-   */
-  const onScrollEnd = () => {
-    changeScrollEnabled(true);
-    actionSheetRef.current?.handleChildScrollEnd();
-  };
 
   return (
     <>
@@ -75,7 +26,6 @@ const App = () => {
         </TouchableOpacity>
 
         <ActionSheet
-          
           initialOffsetFromBottom={0.7}
           ref={actionSheetRef}
           statusBarTranslucent
@@ -106,54 +56,41 @@ const App = () => {
               ))}
             </View>
 
-            {}
-            <View
-              /**
-               * We need to wrap ScrollView in a View to handle
-               * scrolling between parent and child views.The
-               * onMoveShouldSetResponderCapture allows us to do that
-               * soon enough.
-               */
-              onMoveShouldSetResponderCapture={onMoveShouldSetResponderCapture}>
-              <ScrollView
-                ref={scrollViewRef}
-                onScroll={onScroll}
-                onTouchEnd={onScrollEnd}
-                onMomentumScrollEnd={onScrollEnd}
-                scrollEventThrottle={2}
-                style={styles.scrollview}>
-                <TextInput
-                  style={styles.input}
-                  multiline={true}
-                  placeholder="Write your text here"
-                />
+            <ScrollView
+              nestedScrollEnabled
+              onMomentumScrollEnd={onScrollEnd}
+              style={styles.scrollview}>
+              <TextInput
+                style={styles.input}
+                multiline={true}
+                placeholder="Write your text here"
+              />
 
-                <View>
-                  {items.map(item => (
-                    <TouchableOpacity
-                      key={item}
-                      onPress={() => {
-                        actionSheetRef.current?.hide();
-                      }}
-                      style={styles.listItem}>
-                      <View
-                        style={[
-                          styles.placeholder,
-                          {
-                            width: item,
-                          },
-                        ]}
-                      />
+              <View>
+                {items.map(item => (
+                  <TouchableOpacity
+                    key={item}
+                    onPress={() => {
+                      actionSheetRef.current?.hide();
+                    }}
+                    style={styles.listItem}>
+                    <View
+                      style={[
+                        styles.placeholder,
+                        {
+                          width: item,
+                        },
+                      ]}
+                    />
 
-                      <View style={styles.btnLeft} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                    <View style={styles.btnLeft} />
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-                {/*  Add a Small Footer at Bottom */}
-                <View style={styles.footer} />
-              </ScrollView>
-            </View>
+              {/*  Add a Small Footer at Bottom */}
+              <View style={styles.footer} />
+            </ScrollView>
           </View>
         </ActionSheet>
       </SafeAreaView>
