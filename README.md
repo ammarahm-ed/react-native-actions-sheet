@@ -633,13 +633,8 @@ actionSheetRef.current?.snapToOffset(300);
 
 #
 
-## Event Listeners
-
-Listen to changes in ActionSheet State.
-
-#### `addHasReachedTopListener(callback)`
-
-Attach a listener to know when ActionSheet is fully opened and has reached top. Use this if you want to use a ScrollView inside the ActionSheet. Check the example for demonstration on how to use nested ScrollViews inside ActionSheet.
+## Nested scrolling on android
+Nested scrolling on android is disabled by default. You can enable it as done below.
 
 ```jsx
 import ActionSheet from "react-native-actions-sheet";
