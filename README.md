@@ -154,6 +154,16 @@ Assigns a ref to ActionSheet component to use methods.
 
 #
 
+#### `testID`
+
+Test ID for unit testing
+
+| Type | Required |
+|------|----------|
+| string  | no      |
+
+#
+
 #### `initialOffsetFromBottom`
 
 Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true` **
