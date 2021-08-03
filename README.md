@@ -208,7 +208,17 @@ Your custom header component. Using this will hide the default indicator.
 
 | Type            | Required |
 | --------------- | -------- |
-| React.Component | no       |
+| React.ReactNode | no       |
+
+#
+
+#### `ExtraOverlayComponent`
+
+Render a component over the ActionSheet. Useful for rendering Toast components with which user can interact.
+
+| Type            | Required |
+| --------------- | -------- |
+| React.ReactNode | no       |
 
 #
 
@@ -238,7 +248,7 @@ Default: `true`
 
 #### `openAnimationSpeed`
 
-Speed of opening animation. Higher means the ActionSheet will open more quickly.
+Speed of opening animation. Higher means the ActionSheet will open more quickly. Use it in combination with `bounciness` prop to have optimize the bounce/spring effect on ActionSheet open.
 
 | Type   | Required |
 | ------ | -------- |
@@ -601,44 +611,15 @@ Listen to changes in ActionSheet State.
 Attach a listener to know when ActionSheet is fully opened and has reached top. Use this if you want to use a ScrollView inside the ActionSheet. Check the example for demonstration on how to use nested ScrollViews inside ActionSheet.
 
 ```jsx
-import ActionSheet, {
-  addHasReachedTopListener,
-  removeHasReachedTopListener,
-} from "react-native-actions-sheet";
+import ActionSheet from "react-native-actions-sheet";
 
 const App = () => {
-  const scrollViewRef = useRef();
   const actionSheetRef = useRef();
-
-  const onHasReachedTop = (hasReachedTop) => {
-    if (hasReachedTop)
-      scrollViewRef.current?.setNativeProps({
-        scrollEnabled: hasReachedTop,
-      });
-  };
-
-  useEffect(() => {
-    addHasReachedTopListener(onHasReachedTop);
-    return () => {
-      removeHasReachedTopListener(onHasReachedTop);
-    };
-  }, []);
-
-  const onClose = () => {
-    scrollViewRef.current?.setNativeProps({
-      scrollEnabled: false,
-    });
-  };
 
   return (
     <ActionSheet ref={actionSheetRef}>
       <ScrollView
-        ref={scrollViewRef}
         nestedScrollEnabled={true}
-        onScrollEndDrag={() => actionSheetRef.current?.handleChildScrollEnd()}
-        onScrollAnimationEnd={() =>
-          actionSheetRef.current?.handleChildScrollEnd()
-        }
         onMomentumScrollEnd={() =>
           actionSheetRef.current?.handleChildScrollEnd()
         }
