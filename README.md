@@ -7,11 +7,8 @@ style="width:100%; "
 
 >
 
-<a
-href="https://github.com/ammarahm-ed/react-native-actions-sheet/pulls"
-target="_blank"
-
->
+<a href="https://github.com/ammarahm-ed/react-native-actions-sheet/pulls"
+target="_blank">
 
 <img  src="https://img.shields.io/badge/PRs-welcome-green?color=blue&style=flat-square"/>
 </a>
