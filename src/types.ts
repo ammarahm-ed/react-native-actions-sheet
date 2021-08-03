@@ -152,7 +152,7 @@ export type ActionSheetProps = {
   
  | Type | Required |
  | ---- | -------- |
- | React.Component | no |
+ | React.ReactNode | no |
       */
      CustomHeaderComponent?: React.ReactNode;
 
@@ -177,6 +177,17 @@ export type ActionSheetProps = {
  Default: `true`
       */
      closeOnTouchBackdrop?: boolean;
+
+     /**
+      * Render a component over the ActionSheet. Useful for rendering
+      * Toast components with which user can interact.
+      * 
+| Type | Required |
+| ---- | -------- |
+| React.ReactNode | no |
+      */
+
+     ExtraOverlayComponent?: React.ReactNode;
 
 
 

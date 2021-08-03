@@ -672,10 +672,8 @@ export default class ActionSheet extends Component<Props, State, any> {
 
 
 
-            {
-              //@ts-ignore
-              this.props.premium
-            }
+            {this.props.ExtraOverlayComponent}
+            
             <FlatList
               bounces={false}
               keyboardShouldPersistTaps={keyboardShouldPersistTaps}
