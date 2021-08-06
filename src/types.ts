@@ -286,7 +286,7 @@ export type ActionSheetProps = {
  Default : `'none'`
       */
 
-     keyboardDismissMode: 'on-drag' | 'none' | 'interactive'
+     keyboardDismissMode?: 'on-drag' | 'none' | 'interactive'
 
      /**
       * Determine whether the modal should go under the system statusbar.
