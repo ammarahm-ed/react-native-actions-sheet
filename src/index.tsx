@@ -555,12 +555,14 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentWillUnmount() {
-    Keyboard.removeListener(
+    const removeListener = Keyboard.remove ? Keyboard.remove : Keyboard.removeListener;
+
+    removeListener(
       Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
       this._onKeyboardShow
     );
 
-    Keyboard.removeListener(
+    removeListener(
       Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
       this._onKeyboardHide
     );
