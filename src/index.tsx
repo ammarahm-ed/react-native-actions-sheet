@@ -1,7 +1,7 @@
 import React, { Component, createRef } from "react";
 import {
   Animated, Dimensions, FlatList,
-  Keyboard, KeyboardEvent, LayoutChangeEvent, Modal, NativeScrollEvent,
+  Keyboard, KeyboardEvent,EmitterSubscription, LayoutChangeEvent, Modal, NativeScrollEvent,
   NativeSyntheticEvent, Platform, SafeAreaView, StatusBar, TouchableOpacity, UIManager, View
 } from "react-native";
 import { styles } from "./styles";
@@ -85,6 +85,8 @@ export default class ActionSheet extends Component<Props, State, any> {
   underlayScale: Animated.Value
   indicatorTranslateY: Animated.Value
   initialScrolling: boolean = false;
+  keyboardShow: EmitterSubscription;
+  keyboardHide:EmitterSubscription;
 
   constructor(props: ActionSheetProps) {
     super(props);
@@ -124,6 +126,8 @@ export default class ActionSheet extends Component<Props, State, any> {
     this.deviceLayoutCalled = false;
     this.timeout = null;
     this.initialScrolling = false;
+    this.keyboardShow = null;
+    this.keyboardHide = null;
 
   }
 
@@ -493,12 +497,12 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentDidMount() {
-    Keyboard.addListener(
+    this.keyboardShow = Keyboard.addListener(
       Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
       this._onKeyboardShow
     );
 
-    Keyboard.addListener(
+    this.keyboardHide = Keyboard.addListener(
       Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
       this._onKeyboardHide
     );
@@ -555,16 +559,10 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentWillUnmount() {
-     Keyboard.addListener(
-      Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
-      this._onKeyboardShow
-    ).remove()
-
-    Keyboard.addListener(
-      Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
-      this._onKeyboardHide
-    ).remove();
+    this.keyboardShow.remove();
+    this.keyboardHide.remove();
   }
+
 
   _onDeviceLayout = async (_event) => {
     let event = { ..._event };

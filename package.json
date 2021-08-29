@@ -40,6 +40,10 @@
   "peerDependencies": {
     "react-native": "*"
   },
+  "devDependencies": {
+    "react-native":"0.65.1",
+    "react":"17.0.2"
+  },
   "directories": {
     "example": "example"
   },
