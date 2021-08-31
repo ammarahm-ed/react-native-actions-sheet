@@ -48,7 +48,7 @@ const defaultProps = {
   closable: true,
   bottomOffset: 0,
   closeOnTouchBackdrop: true,
-  drawUnderStatusBar: true,
+  drawUnderStatusBar: false,
   statusBarTranslucent: true,
   gestureEnabled: false,
   keyboardDismissMode:'none'
