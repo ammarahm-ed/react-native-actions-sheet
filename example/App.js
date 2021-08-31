@@ -26,12 +26,11 @@ const App = () => {
         </TouchableOpacity>
 
         <ActionSheet
-          initialOffsetFromBottom={0.7}
+          initialOffsetFromBottom={1}
           ref={actionSheetRef}
           statusBarTranslucent
-          onPositionChanged={onHasReachedTop}
           bounceOnOpen={true}
-          drawUnderStatusBar={false}
+          drawUnderStatusBar={true}
           bounciness={4}
           gestureEnabled={true}
           defaultOverlayOpacity={0.3}>
@@ -58,7 +57,9 @@ const App = () => {
 
             <ScrollView
               nestedScrollEnabled
-              onMomentumScrollEnd={onScrollEnd}
+              onMomentumScrollEnd={() => {
+                actionSheetRef.current?.handleChildScrollEnd();
+              }}
               style={styles.scrollview}>
               <TextInput
                 style={styles.input}
