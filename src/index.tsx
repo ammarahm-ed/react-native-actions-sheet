@@ -2,7 +2,7 @@ import React, { Component, createRef } from "react";
 import {
   Animated, Dimensions, FlatList,
   Keyboard, KeyboardEvent, LayoutChangeEvent, Modal, NativeScrollEvent,
-  NativeSyntheticEvent, Platform, SafeAreaView, StatusBar, TouchableOpacity, UIManager, View
+  NativeSyntheticEvent, Platform, SafeAreaView, StatusBar, TouchableOpacity, View
 } from "react-native";
 import { styles } from "./styles";
 import type { ActionSheetProps } from "./types";
@@ -249,7 +249,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         return;
       }
       this.safeAreaViewRef.current?.measure(
-        (x: number, y: number, width: number, height: number) => {
+        (_x: number, _y: number, _width: number, height: number) => {
           safeAreaPaddingTop = height === 0 ? 20 : height;
           resolve(safeAreaPaddingTop);
         }
@@ -323,7 +323,7 @@ export default class ActionSheet extends Component<Props, State, any> {
     }
   };
 
-  _onScrollBegin = async (event: NativeSyntheticEvent<NativeScrollEvent>) => { };
+  _onScrollBegin = async (_event: NativeSyntheticEvent<NativeScrollEvent>) => { };
   _onScrollBeginDrag = async (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     let verticalOffset = event.nativeEvent.contentOffset.y;
     this.prevScroll = verticalOffset;
@@ -624,7 +624,7 @@ export default class ActionSheet extends Component<Props, State, any> {
   _keyExtractor = (item: string) => item;
 
   render() {
-    let { scrollable, modalVisible, keyboard } = this.state;
+    let { scrollable, modalVisible } = this.state;
     let {
       testID,
       onOpen,
@@ -648,6 +648,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         <Modal
           visible={modalVisible}
           animationType="none"
+          // @ts-ignore
           testID={testID}
           supportedOrientations={SUPPORTED_ORIENTATIONS}
           onShow={onOpen}
