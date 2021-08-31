@@ -1,7 +1,7 @@
 import React, { Component, createRef } from "react";
 import {
   Animated, Dimensions, FlatList,
-  Keyboard, KeyboardEvent,EmitterSubscription, LayoutChangeEvent, Modal, NativeScrollEvent,
+  Keyboard, KeyboardEvent, LayoutChangeEvent, Modal, NativeScrollEvent,
   NativeSyntheticEvent, Platform, SafeAreaView, StatusBar, TouchableOpacity, UIManager, View
 } from "react-native";
 import { styles } from "./styles";
@@ -85,8 +85,6 @@ export default class ActionSheet extends Component<Props, State, any> {
   underlayScale: Animated.Value
   indicatorTranslateY: Animated.Value
   initialScrolling: boolean = false;
-  keyboardShow: EmitterSubscription;
-  keyboardHide:EmitterSubscription;
 
   constructor(props: ActionSheetProps) {
     super(props);
@@ -118,7 +116,7 @@ export default class ActionSheet extends Component<Props, State, any> {
     this.transformValue = new Animated.Value(0);
     this.opacityValue = new Animated.Value(0);
     this.borderRadius = new Animated.Value(10);
-    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
+    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 1;
     this.underlayTranslateY = new Animated.Value(100);
     this.underlayScale = new Animated.Value(1);
     this.indicatorTranslateY = new Animated.Value(-this.state.paddingTop | 0);
@@ -126,8 +124,6 @@ export default class ActionSheet extends Component<Props, State, any> {
     this.deviceLayoutCalled = false;
     this.timeout = null;
     this.initialScrolling = false;
-    this.keyboardShow = null;
-    this.keyboardHide = null;
 
   }
 
@@ -203,24 +199,24 @@ export default class ActionSheet extends Component<Props, State, any> {
       }),
     ]).start();
 
-    waitAsync(closeAnimationDuration / 1.5).then(() => {
+    waitAsync((closeAnimationDuration ?? 300)  / 1.5).then(() => {
       if (!closable) {
-        if (bottomOffset > 0) {
+        if (bottomOffset && bottomOffset > 0) {
           this.snapToOffset(bottomOffset);
         } else {
           this._scrollTo(
-            this.actionSheetHeight * initialOffsetFromBottom +
+            this.actionSheetHeight * (initialOffsetFromBottom ?? 1) +
             this.state.deviceHeight * 0.1 +
-            extraScroll,
+            (extraScroll ?? 0),
             true
           );
-          this.currentOffsetFromBottom = initialOffsetFromBottom;
+          this.currentOffsetFromBottom = (initialOffsetFromBottom ?? 1);
         }
 
         this.isClosing = false;
       } else {
         this._scrollTo(0, false);
-        this.currentOffsetFromBottom = initialOffsetFromBottom;
+        this.currentOffsetFromBottom = initialOffsetFromBottom ?? 1;
         this.setState(
           {
             modalVisible: !closable,
@@ -253,7 +249,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         return;
       }
       this.safeAreaViewRef.current?.measure(
-        (x, y, width, height) => {
+        (x: number, y: number, width: number, height: number) => {
           safeAreaPaddingTop = height === 0 ? 20 : height;
           resolve(safeAreaPaddingTop);
         }
@@ -278,20 +274,20 @@ export default class ActionSheet extends Component<Props, State, any> {
       let scrollOffset = this.getInitialScrollPosition();
       this.isRecoiling = false;
       if (Platform.OS === "ios") {
-        await waitAsync(delayActionSheetDrawTime);
+        await waitAsync((delayActionSheetDrawTime ?? 0));
       } else {
         if (delayActionSheetDraw) {
-          await waitAsync(delayActionSheetDrawTime);
+          await waitAsync((delayActionSheetDrawTime ?? 0));
         }
       }
       this._scrollTo(scrollOffset, false);
 
       this.prevScroll = scrollOffset;
       if (Platform.OS === "ios") {
-        await waitAsync(delayActionSheetDrawTime / 2);
+        await waitAsync((delayActionSheetDrawTime) ?? 0 / 2);
       } else {
         if (delayActionSheetDraw) {
-          await waitAsync(delayActionSheetDrawTime / 2);
+          await waitAsync((delayActionSheetDrawTime ?? 0) / 2);
         }
       }
       this._openAnimation(scrollOffset);
@@ -349,17 +345,17 @@ export default class ActionSheet extends Component<Props, State, any> {
     if (this.isRecoiling) return;
 
     if (this.prevScroll < verticalOffset || this.initialScrolling) {
-      if (verticalOffset - this.prevScroll > springOffset * 0.75 || this.initialScrolling) {
+      if (verticalOffset - this.prevScroll > (springOffset ?? 100) * 0.75 || this.initialScrolling) {
         this.isRecoiling = true;
         this._applyHeightLimiter();
         this.currentOffsetFromBottom =
-          this.currentOffsetFromBottom < this.props.initialOffsetFromBottom
-            ? this.props.initialOffsetFromBottom
+          this.currentOffsetFromBottom < (this.props.initialOffsetFromBottom ?? 1)
+            ? (this.props.initialOffsetFromBottom ?? 1)
             : 1;
         let scrollOffset =
           this.actionSheetHeight * this.currentOffsetFromBottom +
           correction +
-          extraScroll;
+          (extraScroll ?? 100);
 
         if (this.initialScrolling) {
           this.initialScrolling = false;
@@ -374,7 +370,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         this._returnToPrevScrollPosition(this.actionSheetHeight);
       }
     } else {
-      if (this.prevScroll - verticalOffset > springOffset) {
+      if (this.prevScroll - verticalOffset > (springOffset ?? 100)) {
         this._hideModal();
       } else {
         if (this.isRecoiling) {
@@ -407,7 +403,7 @@ export default class ActionSheet extends Component<Props, State, any> {
     let scrollOffset =
       height * this.currentOffsetFromBottom +
       correction +
-      this.props.extraScroll;
+      (this.props.extraScroll ?? 0);
 
     this.updateActionSheetPosition(scrollOffset);
     this._scrollTo(scrollOffset);
@@ -497,12 +493,12 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentDidMount() {
-    this.keyboardShow = Keyboard.addListener(
+    Keyboard.addListener(
       Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
       this._onKeyboardShow
     );
 
-    this.keyboardHide = Keyboard.addListener(
+    Keyboard.addListener(
       Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
       this._onKeyboardHide
     );
@@ -536,12 +532,12 @@ export default class ActionSheet extends Component<Props, State, any> {
 
   handleChildScrollEnd = async () => {
     if (this.offsetY > this.prevScroll) return;
-    if (this.prevScroll - this.props.springOffset > this.offsetY) {
+    if (this.prevScroll - (this.props.springOffset ?? 100) > this.offsetY) {
       let scrollOffset = this.getInitialScrollPosition();
       if (this.offsetY > scrollOffset - 100) {
         this.isRecoiling = true;
         this._scrollTo(scrollOffset);
-        this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
+        this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 1;
         this.prevScroll = scrollOffset;
         setTimeout(() => {
           this.isRecoiling = false;
@@ -559,12 +555,18 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentWillUnmount() {
-    this.keyboardShow.remove();
-    this.keyboardHide.remove();
+    Keyboard.removeListener(
+      Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
+      this._onKeyboardShow
+    );
+
+    Keyboard.removeListener(
+      Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
+      this._onKeyboardHide
+    );
   }
 
-
-  _onDeviceLayout = async (_event) => {
+  _onDeviceLayout = async (_event: LayoutChangeEvent) => {
     let event = { ..._event };
 
     if (this.timeout) {
@@ -579,8 +581,10 @@ export default class ActionSheet extends Component<Props, State, any> {
       if (!this.props.drawUnderStatusBar) {
         if (Platform.OS === "android" && !this.props.statusBarTranslucent)
           return;
-        safeMarginFromTop = measuredPadding;
+        safeMarginFromTop = measuredPadding ?? 0;
+        if (measuredPadding){
         this.indicatorTranslateY.setValue(-measuredPadding);
+        }
       } else {
         this.updateActionSheetPosition(this.offsetY);
       }
@@ -598,7 +602,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         deviceHeight: height,
         deviceWidth: width,
         portrait: height > width,
-        paddingTop: measuredPadding,
+        paddingTop: measuredPadding ?? 0,
       });
     }, 1);
   };
@@ -607,17 +611,17 @@ export default class ActionSheet extends Component<Props, State, any> {
     this._applyHeightLimiter();
     let correction = this.state.deviceHeight * 0.15;
     let scrollPosition = this.props.gestureEnabled
-      ? this.actionSheetHeight * this.props.initialOffsetFromBottom +
+      ? this.actionSheetHeight * (this.props.initialOffsetFromBottom ?? 1) +
       correction +
-      this.props.extraScroll
-      : this.actionSheetHeight + correction + this.props.extraScroll;
-    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom;
+      (this.props.extraScroll ?? 0)
+      : this.actionSheetHeight + correction + (this.props.extraScroll ?? 0);
+    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 0;
     this.updateActionSheetPosition(scrollPosition);
 
     return scrollPosition;
   }
 
-  _keyExtractor = (item) => item;
+  _keyExtractor = (item: string) => item;
 
   render() {
     let { scrollable, modalVisible, keyboard } = this.state;
@@ -746,7 +750,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                       },
                       containerStyle,
                       {
-                        ...getElevation(elevation),
+                        ...getElevation(elevation ?? 5),
                         zIndex: 11,
                         opacity: this.opacityValue,
                         transform: [
