@@ -1,6 +1,6 @@
 import React, { Component, createRef } from "react";
 import {
-  Animated, Dimensions, FlatList,
+  Animated, Dimensions, EmitterSubscription, FlatList,
   Keyboard, KeyboardEvent, LayoutChangeEvent, Modal, NativeScrollEvent,
   NativeSyntheticEvent, Platform, SafeAreaView, StatusBar, TouchableOpacity, UIManager, View
 } from "react-native";
@@ -85,6 +85,8 @@ export default class ActionSheet extends Component<Props, State, any> {
   underlayScale: Animated.Value
   indicatorTranslateY: Animated.Value
   initialScrolling: boolean = false;
+  keyboardShowSubscription:EmitterSubscription | null = null;
+  KeyboardHideSubscription:EmitterSubscription | null = null;
 
   constructor(props: ActionSheetProps) {
     super(props);
@@ -493,12 +495,12 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentDidMount() {
-    Keyboard.addListener(
+  this.keyboardShowSubscription =  Keyboard.addListener(
       Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
       this._onKeyboardShow
     );
 
-    Keyboard.addListener(
+  this.KeyboardHideSubscription =  Keyboard.addListener(
       Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
       this._onKeyboardHide
     );
@@ -555,15 +557,21 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentWillUnmount() {
-    Keyboard.removeListener(
-      Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
-      this._onKeyboardShow
-    );
-
-    Keyboard.removeListener(
-      Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
-      this._onKeyboardHide
-    );
+    this.keyboardShowSubscription?.remove();
+    this.KeyboardHideSubscription?.remove();
+    
+    if (Keyboard.removeListener) {
+      Keyboard.removeListener(
+        Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
+        this._onKeyboardShow
+      );
+  
+      Keyboard.removeListener(
+        Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
+        this._onKeyboardHide
+      );
+    }
+   
   }
 
   _onDeviceLayout = async (_event: LayoutChangeEvent) => {
