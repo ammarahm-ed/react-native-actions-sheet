@@ -12,7 +12,7 @@ import ActionSheet from 'react-native-actions-sheet';
 
 const colors = ['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'];
 const App = () => {
-  const actionSheetRef = useRef();
+  const actionSheetRef = useRef<ActionSheet>(null);
 
   return (
     <>
