@@ -639,6 +639,7 @@ export default class ActionSheet extends Component<Props, State, any> {
       overlayColor,
       gestureEnabled,
       elevation,
+      shadowColor,
       indicatorColor,
       defaultOverlayOpacity,
       children,
@@ -759,7 +760,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                       },
                       containerStyle,
                       {
-                        ...getElevation(elevation ?? 5),
+                        ...getElevation(elevation ?? 5, shadowColor),
                         zIndex: 11,
                         opacity: this.opacityValue,
                         transform: [
