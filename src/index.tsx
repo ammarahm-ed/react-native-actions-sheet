@@ -781,6 +781,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                           },
                         ],
                         marginTop: this.state.paddingTop,
+                        marginBottom: - this.state.paddingTop
                       }}
                     >
                       {gestureEnabled || headerAlwaysVisible ? (
