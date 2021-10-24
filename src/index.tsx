@@ -115,16 +115,16 @@ export default class ActionSheet extends Component<Props, State, any> {
 
 
   /**
-   * Snap ActionSheet to Offset
+   * Snap ActionSheet to given offset.
    */
-
   snapToOffset = (offset: number) => {
     let correction = this.state.deviceHeight * 0.15;
     let extraScroll = this.props.extraScroll || 0;
     let scrollOffset = this.props.gestureEnabled
       ? offset + correction + extraScroll
       : offset + correction + extraScroll;
-    this.currentOffsetFromBottom = offset / this.actionSheetHeight;
+    this.currentOffsetFromBottom = scrollOffset / this.actionSheetHeight;
+    this.currentOffsetFromBottom = this.currentOffsetFromBottom - 0.15
     this._scrollTo(scrollOffset);
     this.updateActionSheetPosition(scrollOffset);
   };

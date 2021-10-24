@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, { useRef } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -26,7 +26,7 @@ const App = () => {
         </TouchableOpacity>
 
         <ActionSheet
-          initialOffsetFromBottom={1}
+          initialOffsetFromBottom={0.4}
           ref={actionSheetRef}
           statusBarTranslucent
           bounceOnOpen={true}
@@ -42,7 +42,7 @@ const App = () => {
               {colors.map(color => (
                 <TouchableOpacity
                   onPress={() => {
-                    actionSheetRef.current?.hide();
+                    actionSheetRef.current?.snapToOffset(500);
                   }}
                   key={color}
                   style={[
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     elevation: 5,
     shadowColor: 'black',
-    shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
+    shadowOffset: { width: 0.3 * 4, height: 0.5 * 4 },
     shadowOpacity: 0.2,
     shadowRadius: 0.7 * 4,
   },
