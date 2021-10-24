@@ -142,7 +142,7 @@ export default class ActionSheet extends Component<Props, State, any> {
   /**
    * Open/Close the ActionSheet
    */
-  setModalVisible = (visible: boolean) => {
+  setModalVisible = (visible?: boolean) => {
     let modalVisible = this.state.modalVisible;
     this.initialScrolling = false;
     if (visible !== undefined) {
