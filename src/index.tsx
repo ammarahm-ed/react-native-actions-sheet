@@ -60,7 +60,6 @@ export default class ActionSheet extends Component<Props, State, any> {
 
   static defaultProps = defaultProps;
 
-
   actionSheetHeight: number = 0;
   prevScroll: number = 0;
   timeout: any = null;
@@ -78,13 +77,14 @@ export default class ActionSheet extends Component<Props, State, any> {
   scrollViewRef: React.RefObject<any>
   safeAreaViewRef: React.RefObject<any>
 
-  transformValue: Animated.Value
-  opacityValue: Animated.Value
-  borderRadius: Animated.Value
-  underlayTranslateY: Animated.Value
-  underlayScale: Animated.Value
+  transformValue: Animated.Value = new Animated.Value(0);
+  opacityValue: Animated.Value = new Animated.Value(0);
+  borderRadius: Animated.Value =  new Animated.Value(10);
+  underlayTranslateY: Animated.Value = new Animated.Value(100)
+  underlayScale: Animated.Value = new Animated.Value(1);
   indicatorTranslateY: Animated.Value
   initialScrolling: boolean = false;
+
   keyboardShowSubscription:EmitterSubscription | null = null;
   KeyboardHideSubscription:EmitterSubscription | null = null;
 
@@ -105,27 +105,11 @@ export default class ActionSheet extends Component<Props, State, any> {
       keyboardPadding: 0
     };
 
-    this.actionSheetHeight = 0;
-    this.prevScroll = 0;
-    this.scrollAnimationEndValue = 0;
-    this.hasBounced = false;
     this.scrollViewRef = createRef();
-    this.layoutHasCalled = false;
-    this.isClosing = false;
-    this.isRecoiling = false;
-    this.offsetY = 0;
     this.safeAreaViewRef = createRef();
-    this.transformValue = new Animated.Value(0);
-    this.opacityValue = new Animated.Value(0);
-    this.borderRadius = new Animated.Value(10);
+
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 1;
-    this.underlayTranslateY = new Animated.Value(100);
-    this.underlayScale = new Animated.Value(1);
     this.indicatorTranslateY = new Animated.Value(-this.state.paddingTop | 0);
-    this.isReachedTop = false;
-    this.deviceLayoutCalled = false;
-    this.timeout = null;
-    this.initialScrolling = false;
 
   }
 
@@ -144,6 +128,7 @@ export default class ActionSheet extends Component<Props, State, any> {
     this._scrollTo(scrollOffset);
     this.updateActionSheetPosition(scrollOffset);
   };
+  
   // Open the ActionSheet
   show = () => {
     this.setModalVisible(true);
