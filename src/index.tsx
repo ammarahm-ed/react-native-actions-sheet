@@ -129,12 +129,16 @@ export default class ActionSheet extends Component<Props, State, any> {
     this.updateActionSheetPosition(scrollOffset);
   };
   
-  // Open the ActionSheet
+  /**
+   * Show the ActionSheet
+   */
   show = () => {
     this.setModalVisible(true);
   };
 
-  // Close the ActionSheet
+  /**
+   * Hide the ActionSheet
+   */
   hide = () => {
     this.setModalVisible(false);
   };
