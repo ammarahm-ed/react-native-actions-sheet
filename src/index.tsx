@@ -526,6 +526,7 @@ export default class ActionSheet extends Component<Props, State, any> {
       keyboard: true,
       keyboardPadding: event.endCoordinates.height + correction
     });
+    console.log(event.endCoordinates.height + correction);
     waitAsync(300).then(() => {
       this.isRecoiling = false;
     });
@@ -536,7 +537,9 @@ export default class ActionSheet extends Component<Props, State, any> {
       keyboard: false,
       keyboardPadding: 0
     });
-    this.opacityValue.setValue(1);
+
+    this._openAnimation(this.prevScroll);
+    //this.opacityValue.setValue(1);
   };
 
   /**
