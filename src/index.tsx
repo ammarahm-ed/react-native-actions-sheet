@@ -135,8 +135,10 @@ export default class ActionSheet extends Component<Props, State, any> {
       : offset + correction + extraScroll;
     this.currentOffsetFromBottom = scrollOffset / this.actionSheetHeight;
     this.currentOffsetFromBottom = this.currentOffsetFromBottom - 0.15;
-    this._scrollTo(scrollOffset);
-    this.updateActionSheetPosition(scrollOffset);
+    setTimeout(() => {
+      this._scrollTo(scrollOffset);
+      this.updateActionSheetPosition(scrollOffset);
+    }, 500);
   };
 
   /**
