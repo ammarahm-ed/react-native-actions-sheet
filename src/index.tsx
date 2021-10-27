@@ -538,8 +538,19 @@ export default class ActionSheet extends Component<Props, State, any> {
       keyboardPadding: 0
     });
 
-    this._openAnimation(this.prevScroll);
-    //this.opacityValue.setValue(1);
+    Animated.parallel([
+      Animated.spring(this.transformValue, {
+        toValue: 0,
+        bounciness: this.props.bounceOnOpen ? this.props.bounciness : 1,
+        speed: this.props.openAnimationSpeed,
+        useNativeDriver: true
+      }),
+      Animated.timing(this.opacityValue, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true
+      })
+    ]).start();
   };
 
   /**
