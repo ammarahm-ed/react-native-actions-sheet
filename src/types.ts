@@ -304,6 +304,19 @@ export type ActionSheetProps = {
        */
 
      bottomOffset?: number;
+    
+       /**
+     * Allow to choose will content change position when keyboard is visible. 
+     * This is enabled by default.
+     * 
+     * 
+      * | Type | Required |
+ | ---- | -------- |
+ | boolean | no |
+ Default: `true`
+      */
+ 
+     keyboardHandlerEnabled?: boolean;
 
      /**
       * Test ID for unit testing
