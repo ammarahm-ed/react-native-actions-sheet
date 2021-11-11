@@ -64,7 +64,8 @@ const defaultProps = {
   drawUnderStatusBar: false,
   statusBarTranslucent: true,
   gestureEnabled: false,
-  keyboardDismissMode: "none"
+  keyboardDismissMode: "none",
+  keyboardHandlerEnabled: true
 };
 
 type Props = Partial<typeof defaultProps> & ActionSheetProps;
@@ -520,16 +521,17 @@ export default class ActionSheet extends Component<Props, State, any> {
   }
 
   _onKeyboardShow = (event: KeyboardEvent) => {
-    this.isRecoiling = true;
-    let correction = Platform.OS === "android" ? 20 : 5;
-    this.setState({
+    if(this.props.keyboardHandlerEnabled) {
+      this.isRecoiling = true;
+      let correction = Platform.OS === "android" ? 20 : 5;
+      this.setState({
       keyboard: true,
       keyboardPadding: event.endCoordinates.height + correction
-    });
-    console.log(event.endCoordinates.height + correction);
-    waitAsync(300).then(() => {
-      this.isRecoiling = false;
-    });
+      });
+      waitAsync(300).then(() => {
+        this.isRecoiling = false;
+      });
+    }
   };
 
   _onKeyboardHide = () => {
