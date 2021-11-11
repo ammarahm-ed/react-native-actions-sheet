@@ -155,9 +155,9 @@ Assigns a ref to ActionSheet component to use methods.
 
 Test ID for unit testing
 
-| Type | Required |
-|------|----------|
-| string  | no      |
+| Type   | Required |
+|--------|----------|
+| string | no       |
 
 #
 
@@ -428,6 +428,20 @@ Setting the keyboard persistence of the `ScrollView` component. Should be one of
 | string | no       |
 
 Default: `never`
+
+#
+
+#### `keyboardHandlerEnabled`
+
+Allow to choose will content change position when keyboard is visible. 
+This is enabled by default.
+
+ | Type    | Required |
+ |---------|----------|
+ | boolean | no       |
+
+ Default: `true`
+
 
 #
 
