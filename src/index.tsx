@@ -208,8 +208,8 @@ export default class ActionSheet extends Component<Props, State, any> {
         } else {
           this._scrollTo(
             this.actionSheetHeight * (initialOffsetFromBottom ?? 1) +
-              this.state.deviceHeight * 0.1 +
-              (extraScroll ?? 0),
+            this.state.deviceHeight * 0.1 +
+            (extraScroll ?? 0),
             true
           );
           this.currentOffsetFromBottom = initialOffsetFromBottom ?? 1;
@@ -333,7 +333,7 @@ export default class ActionSheet extends Component<Props, State, any> {
 
   _onScrollBegin = async (
     _event: NativeSyntheticEvent<NativeScrollEvent>
-  ) => {};
+  ) => { };
   _onScrollBeginDrag = async (
     event: NativeSyntheticEvent<NativeScrollEvent>
   ) => {
@@ -365,7 +365,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         this._applyHeightLimiter();
         this.currentOffsetFromBottom =
           this.currentOffsetFromBottom <
-          (this.props.initialOffsetFromBottom ?? 1)
+            (this.props.initialOffsetFromBottom ?? 1)
             ? this.props.initialOffsetFromBottom ?? 1
             : 1;
         let scrollOffset =
@@ -521,12 +521,12 @@ export default class ActionSheet extends Component<Props, State, any> {
   }
 
   _onKeyboardShow = (event: KeyboardEvent) => {
-    if(this.props.keyboardHandlerEnabled) {
+    if (this.props.keyboardHandlerEnabled) {
       this.isRecoiling = true;
       let correction = Platform.OS === "android" ? 20 : 5;
       this.setState({
-      keyboard: true,
-      keyboardPadding: event.endCoordinates.height + correction
+        keyboard: true,
+        keyboardPadding: event.endCoordinates.height + correction
       });
       waitAsync(300).then(() => {
         this.isRecoiling = false;
@@ -586,10 +586,8 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentWillUnmount() {
-    this.keyboardShowSubscription?.remove();
-    this.KeyboardHideSubscription?.remove();
 
-    if (Keyboard.removeListener) {
+    if (!this.keyboardShowSubscription?.remove) {
       Keyboard.removeListener(
         Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
         this._onKeyboardShow
@@ -600,6 +598,11 @@ export default class ActionSheet extends Component<Props, State, any> {
         this._onKeyboardHide
       );
     }
+
+    this.keyboardShowSubscription?.remove();
+    this.KeyboardHideSubscription?.remove();
+
+
   }
 
   _onDeviceLayout = async (_event: LayoutChangeEvent) => {
@@ -648,8 +651,8 @@ export default class ActionSheet extends Component<Props, State, any> {
     let correction = this.state.deviceHeight * 0.15;
     let scrollPosition = this.props.gestureEnabled
       ? this.actionSheetHeight * (this.props.initialOffsetFromBottom ?? 1) +
-        correction +
-        (this.props.extraScroll ?? 0)
+      correction +
+      (this.props.extraScroll ?? 0)
       : this.actionSheetHeight + correction + (this.props.extraScroll ?? 0);
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 0;
     this.updateActionSheetPosition(scrollPosition);
