@@ -788,7 +788,6 @@ export default class ActionSheet extends Component<Props, State, any> {
                       {
                         borderRadius: 10
                       },
-                      containerStyle,
                       {
                         ...getElevation(elevation ?? 5),
                         zIndex: 11,
@@ -800,7 +799,8 @@ export default class ActionSheet extends Component<Props, State, any> {
                         ],
                         maxHeight: this.state.deviceHeight,
                         paddingBottom: this.state.keyboardPadding
-                      }
+                      },
+                      containerStyle,
                     ]}
                   >
                     <Animated.View
