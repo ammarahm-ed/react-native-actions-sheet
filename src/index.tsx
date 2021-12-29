@@ -710,7 +710,7 @@ export default class ActionSheet extends Component<Props, State, any> {
               styles.parentContainer,
               {
                 opacity: this.opacityValue,
-                width: this.state.deviceWidth
+                width: "100%"
               }
             ]}
           >
