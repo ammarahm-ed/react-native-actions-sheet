@@ -167,7 +167,7 @@ Use if you want to show the ActionSheet Partially on Opening. **Requires `gestur
 
 | Type    | Required |
 |---------|----------|
-| boolean | no       |
+| number  | no       |
 
 Default: `1`
 
