@@ -1,49 +1,27 @@
-<div align="center">
-<h1>  react-native-actions-sheet</h1>
-</div>
+<img src="https://imgur.com/V2fXDFk.png"/>
+
+#
+
 <div
 align="center"
-style="width:100%; "
-
->
+style="width:100%;">
 
 <a href="https://github.com/ammarahm-ed/react-native-actions-sheet/pulls"
 target="_blank">
-
 <img  src="https://img.shields.io/badge/PRs-welcome-green?color=blue&style=flat-square"/>
-</a>
-<a
-href="https://www.npmjs.com/package/react-native-actions-sheet"
-target="_blank"
-
->
-
+</a><a href="https://www.npmjs.com/package/react-native-actions-sheet"
+target="_blank">
 <img src="https://img.shields.io/npm/v/react-native-actions-sheet?color=orange&style=flat-square"/>
-</a>
-<a
-href="https://www.npmjs.com/package/react-native-actions-sheet"
-target="_blank"
-
->
-
+</a><a href="https://www.npmjs.com/package/react-native-actions-sheet" target="_blank">
 <img  src="https://img.shields.io/npm/dt/react-native-actions-sheet?color=darkgreen&style=flat-square"/>
-</a> 
+</a>
 </div>
-<p align="center">
-A highly customizable cross platform ActionSheet for react native. 
-</p>
-<p align="center">
-<img src="https://imgur.com/7dPMBmI.png"/>
-</p>
 
 <div align="center">
-<h2>Screenshots</h2>
+<h1>Quick Preview</h1>
 </div>
 
-<p
-align="center"
-
->
+<div align="center" >
 
 <img
 width='33%'
@@ -55,77 +33,46 @@ width='30%'
 height:500
 src="https://imgur.com/g6LLkl4.gif"
 />
-</p>
-<div align="center">
-<h2>Features</h2>
+
 </div>
-
-01. Cross Platform (iOS and Android)
-02. Native Animations & Performance
-03. Identical Working on Android and iOS
-04. Control ActionSheet with **Gestures**
-05. **Raw ActionSheet** - You can Add Anything
-06. Allow ActionSheet to be partially shown when opened
-07. Support TextInputs
-08. Cool **bounce effect** on open.
-09. Support for **Tablets and iPads**
-10. Support **Horizontal Layout**
-11. Support for **Nested Scrolling or Scrollable Content.**
-12. Virtualization Support
-
-<div align="center">
-<h2>Run Example</h2>
-</div>
-To run the example app clone the project
-
-    git clone https://github.com/ammarahm-ed/react-native-actions-sheet.git
-
-then run `yarn or npm install` in the example folder and finally to run the example app:
-
-    react-native run-android
 
 <div align="center">
 <h2>Installation Guide</h2>
 </div>
 
-    npm install react-native-actions-sheet --save
-
-or if you use yarn:
-
-    yarn add react-native-actions-sheet
-
+<div align="center">
+<pre>npm install react-native-actions-sheet --save</pre>
+<p>OR</p>
+<pre>yarn add react-native-actions-sheet</pre>
+</div>
 <div align="center">
 <h2>Usage Example</h2>
 </div>
 For complete usage, see the example project.
 
 ```jsx
-import ActionSheet from "react-native-actions-sheet";
-import React, { createRef } from "react";
-
-const actionSheetRef = createRef();
+import React from "react";
+import ActionSheet, { SheetManager } from "react-native-actions-sheet";
 
 const App = () => {
-  let actionSheet;
-
   return (
     <View
       style={{
         justifyContent: "center",
-        flex: 1
+        flex: 1,
       }}
     >
       <TouchableOpacity
         onPress={() => {
-          actionSheetRef.current?.setModalVisible();
+          SheetManager.show("helloworld_sheet");
         }}
       >
         <Text>Open ActionSheet</Text>
       </TouchableOpacity>
 
-      <ActionSheet ref={actionSheetRef}>
+      <ActionSheet id="helloworld_sheet">
         <View>
-          <Text>YOUR CUSTOM COMPONENT INSIDE THE ACTIONSHEET</Text>
+          <Text>Hello World</Text>
         </View>
       </ActionSheet>
     </View>
@@ -136,10 +83,38 @@ export default App;
 ```
 
 <div align="center">
+<h2>Features</h2>
+</div>
+
+1.  Cross Platform (iOS and Android)
+2.  Native Animations & Performance
+3.  Identical Working on Android and iOS
+4.  Control ActionSheet with **Gestures**
+5.  **Raw ActionSheet** - You can Add Anything
+6.  Allow ActionSheet to be partially shown when opened
+7.  Support TextInputs
+8.  Cool **bounce effect** on open.
+9.  **Tablets and iPads**
+10. **Horizontal Layout**
+11. **Nested Scrolling or Scrollable Content.**
+12. Virtualization Support
+13. Global Sheet Manager
+
+<div align="center">
 <h1>Reference</h1>
 </div>
 
 ## Props
+
+#### `id`
+
+A unique id for the ActionSheet. You must set this if you are using `SheetManager`.
+
+| Type | Required |
+|------|----------|
+| id   | false    |
+
+#
 
 #### `ref`
 
@@ -147,7 +122,7 @@ Assigns a ref to ActionSheet component to use methods.
 
 | Type | Required |
 |------|----------|
-| ref  | Yes      |
+| ref  | false    |
 
 #
 
@@ -165,9 +140,9 @@ Test ID for unit testing
 
 Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true` **
 
-| Type    | Required |
-|---------|----------|
-| number  | no       |
+| Type   | Required |
+|--------|----------|
+| number | no       |
 
 Default: `1`
 
@@ -182,6 +157,16 @@ Normally when the ActionSheet is fully opened, a small portion from the bottom i
 | number | no       |
 
 Default: `0`
+
+#
+
+#### `indicatorStyle`
+
+Style the top indicator bar in ActionSheet.
+
+| Type        | Required |
+|-------------|----------|
+| `ViewStyle` | no       |
 
 #
 
@@ -433,15 +418,14 @@ Default: `never`
 
 #### `keyboardHandlerEnabled`
 
-Allow to choose will content change position when keyboard is visible. 
+Allow to choose will content change position when keyboard is visible.
 This is enabled by default.
 
- | Type    | Required |
- |---------|----------|
- | boolean | no       |
+| Type    | Required |
+|---------|----------|
+| boolean | no       |
 
- Default: `true`
-
+Default: `true`
 
 #
 
@@ -645,6 +629,7 @@ actionSheetRef.current?.snapToOffset(300);
 #
 
 ## Nested scrolling on android
+
 Nested scrolling on android is disabled by default. You can enable it as done below.
 
 ```jsx
