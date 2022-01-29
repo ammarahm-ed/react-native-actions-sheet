@@ -107,6 +107,7 @@ SheetManager.hideAll();
 11. **Nested Scrolling or Scrollable Content.**
 12. Virtualization Support
 13. Global Sheet Manager
+14. Proper resizing on Android & iOS on Keyboard show/hide.
 
 <div align="center">
 <h1>Reference</h1>
@@ -526,12 +527,6 @@ If your component includes any child ScrollView/FlatList you must attach this me
 <ScrollView
             ref={scrollViewRef}
             nestedScrollEnabled={true}
-            onScrollEndDrag={() =>
-              actionSheetRef.current?.handleChildScrollEnd()
-            }
-            onScrollAnimationEnd={() =>
-              actionSheetRef.current?.handleChildScrollEnd()
-            }
             onMomentumScrollEnd={() =>
               actionSheetRef.current?.handleChildScrollEnd()
             }
