@@ -15,6 +15,7 @@ target="_blank">
 </a><a href="https://www.npmjs.com/package/react-native-actions-sheet" target="_blank">
 <img  src="https://img.shields.io/npm/dt/react-native-actions-sheet?color=darkgreen&style=flat-square"/>
 </a>
+
 </div>
 
 <div align="center">
@@ -45,46 +46,53 @@ src="https://imgur.com/g6LLkl4.gif"
 <p>OR</p>
 <pre>yarn add react-native-actions-sheet</pre>
 </div>
-<div align="center">
-<h2>Usage Example</h2>
-</div>
-For complete usage, see the example project.
+
+# How to use
+
+It's very simple to use the ActionSheet. Import the ActionSheet & SheetManager.
 
 ```jsx
 import React from "react";
 import ActionSheet, { SheetManager } from "react-native-actions-sheet";
-
-const App = () => {
-  return (
-    <View
-      style={{
-        justifyContent: "center",
-        flex: 1,
-      }}
-    >
-      <TouchableOpacity
-        onPress={() => {
-          SheetManager.show("helloworld_sheet");
-        }}
-      >
-        <Text>Open ActionSheet</Text>
-      </TouchableOpacity>
-
-      <ActionSheet id="helloworld_sheet">
-        <View>
-          <Text>Hello World</Text>
-        </View>
-      </ActionSheet>
-    </View>
-  );
-};
-
-export default App;
 ```
 
-<div align="center">
-<h2>Features</h2>
-</div>
+Create your ActionSheet component and give it a unique id.
+
+```jsx
+<ActionSheet id="helloworld_sheet">
+  <View>
+    <Text>Hello World</Text>
+  </View>
+</ActionSheet>
+```
+
+Open the ActionSheet from anywhere in the app.
+
+```jsx
+SheetManager.show("helloworld_sheet");
+```
+
+Want to pass some data on opening the sheet or update the state?
+
+```jsx
+SheetManager.show("helloworld_sheet",{value:"Hello World"});
+
+<ActionSheet
+onBeforeShow={(data) => {
+  setData(data);
+}}
+id="helloworld_sheet">
+```
+Hiding the sheet is easy. Enable gestures or do the following.
+```jsx
+await SheetManager.hide("helloworld_sheet");
+```
+Close all opened ActionSheets
+```jsx
+SheetManager.hideAll();
+```
+
+# Features
 
 1.  Cross Platform (iOS and Android)
 2.  Native Animations & Performance
