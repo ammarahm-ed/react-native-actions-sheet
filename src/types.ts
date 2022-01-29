@@ -1,9 +1,12 @@
 import { ViewStyle } from "react-native";
 
-
 export type ActionSheetProps = {
-
-     /**
+  /**
+   * A unique id for the ActionSheet. You must set this if you are using `SheetManager`.
+   *
+   */
+  id?: string;
+  /**
       * Animate the opening and closing of ActionSheet.
   
  | Type | Required |
@@ -12,9 +15,9 @@ export type ActionSheetProps = {
   
  Default: `true`
       */
-     animated?: boolean;
+  animated?: boolean;
 
-     /**
+  /**
       * Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**
   
  | Type | Required |
@@ -24,9 +27,9 @@ export type ActionSheetProps = {
  Default:`1`
       */
 
-     initialOffsetFromBottom?: number;
+  initialOffsetFromBottom?: number;
 
-     /**
+  /**
       * When touch ends and user has not moved farther from the set springOffset, the ActionSheet will return to previous position.
   
  | Type | Required |
@@ -35,8 +38,8 @@ export type ActionSheetProps = {
   
  Default: `50`
       */
-     springOffset?: number;
-     /**
+  springOffset?: number;
+  /**
       * Add elevation to the ActionSheet container. 
   
  | Type | Required |
@@ -47,9 +50,9 @@ export type ActionSheetProps = {
   
  #
       */
-     elevation?: number;
+  elevation?: number;
 
-     /**
+  /**
       * Color of the gestureEnabled Indicator.
   
  | Type | Required |
@@ -58,9 +61,9 @@ export type ActionSheetProps = {
   
  Default: `"#f0f0f0"`
       */
-     indicatorColor?: string;
+  indicatorColor?: string;
 
-     /**
+  /**
       * Normally when the ActionSheet is fully opened, a small portion from the bottom is hidden by default. Use this prop if you want the ActionSheet to hover over the bottom of screen and not hide a little behind it.
   
  | Type | Required |
@@ -69,8 +72,8 @@ export type ActionSheetProps = {
   
  Default:`0`
       */
-     extraScroll?: number;
-     /**
+  extraScroll?: number;
+  /**
       * Color of the overlay/backdrop.
   
  | Type | Required |
@@ -79,11 +82,9 @@ export type ActionSheetProps = {
   
  Default: `"black"`
       */
-     overlayColor?: string;
+  overlayColor?: string;
 
-
-
-     /**
+  /**
       * Keep the header always visible even when gestures are disabled.
   
  | Type | Required |
@@ -92,9 +93,9 @@ export type ActionSheetProps = {
   
  Default: `false`
       */
-     headerAlwaysVisible?: boolean;
+  headerAlwaysVisible?: boolean;
 
-     /**
+  /**
       * Delay draw of ActionSheet on open for android.
   
  | Type | Required |
@@ -104,9 +105,9 @@ export type ActionSheetProps = {
  Default: `false`
       */
 
-     delayActionSheetDraw?: boolean;
+  delayActionSheetDraw?: boolean;
 
-     /**
+  /**
       * Delay draw of ActionSheet on open for android time.
   
  | Type | Required |
@@ -116,29 +117,27 @@ export type ActionSheetProps = {
  Default: `50`
       */
 
-     delayActionSheetDrawTime?: number;
+  delayActionSheetDrawTime?: number;
 
-     /**
+  /**
       * Your custom header component. Using this will hide the default indicator.
   
  | Type | Required |
  | ---- | -------- |
  | React.ReactNode | no |
       */
-     CustomHeaderComponent?: React.ReactNode;
+  CustomHeaderComponent?: React.ReactNode;
 
-
-
-     /**
+  /**
       * Any custom styles for the container. 
   
  | Type | Required |
  | ---- | -------- |
  | Object | no |
       */
-     containerStyle?: ViewStyle;
+  containerStyle?: ViewStyle;
 
-     /**
+  /**
       * Control closing ActionSheet by touching on backdrop.
   
  | Type | Required |
@@ -147,9 +146,9 @@ export type ActionSheetProps = {
   
  Default: `true`
       */
-     closeOnTouchBackdrop?: boolean;
+  closeOnTouchBackdrop?: boolean;
 
-     /**
+  /**
       * Render a component over the ActionSheet. Useful for rendering
       * Toast components with which user can interact.
       * 
@@ -158,11 +157,9 @@ export type ActionSheetProps = {
 | React.ReactNode | no |
       */
 
-     ExtraOverlayComponent?: React.ReactNode;
+  ExtraOverlayComponent?: React.ReactNode;
 
-
-
-     /**
+  /**
       * Speed of opening animation. Higher means the ActionSheet will open more quickly.
   
  | Type | Required |
@@ -171,8 +168,8 @@ export type ActionSheetProps = {
   
  Default: `12`
       */
-     openAnimationSpeed?: number;
-     /**
+  openAnimationSpeed?: number;
+  /**
       * Duration of closing animation.
   
  | Type | Required |
@@ -181,8 +178,8 @@ export type ActionSheetProps = {
   
  Default: `300`
       */
-     closeAnimationDuration?: number;
-     /**
+  closeAnimationDuration?: number;
+  /**
       * 
  How much you want the ActionSheet to bounce when it is opened. 
   
@@ -192,9 +189,9 @@ export type ActionSheetProps = {
   
  Default: `8`
       */
-     bounciness?: number;
+  bounciness?: number;
 
-     /**
+  /**
       * Will the ActionSheet close on `hardwareBackPress` event.
   
  | Type | Required |
@@ -203,8 +200,8 @@ export type ActionSheetProps = {
   
  Default: `true`
       */
-     closeOnPressBack?: boolean;
-     /**
+  closeOnPressBack?: boolean;
+  /**
       * Default opacity of the overlay/backdrop.
   
  | Type | Required |
@@ -213,9 +210,9 @@ export type ActionSheetProps = {
   
  Default: `0.3`
       */
-     defaultOverlayOpacity?: number;
+  defaultOverlayOpacity?: number;
 
-     /**
+  /**
       * Enables gesture control of ActionSheet
   
  | Type | Required |
@@ -224,9 +221,9 @@ export type ActionSheetProps = {
   
  Default: `false`
       */
-     gestureEnabled?: boolean;
+  gestureEnabled?: boolean;
 
-     /**
+  /**
       * Bounces the ActionSheet on open.
   
  | Type | Required |
@@ -235,9 +232,9 @@ export type ActionSheetProps = {
   
  Default: `false`
       */
-     bounceOnOpen?: boolean;
+  bounceOnOpen?: boolean;
 
-     /**
+  /**
       * Setting the keyboard persistance of the ScrollView component, should be one of "never", "always", or "handled"
   
  | Type | Required |
@@ -246,9 +243,9 @@ export type ActionSheetProps = {
   
  Default: `"never"`
       */
-     keyboardShouldPersistTaps?: boolean | "always" | "never" | "handled";
+  keyboardShouldPersistTaps?: boolean | "always" | "never" | "handled";
 
-     /**
+  /**
       * Set how keyboard should behave on tapping the ActionSheet.
       * | Type | Required |
  | ---- | -------- |
@@ -257,9 +254,9 @@ export type ActionSheetProps = {
  Default : `'none'`
       */
 
-     keyboardDismissMode?: 'on-drag' | 'none' | 'interactive'
+  keyboardDismissMode?: "on-drag" | "none" | "interactive";
 
-     /**
+  /**
       * Determine whether the modal should go under the system statusbar.
   
  | Type | Required |
@@ -268,9 +265,9 @@ export type ActionSheetProps = {
   
  Default: `true`
       */
-     statusBarTranslucent?: boolean;
+  statusBarTranslucent?: boolean;
 
-     /**
+  /**
       * Prevent ActionSheet from closing on 
       * gesture or tapping on backdrop. 
       * Instead snap it to `bottomOffset` location
@@ -280,9 +277,9 @@ export type ActionSheetProps = {
  | ---- | -------- |
  | boolean | no |
        */
-     closable?: boolean;
+  closable?: boolean;
 
-     /**
+  /**
      * Allow ActionSheet to draw under the StatusBar. 
      * This is enabled by default.
      * 
@@ -292,9 +289,9 @@ export type ActionSheetProps = {
  | boolean | no |
  Default: `true`
       */
-     drawUnderStatusBar?: boolean;
+  drawUnderStatusBar?: boolean;
 
-     /**
+  /**
       * Snap ActionSheet to this location if `closable` is set to false;
       * 
       * 
@@ -303,9 +300,9 @@ export type ActionSheetProps = {
  | number | no |
        */
 
-     bottomOffset?: number;
-    
-       /**
+  bottomOffset?: number;
+
+  /**
      * Allow to choose will content change position when keyboard is visible. 
      * This is enabled by default.
      * 
@@ -315,15 +312,15 @@ export type ActionSheetProps = {
  | boolean | no |
  Default: `true`
       */
- 
-     keyboardHandlerEnabled?: boolean;
 
-     /**
-      * Test ID for unit testing
-      */
-     testID?: string
+  keyboardHandlerEnabled?: boolean;
 
-     /**
+  /**
+   * Test ID for unit testing
+   */
+  testID?: string;
+
+  /**
       * 
  Event called when the ActionSheet closes.
   
@@ -336,19 +333,21 @@ export type ActionSheetProps = {
  #
       */
 
-     onClose?: () => void;
+  onClose?: (data?: unknown) => void;
 
-     /**
+  onBeforeShow?: (data?: unknown) => void;
+
+  /**
       * An event called when the ActionSheet Opens.
   
  | Type | Required |
  | ---- | -------- |
  | function | no |
       */
-     onOpen?: () => void;
+  onOpen?: () => void;
 
-     /**
-      * Event called when position of ActionSheet changes.
-      */
-     onPositionChanged?: (hasReachedTop: boolean) => void;
+  /**
+   * Event called when position of ActionSheet changes.
+   */
+  onPositionChanged?: (hasReachedTop: boolean) => void;
 };

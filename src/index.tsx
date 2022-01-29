@@ -1,6 +1,7 @@
 import React, { Component, createRef } from "react";
 import {
   Animated,
+  DeviceEventEmitter,
   Dimensions,
   EmitterSubscription,
   FlatList,
@@ -14,7 +15,7 @@ import {
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { styles } from "./styles";
 import type { ActionSheetProps } from "./types";
@@ -22,7 +23,7 @@ import {
   getDeviceHeight,
   getElevation,
   SUPPORTED_ORIENTATIONS,
-  waitAsync
+  waitAsync,
 } from "./utils";
 
 let safeAreaInnerHeight = 0;
@@ -65,7 +66,7 @@ const defaultProps = {
   statusBarTranslucent: true,
   gestureEnabled: false,
   keyboardDismissMode: "none",
-  keyboardHandlerEnabled: true
+  keyboardHandlerEnabled: true,
 };
 
 type Props = Partial<typeof defaultProps> & ActionSheetProps;
@@ -97,6 +98,8 @@ export default class ActionSheet extends Component<Props, State, any> {
   underlayScale: Animated.Value = new Animated.Value(1);
   indicatorTranslateY: Animated.Value;
   initialScrolling: boolean = false;
+  sheetManagerHideEvent: EmitterSubscription | null = null;
+  sheetManagerShowEvent: EmitterSubscription | null = null;
 
   keyboardShowSubscription: EmitterSubscription | null = null;
   KeyboardHideSubscription: EmitterSubscription | null = null;
@@ -115,7 +118,7 @@ export default class ActionSheet extends Component<Props, State, any> {
       portrait: true,
       safeAreaInnerHeight,
       paddingTop: safeAreaPaddingTop,
-      keyboardPadding: 0
+      keyboardPadding: 0,
     };
 
     this.scrollViewRef = createRef();
@@ -172,33 +175,33 @@ export default class ActionSheet extends Component<Props, State, any> {
     if (!modalVisible) {
       this.setState({
         modalVisible: true,
-        scrollable: this.props.gestureEnabled || false
+        scrollable: this.props.gestureEnabled || false,
       });
     } else {
-      this._hideModal();
+      this._hideModal(null);
     }
   };
 
-  _hideAnimation() {
+  _hideAnimation(data: unknown) {
     let {
       animated,
       closeAnimationDuration,
       bottomOffset,
       initialOffsetFromBottom,
       extraScroll,
-      closable
+      closable,
     } = this.props;
     Animated.parallel([
       Animated.timing(this.opacityValue, {
         toValue: closable ? 0 : 1,
         duration: animated ? closeAnimationDuration : 1,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(this.transformValue, {
         toValue: closable ? this.actionSheetHeight * 2 : 0,
         duration: animated ? closeAnimationDuration : 1,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start();
 
     waitAsync((closeAnimationDuration ?? 300) / 1.5).then(() => {
@@ -208,8 +211,8 @@ export default class ActionSheet extends Component<Props, State, any> {
         } else {
           this._scrollTo(
             this.actionSheetHeight * (initialOffsetFromBottom ?? 1) +
-            this.state.deviceHeight * 0.1 +
-            (extraScroll ?? 0),
+              this.state.deviceHeight * 0.1 +
+              (extraScroll ?? 0),
             true
           );
           this.currentOffsetFromBottom = initialOffsetFromBottom ?? 1;
@@ -221,7 +224,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         this.currentOffsetFromBottom = initialOffsetFromBottom ?? 1;
         this.setState(
           {
-            modalVisible: !closable
+            modalVisible: !closable,
           },
           () => {
             this.isClosing = false;
@@ -230,17 +233,20 @@ export default class ActionSheet extends Component<Props, State, any> {
             this.indicatorTranslateY.setValue(-this.state.paddingTop);
             this.layoutHasCalled = false;
             this.deviceLayoutCalled = false;
-            this.props.onClose && this.props.onClose();
+            this.props.onClose && this.props.onClose(data);
+            if (this.props.id) {
+              DeviceEventEmitter.emit(`onclose_${this.props.id}`, data);
+            }
           }
         );
       }
     });
   }
 
-  _hideModal = () => {
+  _hideModal = (data?: unknown) => {
     if (this.isClosing) return;
     this.isClosing = true;
-    this._hideAnimation();
+    this._hideAnimation(data);
   };
 
   measure = async (): Promise<number> => {
@@ -318,13 +324,13 @@ export default class ActionSheet extends Component<Props, State, any> {
           toValue: 0,
           bounciness: bounceOnOpen ? bounciness : 1,
           speed: openAnimationSpeed,
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(this.opacityValue, {
           toValue: 1,
           duration: 150,
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
     } else {
       this.opacityValue.setValue(1);
@@ -333,7 +339,7 @@ export default class ActionSheet extends Component<Props, State, any> {
 
   _onScrollBegin = async (
     _event: NativeSyntheticEvent<NativeScrollEvent>
-  ) => { };
+  ) => {};
   _onScrollBeginDrag = async (
     event: NativeSyntheticEvent<NativeScrollEvent>
   ) => {
@@ -365,7 +371,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         this._applyHeightLimiter();
         this.currentOffsetFromBottom =
           this.currentOffsetFromBottom <
-            (this.props.initialOffsetFromBottom ?? 1)
+          (this.props.initialOffsetFromBottom ?? 1)
             ? this.props.initialOffsetFromBottom ?? 1
             : 1;
         let scrollOffset =
@@ -387,7 +393,7 @@ export default class ActionSheet extends Component<Props, State, any> {
       }
     } else {
       if (this.prevScroll - verticalOffset > (springOffset ?? 100)) {
-        this._hideModal();
+        this._hideModal(null);
       } else {
         if (this.isRecoiling) {
           return;
@@ -431,7 +437,7 @@ export default class ActionSheet extends Component<Props, State, any> {
     this.scrollViewRef.current?._listRef._scrollRef.scrollTo({
       x: 0,
       y: this.scrollAnimationEndValue,
-      animated: animated
+      animated: animated,
     });
     if (this.initialScrolling) {
       setTimeout(() => {
@@ -445,7 +451,7 @@ export default class ActionSheet extends Component<Props, State, any> {
       this._hideModal();
     }
     this.setState({
-      scrollable: false
+      scrollable: false,
     });
   };
 
@@ -454,7 +460,7 @@ export default class ActionSheet extends Component<Props, State, any> {
       this._hideModal();
     }
     this.setState({
-      scrollable: false
+      scrollable: false,
     });
   };
 
@@ -462,7 +468,7 @@ export default class ActionSheet extends Component<Props, State, any> {
     this._returnToPrevScrollPosition(this.actionSheetHeight);
     if (this.props.gestureEnabled) {
       this.setState({
-        scrollable: true
+        scrollable: true,
       });
     }
   };
@@ -508,6 +514,17 @@ export default class ActionSheet extends Component<Props, State, any> {
     }
   };
 
+  onSheetManagerShow = (data?: unknown) => {
+    if (this.props.onBeforeShow) {
+      this.props.onBeforeShow(data);
+    }
+    this.setModalVisible(true);
+  };
+
+  onSheetMangerHide = (data?: unknown) => {
+    this._hideModal(data);
+  };
+
   componentDidMount() {
     this.keyboardShowSubscription = Keyboard.addListener(
       Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
@@ -518,6 +535,23 @@ export default class ActionSheet extends Component<Props, State, any> {
       Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
       this._onKeyboardHide
     );
+    if (this.props.id) {
+      this.sheetManagerShowEvent = DeviceEventEmitter.addListener(
+        `show_${this.props.id}`,
+        this.onSheetManagerShow
+      );
+      this.sheetManagerHideEvent = DeviceEventEmitter.addListener(
+        `hide_${this.props.id}`,
+        this.onSheetMangerHide
+      );
+    }
+  }
+
+  componentWillUnmount() {
+    this.keyboardShowSubscription?.remove();
+    this.KeyboardHideSubscription?.remove();
+    this.sheetManagerHideEvent?.remove();
+    this.sheetManagerShowEvent?.remove();
   }
 
   _onKeyboardShow = (event: KeyboardEvent) => {
@@ -526,7 +560,7 @@ export default class ActionSheet extends Component<Props, State, any> {
       let correction = Platform.OS === "android" ? 20 : 5;
       this.setState({
         keyboard: true,
-        keyboardPadding: event.endCoordinates.height + correction
+        keyboardPadding: event.endCoordinates.height + correction,
       });
       waitAsync(300).then(() => {
         this.isRecoiling = false;
@@ -537,7 +571,7 @@ export default class ActionSheet extends Component<Props, State, any> {
   _onKeyboardHide = () => {
     this.setState({
       keyboard: false,
-      keyboardPadding: 0
+      keyboardPadding: 0,
     });
 
     Animated.parallel([
@@ -545,13 +579,13 @@ export default class ActionSheet extends Component<Props, State, any> {
         toValue: 0,
         bounciness: this.props.bounceOnOpen ? this.props.bounciness : 1,
         speed: this.props.openAnimationSpeed,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(this.opacityValue, {
         toValue: 1,
         duration: 150,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start();
   };
 
@@ -584,11 +618,6 @@ export default class ActionSheet extends Component<Props, State, any> {
       }, 500);
     }
   };
-
-  componentWillUnmount() {
-    this.keyboardShowSubscription?.remove();
-    this.KeyboardHideSubscription?.remove();
-  }
 
   _onDeviceLayout = async (_event: LayoutChangeEvent) => {
     let event = { ..._event };
@@ -626,7 +655,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         deviceHeight: height,
         deviceWidth: width,
         portrait: height > width,
-        paddingTop: measuredPadding ?? 0
+        paddingTop: measuredPadding ?? 0,
       });
     }, 1);
   };
@@ -636,8 +665,8 @@ export default class ActionSheet extends Component<Props, State, any> {
     let correction = this.state.deviceHeight * 0.15;
     let scrollPosition = this.props.gestureEnabled
       ? this.actionSheetHeight * (this.props.initialOffsetFromBottom ?? 1) +
-      correction +
-      (this.props.extraScroll ?? 0)
+        correction +
+        (this.props.extraScroll ?? 0)
       : this.actionSheetHeight + correction + (this.props.extraScroll ?? 0);
     this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 0;
     this.updateActionSheetPosition(scrollPosition);
@@ -663,7 +692,7 @@ export default class ActionSheet extends Component<Props, State, any> {
       headerAlwaysVisible,
       keyboardShouldPersistTaps,
       statusBarTranslucent,
-      keyboardDismissMode
+      keyboardDismissMode,
     } = this.props;
 
     return (
@@ -683,7 +712,7 @@ export default class ActionSheet extends Component<Props, State, any> {
             pointerEvents="none"
             style={{
               position: "absolute",
-              width: 0
+              width: 0,
             }}
             ref={this.safeAreaViewRef}
           >
@@ -695,8 +724,8 @@ export default class ActionSheet extends Component<Props, State, any> {
               styles.parentContainer,
               {
                 opacity: this.opacityValue,
-                width: "100%"
-              }
+                width: "100%",
+              },
             ]}
           >
             {this.props.ExtraOverlayComponent}
@@ -719,18 +748,18 @@ export default class ActionSheet extends Component<Props, State, any> {
               style={[
                 styles.scrollView,
                 {
-                  width: this.state.deviceWidth
-                }
+                  width: this.state.deviceWidth,
+                },
               ]}
               contentContainerStyle={{
-                width: this.state.deviceWidth
+                width: this.state.deviceWidth,
               }}
               data={dummyData}
               keyExtractor={this._keyExtractor}
               renderItem={() => (
                 <View
                   style={{
-                    width: "100%"
+                    width: "100%",
                   }}
                 >
                   <Animated.View
@@ -743,7 +772,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                       position: "absolute",
                       zIndex: 1,
                       backgroundColor: overlayColor,
-                      opacity: defaultOverlayOpacity
+                      opacity: defaultOverlayOpacity,
                     }}
                   />
                   <View
@@ -753,7 +782,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                     style={{
                       height: this.state.deviceHeight * 1.15,
                       width: "100%",
-                      zIndex: 10
+                      zIndex: 10,
                     }}
                   >
                     <TouchableOpacity
@@ -761,7 +790,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                       onLongPress={this._onTouchBackdrop}
                       style={{
                         height: this.state.deviceHeight * 1.15,
-                        width: "100%"
+                        width: "100%",
                       }}
                     />
                   </View>
@@ -771,7 +800,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                     style={[
                       styles.container,
                       {
-                        borderRadius: 10
+                        borderRadius: 10,
                       },
                       containerStyle,
                       {
@@ -780,12 +809,12 @@ export default class ActionSheet extends Component<Props, State, any> {
                         opacity: this.opacityValue,
                         transform: [
                           {
-                            translateY: this.transformValue
-                          }
+                            translateY: this.transformValue,
+                          },
                         ],
                         maxHeight: this.state.deviceHeight,
-                        paddingBottom: this.state.keyboardPadding
-                      }
+                        paddingBottom: this.state.keyboardPadding,
+                      },
                     ]}
                   >
                     <Animated.View
@@ -793,11 +822,11 @@ export default class ActionSheet extends Component<Props, State, any> {
                         maxHeight: this.state.deviceHeight,
                         transform: [
                           {
-                            translateY: this.indicatorTranslateY
-                          }
+                            translateY: this.indicatorTranslateY,
+                          },
                         ],
                         marginTop: this.state.paddingTop,
-                        marginBottom: -this.state.paddingTop
+                        marginBottom: -this.state.paddingTop,
                       }}
                     >
                       {gestureEnabled || headerAlwaysVisible ? (
@@ -807,7 +836,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                           <Animated.View
                             style={[
                               styles.indicator,
-                              { backgroundColor: indicatorColor }
+                              { backgroundColor: indicatorColor },
                             ]}
                           />
                         )
@@ -823,7 +852,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                           containerStyle?.backgroundColor || "#ffffff",
                         position: "absolute",
                         bottom: -195,
-                        width: containerStyle?.width || "100%"
+                        width: containerStyle?.width || "100%",
                       }}
                     />
                   </Animated.View>
