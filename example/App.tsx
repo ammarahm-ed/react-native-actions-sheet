@@ -23,7 +23,7 @@ const App = () => {
       <SafeAreaView style={styles.safeareview}>
         <TouchableOpacity
           onPress={() => {
-            SheetManager.show(Sheets.testSheet, 'abc');
+            SheetManager.show(Sheets.testSheet, {text: 'Hello World'});
           }}
           style={styles.btn}>
           <Text style={styles.btnTitle}>Open ActionSheet</Text>
