@@ -8,4 +8,9 @@ node_modules/
 example/
 #gifs
 gifs/
+index.tsx
+src/
+README.md
+tsconfig.json
+.github/
 
