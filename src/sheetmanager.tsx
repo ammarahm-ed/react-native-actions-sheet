@@ -3,6 +3,10 @@ import { DeviceEventEmitter, EmitterSubscription } from "react-native";
 // Array of all the ids of ActionSheets currently rendered in the app.
 const ids: string[] = [];
 
+/**
+ * SheetManager can be used to imperitively show/hide any ActionSheet with a
+ * unique id prop.
+ */
 export class SheetManager {
   /**
    * Show an ActionSheet with a given id.
