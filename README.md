@@ -109,6 +109,10 @@ SheetManager.hideAll();
 13. Global Sheet Manager
 14. Proper resizing on Android & iOS on Keyboard show/hide.
 
+## Consider supporting with a ⭐️ [star on GitHub](https://github.com/ammarahm-ed/react-native-mmkv-storage/)
+
+If you are using the library in one of your projects, consider supporting with a star. It takes a lot of time and effort to keep this maintained and address issues and bugs. Thank you.
+
 <div align="center">
 <h1>Reference</h1>
 </div>
