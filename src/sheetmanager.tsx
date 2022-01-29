@@ -14,7 +14,7 @@ export class SheetManager {
    * @param id id of the ActionSheet to show
    * @param data Any data to pass to the ActionSheet. Will be available from `onBeforeShow` prop.
    */
-  static show(id: string, data: unknown) {
+  static show(id: string, data?: unknown) {
     DeviceEventEmitter.emit(`show_${id}`, data);
   }
 
@@ -24,7 +24,7 @@ export class SheetManager {
    * @param id id of the ActionSheet to show
    * @param data An data to pass to the ActionSheet. Will be available from `onClose` prop.
    */
-  static async hide(id: string, data: unknown): Promise<boolean> {
+  static async hide(id: string, data?: unknown): Promise<boolean> {
     return new Promise((resolve) => {
       let sub: EmitterSubscription;
       const fn = () => {

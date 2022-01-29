@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SheetManager } from "./sheetmanager";
 import { styles } from "./styles";
 import type { ActionSheetProps } from "./types";
 import {
@@ -526,6 +527,8 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentDidMount() {
+    this.props.id && SheetManager.add(this.props.id);
+
     this.keyboardShowSubscription = Keyboard.addListener(
       Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
       this._onKeyboardShow
@@ -548,6 +551,7 @@ export default class ActionSheet extends Component<Props, State, any> {
   }
 
   componentWillUnmount() {
+    this.props.id && SheetManager.remove(this.props.id);
     this.keyboardShowSubscription?.remove();
     this.KeyboardHideSubscription?.remove();
     this.sheetManagerHideEvent?.remove();
@@ -837,6 +841,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                             style={[
                               styles.indicator,
                               { backgroundColor: indicatorColor },
+                              this.props.indicatorStyle,
                             ]}
                           />
                         )

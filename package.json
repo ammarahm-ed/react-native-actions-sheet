@@ -2,7 +2,7 @@
   "name": "react-native-actions-sheet",
   "version": "0.5.8",
   "description": "A Cross Platform(Android & iOS) ActionSheet with a robust and flexible api, native performance and zero dependency code for react native. Create anything you want inside ActionSheet.",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ammarahm-ed/react-native-actions-sheet.git"
@@ -54,14 +54,16 @@
     "react": "17.0.2",
     "react-native": "0.66.4",
     "react-native-vector-icons": "^9.0.0",
-    "typedoc": "^0.22.10",
-    "typedoc-plugin-markdown": "^3.11.11",
+    "typedoc": "^0.22.11",
+    "typedoc-plugin-markdown": "^3.11.12",
     "typescript": "4.5.4"
   },
   "directories": {
     "example": "example"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "docs": "typedoc --plugin typedoc-plugin-markdown --out docs ./index.tsx"
   }
 }

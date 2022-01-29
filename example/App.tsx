@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, {useRef} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -8,7 +8,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import ActionSheet from 'react-native-actions-sheet';
+import ActionSheet, {SheetManager} from 'react-native-actions-sheet';
+
+const Sheets = {
+  testSheet: 'test_sheet_id',
+};
 
 const colors = ['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'];
 const App = () => {
@@ -19,7 +23,7 @@ const App = () => {
       <SafeAreaView style={styles.safeareview}>
         <TouchableOpacity
           onPress={() => {
-            actionSheetRef.current?.show();
+            SheetManager.show(Sheets.testSheet, 'abc');
           }}
           style={styles.btn}>
           <Text style={styles.btnTitle}>Open ActionSheet</Text>
@@ -27,6 +31,8 @@ const App = () => {
 
         <ActionSheet
           initialOffsetFromBottom={0.4}
+          onBeforeShow={data => console.log(data)}
+          id={Sheets.testSheet}
           ref={actionSheetRef}
           statusBarTranslucent
           bounceOnOpen={true}
@@ -72,7 +78,7 @@ const App = () => {
                   <TouchableOpacity
                     key={item}
                     onPress={() => {
-                      actionSheetRef.current?.hide();
+                      SheetManager.hide(Sheets.testSheet, null);
                     }}
                     style={styles.listItem}>
                     <View
@@ -187,7 +193,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     elevation: 5,
     shadowColor: 'black',
-    shadowOffset: { width: 0.3 * 4, height: 0.5 * 4 },
+    shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
     shadowOpacity: 0.2,
     shadowRadius: 0.7 * 4,
   },

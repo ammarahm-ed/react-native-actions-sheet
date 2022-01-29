@@ -1,3 +1,7 @@
+/**
+ * SheetManager can be used to imperitively show/hide any ActionSheet with a
+ * unique id prop.
+ */
 export declare class SheetManager {
     /**
      * Show an ActionSheet with a given id.
@@ -5,14 +9,14 @@ export declare class SheetManager {
      * @param id id of the ActionSheet to show
      * @param data Any data to pass to the ActionSheet. Will be available from `onBeforeShow` prop.
      */
-    static show(id: string, data: unknown): void;
+    static show(id: string, data?: unknown): void;
     /**
      * An async hide function. This is useful when you want to show one ActionSheet after closing another.
      *
      * @param id id of the ActionSheet to show
      * @param data An data to pass to the ActionSheet. Will be available from `onClose` prop.
      */
-    static hide(id: string, data: unknown): Promise<boolean>;
+    static hide(id: string, data?: unknown): Promise<boolean>;
     /**
      * Hide all the opened ActionSheets.
      */

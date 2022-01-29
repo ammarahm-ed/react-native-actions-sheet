@@ -37,6 +37,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 import { DeviceEventEmitter } from "react-native";
 // Array of all the ids of ActionSheets currently rendered in the app.
 var ids = [];
+/**
+ * SheetManager can be used to imperitively show/hide any ActionSheet with a
+ * unique id prop.
+ */
 var SheetManager = /** @class */ (function () {
     function SheetManager() {
     }

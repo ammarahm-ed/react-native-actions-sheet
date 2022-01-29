@@ -62,6 +62,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import React, { Component, createRef } from "react";
 import { Animated, DeviceEventEmitter, Dimensions, FlatList, Keyboard, Modal, Platform, SafeAreaView, StatusBar, TouchableOpacity, View, } from "react-native";
+import { SheetManager } from "./sheetmanager";
 import { styles } from "./styles";
 import { getDeviceHeight, getElevation, SUPPORTED_ORIENTATIONS, waitAsync, } from "./utils";
 var safeAreaInnerHeight = 0;
@@ -656,6 +657,7 @@ var ActionSheet = /** @class */ (function (_super) {
         this._scrollTo(scrollOffset);
     };
     ActionSheet.prototype.componentDidMount = function () {
+        this.props.id && SheetManager.add(this.props.id);
         this.keyboardShowSubscription = Keyboard.addListener(Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow", this._onKeyboardShow);
         this.KeyboardHideSubscription = Keyboard.addListener(Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide", this._onKeyboardHide);
         if (this.props.id) {
@@ -665,6 +667,7 @@ var ActionSheet = /** @class */ (function (_super) {
     };
     ActionSheet.prototype.componentWillUnmount = function () {
         var _a, _b, _c, _d;
+        this.props.id && SheetManager.remove(this.props.id);
         (_a = this.keyboardShowSubscription) === null || _a === void 0 ? void 0 : _a.remove();
         (_b = this.KeyboardHideSubscription) === null || _b === void 0 ? void 0 : _b.remove();
         (_c = this.sheetManagerHideEvent) === null || _c === void 0 ? void 0 : _c.remove();
@@ -760,6 +763,7 @@ var ActionSheet = /** @class */ (function (_super) {
                       {gestureEnabled || headerAlwaysVisible ? (CustomHeaderComponent ? (CustomHeaderComponent) : (<Animated.View style={[
                         styles.indicator,
                         { backgroundColor: indicatorColor },
+                        _this.props.indicatorStyle,
                     ]}/>)) : null}
 
                       {children}
