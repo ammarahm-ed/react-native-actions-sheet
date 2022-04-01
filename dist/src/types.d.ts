@@ -179,9 +179,22 @@ export declare type ActionSheetProps = {
      */
     keyboardHandlerEnabled?: boolean;
     /**
-     * Test ID for unit testing
+     * Test ID for sheet modal.
      */
     testID?: string;
+    /**
+     * Test id for various sheet components for testing
+     */
+    testIDs?: {
+        /**
+         * Test id for backdrop. Can be used to close sheet in e2e tests.
+         */
+        backdrop?: string;
+        /**
+         * Test id for internal scroll view.
+         */
+        scrollview?: string;
+    };
     /**
      * Event called when the ActionSheet closes.
      *

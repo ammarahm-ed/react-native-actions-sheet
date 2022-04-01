@@ -688,8 +688,9 @@ var ActionSheet = /** @class */ (function (_super) {
     };
     ActionSheet.prototype.render = function () {
         var _this = this;
-        var _a = this.state, scrollable = _a.scrollable, modalVisible = _a.modalVisible;
-        var _b = this.props, testID = _b.testID, onOpen = _b.onOpen, overlayColor = _b.overlayColor, gestureEnabled = _b.gestureEnabled, elevation = _b.elevation, indicatorColor = _b.indicatorColor, defaultOverlayOpacity = _b.defaultOverlayOpacity, children = _b.children, containerStyle = _b.containerStyle, CustomHeaderComponent = _b.CustomHeaderComponent, headerAlwaysVisible = _b.headerAlwaysVisible, keyboardShouldPersistTaps = _b.keyboardShouldPersistTaps, statusBarTranslucent = _b.statusBarTranslucent, keyboardDismissMode = _b.keyboardDismissMode;
+        var _a;
+        var _b = this.state, scrollable = _b.scrollable, modalVisible = _b.modalVisible;
+        var _c = this.props, testID = _c.testID, onOpen = _c.onOpen, overlayColor = _c.overlayColor, gestureEnabled = _c.gestureEnabled, elevation = _c.elevation, indicatorColor = _c.indicatorColor, defaultOverlayOpacity = _c.defaultOverlayOpacity, children = _c.children, containerStyle = _c.containerStyle, CustomHeaderComponent = _c.CustomHeaderComponent, headerAlwaysVisible = _c.headerAlwaysVisible, keyboardShouldPersistTaps = _c.keyboardShouldPersistTaps, statusBarTranslucent = _c.statusBarTranslucent, keyboardDismissMode = _c.keyboardDismissMode;
         return (<>
         <Modal visible={modalVisible} animationType="none" 
         // @ts-ignore
@@ -709,75 +710,78 @@ var ActionSheet = /** @class */ (function (_super) {
             ]}>
             {this.props.ExtraOverlayComponent}
 
-            <FlatList bounces={false} keyboardShouldPersistTaps={keyboardShouldPersistTaps} keyboardDismissMode={keyboardDismissMode} ref={this.scrollViewRef} scrollEventThrottle={5} overScrollMode="never" showsVerticalScrollIndicator={false} onMomentumScrollBegin={this._onScrollBegin} onMomentumScrollEnd={this._onScrollEnd} scrollEnabled={scrollable} onScrollBeginDrag={this._onScrollBeginDrag} onTouchEnd={this._onTouchEnd} onScroll={this._onScroll} scrollsToTop={false} style={[
+            <FlatList testID={(_a = this.props.testIDs) === null || _a === void 0 ? void 0 : _a.scrollview} bounces={false} keyboardShouldPersistTaps={keyboardShouldPersistTaps} keyboardDismissMode={keyboardDismissMode} ref={this.scrollViewRef} scrollEventThrottle={5} overScrollMode="never" showsVerticalScrollIndicator={false} onMomentumScrollBegin={this._onScrollBegin} onMomentumScrollEnd={this._onScrollEnd} scrollEnabled={scrollable} onScrollBeginDrag={this._onScrollBeginDrag} onTouchEnd={this._onTouchEnd} onScroll={this._onScroll} scrollsToTop={false} style={[
                 styles.scrollView,
                 {
                     width: this.state.deviceWidth
                 },
             ]} contentContainerStyle={{
                 width: this.state.deviceWidth
-            }} data={dummyData} keyExtractor={this._keyExtractor} renderItem={function () { return (<View style={{
-                    width: "100%"
-                }}>
+            }} data={dummyData} keyExtractor={this._keyExtractor} renderItem={function () {
+                var _a;
+                return (<View style={{
+                        width: "100%"
+                    }}>
                   <Animated.View onTouchStart={_this._onTouchBackdrop} onTouchMove={_this._onTouchBackdrop} onTouchEnd={_this._onTouchBackdrop} style={{
-                    height: "100%",
-                    width: "100%",
-                    position: "absolute",
-                    zIndex: 1,
-                    backgroundColor: overlayColor,
-                    opacity: defaultOverlayOpacity
-                }}/>
+                        height: "100%",
+                        width: "100%",
+                        position: "absolute",
+                        zIndex: 1,
+                        backgroundColor: overlayColor,
+                        opacity: defaultOverlayOpacity
+                    }}/>
                   <View onTouchMove={_this._onTouchMove} onTouchStart={_this._onTouchStart} onTouchEnd={_this._onTouchEnd} style={{
-                    height: _this.state.deviceHeight * 1.15,
-                    width: "100%",
-                    zIndex: 10
-                }}>
-                    <TouchableOpacity onPress={_this._onTouchBackdrop} onLongPress={_this._onTouchBackdrop} style={{
-                    height: _this.state.deviceHeight * 1.15,
-                    width: "100%"
-                }}/>
+                        height: _this.state.deviceHeight * 1.15,
+                        width: "100%",
+                        zIndex: 10
+                    }}>
+                    <TouchableOpacity testID={(_a = _this.props.testIDs) === null || _a === void 0 ? void 0 : _a.backdrop} onPress={_this._onTouchBackdrop} onLongPress={_this._onTouchBackdrop} style={{
+                        height: _this.state.deviceHeight * 1.15,
+                        width: "100%"
+                    }}/>
                   </View>
 
                   <Animated.View onLayout={_this._showModal} style={[
-                    styles.container,
-                    {
-                        borderRadius: 10
-                    },
-                    containerStyle,
-                    __assign(__assign({}, getElevation(elevation !== null && elevation !== void 0 ? elevation : 5)), { zIndex: 11, opacity: _this.opacityValue, transform: [
-                            {
-                                translateY: _this.transformValue
-                            },
-                        ], maxHeight: _this.state.deviceHeight, paddingBottom: _this.state.keyboardPadding }),
-                ]}>
-                    <Animated.View style={{
-                    maxHeight: _this.state.deviceHeight,
-                    transform: [
+                        styles.container,
                         {
-                            translateY: _this.indicatorTranslateY
+                            borderRadius: 10
                         },
-                    ],
-                    marginTop: _this.state.paddingTop,
-                    marginBottom: -_this.state.paddingTop
-                }}>
+                        containerStyle,
+                        __assign(__assign({}, getElevation(elevation !== null && elevation !== void 0 ? elevation : 5)), { zIndex: 11, opacity: _this.opacityValue, transform: [
+                                {
+                                    translateY: _this.transformValue
+                                },
+                            ], maxHeight: _this.state.deviceHeight, paddingBottom: _this.state.keyboardPadding }),
+                    ]}>
+                    <Animated.View style={{
+                        maxHeight: _this.state.deviceHeight,
+                        transform: [
+                            {
+                                translateY: _this.indicatorTranslateY
+                            },
+                        ],
+                        marginTop: _this.state.paddingTop,
+                        marginBottom: -_this.state.paddingTop
+                    }}>
                       {gestureEnabled || headerAlwaysVisible ? (CustomHeaderComponent ? (CustomHeaderComponent) : (<Animated.View style={[
-                        styles.indicator,
-                        { backgroundColor: indicatorColor },
-                        _this.props.indicatorStyle,
-                    ]}/>)) : null}
+                            styles.indicator,
+                            { backgroundColor: indicatorColor },
+                            _this.props.indicatorStyle,
+                        ]}/>)) : null}
 
                       {children}
                     </Animated.View>
 
                     <View style={{
-                    height: 200,
-                    backgroundColor: (containerStyle === null || containerStyle === void 0 ? void 0 : containerStyle.backgroundColor) || "#ffffff",
-                    position: "absolute",
-                    bottom: -195,
-                    width: (containerStyle === null || containerStyle === void 0 ? void 0 : containerStyle.width) || "100%"
-                }}/>
+                        height: 200,
+                        backgroundColor: (containerStyle === null || containerStyle === void 0 ? void 0 : containerStyle.backgroundColor) || "#ffffff",
+                        position: "absolute",
+                        bottom: -195,
+                        width: (containerStyle === null || containerStyle === void 0 ? void 0 : containerStyle.width) || "100%"
+                    }}/>
                   </Animated.View>
-                </View>); }}/>
+                </View>);
+            }}/>
           </Animated.View>
         </Modal>
       </>);

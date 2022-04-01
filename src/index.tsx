@@ -735,6 +735,7 @@ export default class ActionSheet extends Component<Props, State, any> {
             {this.props.ExtraOverlayComponent}
 
             <FlatList
+              testID={this.props.testIDs?.scrollview}
               bounces={false}
               keyboardShouldPersistTaps={keyboardShouldPersistTaps}
               keyboardDismissMode={keyboardDismissMode}
@@ -790,6 +791,7 @@ export default class ActionSheet extends Component<Props, State, any> {
                     }}
                   >
                     <TouchableOpacity
+                      testID={this.props.testIDs?.backdrop}
                       onPress={this._onTouchBackdrop}
                       onLongPress={this._onTouchBackdrop}
                       style={{
