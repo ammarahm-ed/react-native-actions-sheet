@@ -1,6 +1,8 @@
+import React from "react";
 import { ViewStyle } from "react-native";
 
 export type ActionSheetProps = {
+  children: React.ReactNode;
   /**
    * A unique id for the ActionSheet. You must set this if you are using `SheetManager`.
    *
