@@ -49,33 +49,56 @@ src="https://imgur.com/g6LLkl4.gif"
 
 # How to use
 
-It's very simple to use the ActionSheet. Import the ActionSheet & SheetManager.
-
+Create your ActionSheet component and register it with a unique id. Remember that you do not need to render the ActionSheet in any components.
 ```jsx
 import React from "react";
-import ActionSheet, { SheetManager } from "react-native-actions-sheet";
-```
+import ActionSheet, { SheetManager,SheetProps,registerSheet } from "react-native-actions-sheet";
 
-Create your ActionSheet component and give it a unique id.
+function MySheet(props:SheetProps) {
 
-```jsx
-<ActionSheet id="helloworld_sheet">
+return <ActionSheet id={props.sheetId}>
   <View>
     <Text>Hello World</Text>
   </View>
-</ActionSheet>
-```
+</ActionSheet>;
+}
 
-Open the ActionSheet from anywhere in the app.
+// Register your Sheet component.
+registerSheet('mysheet', MySheet);
+
+export default MySheet;
+```
+Create a `sheets.tsx` or `sheets.js` file.
+
+```tsx
+// Import all the sheets here as follows
+import "mysheet.tsx"
+export {};
+```
+In `App.js` import `sheets.tsx` and wrap your app in `SheetProvider`.
+```tsx
+import { SheetProvider } from "react-native-actions-sheet";
+import "sheets.tsx"; // here
+
+function App() {
+
+  return <SheetProvider>
+    {
+      // your app components
+    }
+  </SheetProvider>;
+}
+```
+Now you can open the ActionSheet from anywhere in the app.
 
 ```jsx
-SheetManager.show("helloworld_sheet");
+SheetManager.show("mysheet");
 ```
 
 Want to pass some data on opening the sheet or update the state?
 
 ```jsx
-SheetManager.show("helloworld_sheet",{value:"Hello World"});
+SheetManager.show("mysheet",{value:"data"});
 
 <ActionSheet
 onBeforeShow={(data) => {
@@ -85,12 +108,27 @@ id="helloworld_sheet">
 ```
 Hiding the sheet is easy. Enable gestures or do the following.
 ```jsx
-await SheetManager.hide("helloworld_sheet");
+await SheetManager.hide("mysheet");
 ```
 Close all opened ActionSheets
 ```jsx
 SheetManager.hideAll();
 ```
+
+### Showing ActionSheet without `SheetProvider`
+You can also show the sheet without SheetProvider.
+```js
+<ActionSheet id="mysheet">
+  <View>
+    <Text>Hello World</Text>
+  </View>
+</ActionSheet>;
+```
+And then show it;
+```js
+SheetManager.show("mysheet");
+```
+
 
 # Features
 
@@ -147,6 +185,17 @@ Test ID for unit testing
 |--------|----------|
 | string | no       |
 
+#
+
+#### `isModal`
+
+Set this to false to use a simple View instead of a Modal to show the ActionSheet.
+
+| Type    | Required |
+|---------|----------|
+| boolean | no       |
+
+default:`true`
 #
 
 #### `initialOffsetFromBottom`
