@@ -38,6 +38,7 @@ const styles = StyleSheet.create({
   safeareview: {
     justifyContent: 'center',
     flex: 1,
+    backgroundColor: 'transparent',
   },
   btnTitle: {
     color: 'white',

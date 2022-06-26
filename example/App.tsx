@@ -5,8 +5,9 @@ import './src/sheets';
 const App = () => {
   return (
     <>
-      <SheetProvider />
-      <ExampleScreen />
+      <SheetProvider>
+        <ExampleScreen />
+      </SheetProvider>
     </>
   );
 };

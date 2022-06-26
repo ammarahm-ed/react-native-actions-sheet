@@ -1,6 +1,7 @@
 import React, { Component, createRef } from "react";
 import {
   Animated,
+  BackHandler,
   Dimensions,
   EmitterSubscription,
   FlatList,
@@ -8,6 +9,7 @@ import {
   KeyboardEvent,
   LayoutChangeEvent,
   Modal,
+  NativeEventSubscription,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
@@ -68,6 +70,7 @@ const defaultProps = {
   gestureEnabled: false,
   keyboardDismissMode: "none",
   keyboardHandlerEnabled: true,
+  isModal: true,
 };
 
 type Props = Partial<typeof defaultProps> & ActionSheetProps;
@@ -104,6 +107,7 @@ export default class ActionSheet extends Component<Props, State, any> {
 
   keyboardShowSubscription: EmitterSubscription | null = null;
   KeyboardHideSubscription: EmitterSubscription | null = null;
+  hardwareBackPressEvent: NativeEventSubscription | null = null;
 
   constructor(props: ActionSheetProps) {
     super(props);
@@ -247,6 +251,7 @@ export default class ActionSheet extends Component<Props, State, any> {
   _hideModal = (data?: unknown) => {
     if (this.isClosing) return;
     this.isClosing = true;
+    this.hardwareBackPressEvent?.remove();
     this._hideAnimation(data);
   };
 
@@ -691,6 +696,11 @@ export default class ActionSheet extends Component<Props, State, any> {
     console.log(event.nativeEvent.layout);
   };
 
+  onHardwareBackPress = () => {
+    this._hideModal();
+    return true;
+  };
+
   render() {
     let { scrollable, modalVisible } = this.state;
     let {
@@ -708,21 +718,45 @@ export default class ActionSheet extends Component<Props, State, any> {
       keyboardShouldPersistTaps,
       statusBarTranslucent,
       keyboardDismissMode,
+      isModal,
     } = this.props;
 
-    return (
-      <>
-        <Modal
-          visible={modalVisible}
-          animationType="none"
+    const Root = isModal
+      ? (Modal as React.ElementType)
+      : (View as React.ElementType);
+
+    const rootProps = isModal
+      ? {
+          visible: true,
+          animationType: "none",
           // @ts-ignore
-          testID={testID}
-          supportedOrientations={SUPPORTED_ORIENTATIONS}
-          onShow={onOpen}
-          onRequestClose={this._onRequestClose}
-          transparent={true}
-          statusBarTranslucent={statusBarTranslucent}
-        >
+          testID: testID,
+          supportedOrientations: SUPPORTED_ORIENTATIONS,
+          onShow: onOpen,
+          onRequestClose: this._onRequestClose,
+          transparent: true,
+          statusBarTranslucent: statusBarTranslucent,
+        }
+      : {
+          testID: testID,
+          onLayout: () => {
+            this.hardwareBackPressEvent = BackHandler.addEventListener(
+              "hardwareBackPress",
+              this.onHardwareBackPress
+            );
+            onOpen && onOpen();
+          },
+          style: {
+            position: "absolute",
+            zIndex: 9999,
+            width: "100%",
+            height: "100%",
+          },
+        };
+    console.log("rendering as", isModal);
+    return !modalVisible ? null : (
+      <>
+        <Root {...rootProps}>
           <SafeAreaView
             pointerEvents="none"
             style={{
@@ -757,6 +791,7 @@ export default class ActionSheet extends Component<Props, State, any> {
               showsVerticalScrollIndicator={false}
               onMomentumScrollBegin={this._onScrollBegin}
               onScrollEndDrag={this._onScrollEnd}
+              onMomentumScrollEnd={this._onScrollEnd}
               scrollEnabled={scrollable}
               onScrollBeginDrag={this._onScrollBeginDrag}
               onTouchEnd={this._onTouchEnd}
@@ -879,7 +914,7 @@ export default class ActionSheet extends Component<Props, State, any> {
               )}
             />
           </Animated.View>
-        </Modal>
+        </Root>
       </>
     );
   }

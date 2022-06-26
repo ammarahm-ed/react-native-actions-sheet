@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from "react";
+import React, { ReactNode, useEffect, useReducer } from "react";
 import { actionSheetEventManager } from "./eventmanager";
 
 /**
@@ -46,7 +46,13 @@ registerSheet('local-sheet', LocalSheet,'local-context');
 ``` 
  * @returns 
  */
-function SheetProvider({ context = "global" }: { context?: string }) {
+function SheetProvider({
+  context = "global",
+  children,
+}: {
+  context?: string;
+  children: ReactNode;
+}) {
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const onRegister = React.useCallback(() => {
     // Rerender when a new sheet is added.
@@ -69,7 +75,12 @@ function SheetProvider({ context = "global" }: { context?: string }) {
     return <Sheet key={key} sheetId={key} />;
   }, []);
 
-  return <>{Object.keys(sheetsRegistry[context] || {}).map(renderSheet)}</>;
+  return (
+    <>
+      {children}
+      {Object.keys(sheetsRegistry[context] || {}).map(renderSheet)}
+    </>
+  );
 }
 
 export default React.memo(SheetProvider, () => true);
