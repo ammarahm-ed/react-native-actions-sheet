@@ -692,10 +692,6 @@ export default class ActionSheet extends Component<Props, State, any> {
 
   _keyExtractor = (item: string) => item;
 
-  onSafeAreaLayout = (event: LayoutChangeEvent) => {
-    console.log(event.nativeEvent.layout);
-  };
-
   onHardwareBackPress = () => {
     this._hideModal();
     return true;
@@ -753,7 +749,6 @@ export default class ActionSheet extends Component<Props, State, any> {
             height: "100%",
           },
         };
-    console.log("rendering as", isModal);
     return !modalVisible ? null : (
       <>
         <Root {...rootProps}>
@@ -763,7 +758,6 @@ export default class ActionSheet extends Component<Props, State, any> {
               position: "absolute",
               width: 0,
             }}
-            onLayout={this.onSafeAreaLayout}
             ref={this.safeAreaViewRef}
           >
             <View />
