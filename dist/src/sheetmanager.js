@@ -34,7 +34,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import { DeviceEventEmitter } from "react-native";
+import { actionSheetEventManager } from "./eventmanager";
 // Array of all the ids of ActionSheets currently rendered in the app.
 var ids = [];
 /**
@@ -51,7 +51,7 @@ var SheetManager = /** @class */ (function () {
      * @param data Any data to pass to the ActionSheet. Will be available from `onBeforeShow` prop.
      */
     SheetManager.show = function (id, data) {
-        DeviceEventEmitter.emit("show_".concat(id), data);
+        actionSheetEventManager.publish("show_".concat(id), data);
     };
     /**
      * An async hide function. This is useful when you want to show one ActionSheet after closing another.
@@ -66,10 +66,10 @@ var SheetManager = /** @class */ (function () {
                         var sub;
                         var fn = function () {
                             resolve(true);
-                            sub === null || sub === void 0 ? void 0 : sub.remove();
+                            sub && sub();
                         };
-                        sub = DeviceEventEmitter.addListener("onclose_".concat(id), fn);
-                        DeviceEventEmitter.emit("hide_".concat(id), data);
+                        sub = actionSheetEventManager.subscribe("onclose_".concat(id), fn);
+                        actionSheetEventManager.publish("hide_".concat(id), data);
                     })];
             });
         });
@@ -78,7 +78,7 @@ var SheetManager = /** @class */ (function () {
      * Hide all the opened ActionSheets.
      */
     SheetManager.hideAll = function () {
-        ids.forEach(function (id) { return DeviceEventEmitter.emit("hide_".concat(id)); });
+        ids.forEach(function (id) { return actionSheetEventManager.publish("hide_".concat(id)); });
     };
     SheetManager.add = function (id) {
         if (ids.indexOf(id) < 0) {

@@ -180,6 +180,10 @@ export declare type ActionSheetProps = {
      */
     keyboardHandlerEnabled?: boolean;
     /**
+     * Set this to false to use a View instead of a Modal to show Sheet.
+     */
+    isModal?: boolean;
+    /**
      * Test ID for sheet modal.
      */
     testID?: string;

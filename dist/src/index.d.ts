@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Animated, EmitterSubscription, KeyboardEvent, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from "react-native";
+import { Animated, EmitterSubscription, KeyboardEvent, LayoutChangeEvent, NativeEventSubscription, NativeScrollEvent, NativeSyntheticEvent } from "react-native";
 import type { ActionSheetProps } from "./types";
 declare type State = {
     modalVisible: boolean;
@@ -35,6 +35,7 @@ declare const defaultProps: {
     gestureEnabled: boolean;
     keyboardDismissMode: string;
     keyboardHandlerEnabled: boolean;
+    isModal: boolean;
 };
 declare type Props = Partial<typeof defaultProps> & ActionSheetProps;
 export default class ActionSheet extends Component<Props, State, any> {
@@ -60,6 +61,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         gestureEnabled: boolean;
         keyboardDismissMode: string;
         keyboardHandlerEnabled: boolean;
+        isModal: boolean;
     };
     actionSheetHeight: number;
     prevScroll: number;
@@ -82,10 +84,11 @@ export default class ActionSheet extends Component<Props, State, any> {
     underlayScale: Animated.Value;
     indicatorTranslateY: Animated.Value;
     initialScrolling: boolean;
-    sheetManagerHideEvent: EmitterSubscription | null;
-    sheetManagerShowEvent: EmitterSubscription | null;
+    sheetManagerHideEvent: (() => void) | null;
+    sheetManagerShowEvent: (() => void) | null;
     keyboardShowSubscription: EmitterSubscription | null;
     KeyboardHideSubscription: EmitterSubscription | null;
+    hardwareBackPressEvent: NativeEventSubscription | null;
     constructor(props: ActionSheetProps);
     /**
      * Snap ActionSheet to given offset.
@@ -134,9 +137,11 @@ export default class ActionSheet extends Component<Props, State, any> {
      */
     handleChildScrollEnd: () => Promise<void>;
     _onDeviceLayout: (_event: LayoutChangeEvent) => Promise<void>;
+    getScrollPositionFromOffset(offset: number, correction: number): number;
     getInitialScrollPosition(): number;
     _keyExtractor: (item: string) => string;
-    render(): JSX.Element;
+    onHardwareBackPress: () => boolean;
+    render(): JSX.Element | null;
 }
 export {};
 //# sourceMappingURL=index.d.ts.map
