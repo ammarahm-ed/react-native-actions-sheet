@@ -1,4 +1,4 @@
-import { DeviceEventEmitter, EmitterSubscription } from "react-native";
+import { actionSheetEventManager } from "./eventmanager";
 
 // Array of all the ids of ActionSheets currently rendered in the app.
 const ids: string[] = [];
@@ -15,7 +15,7 @@ export class SheetManager {
    * @param data Any data to pass to the ActionSheet. Will be available from `onBeforeShow` prop.
    */
   static show(id: string, data?: unknown) {
-    DeviceEventEmitter.emit(`show_${id}`, data);
+    actionSheetEventManager.publish(`show_${id}`, data);
   }
 
   /**
@@ -26,13 +26,13 @@ export class SheetManager {
    */
   static async hide(id: string, data?: unknown): Promise<boolean> {
     return new Promise((resolve) => {
-      let sub: EmitterSubscription;
+      let sub: () => void;
       const fn = () => {
         resolve(true);
-        sub?.remove();
+        sub && sub();
       };
-      sub = DeviceEventEmitter.addListener(`onclose_${id}`, fn);
-      DeviceEventEmitter.emit(`hide_${id}`, data);
+      sub = actionSheetEventManager.subscribe(`onclose_${id}`, fn);
+      actionSheetEventManager.publish(`hide_${id}`, data);
     });
   }
 
@@ -40,7 +40,7 @@ export class SheetManager {
    * Hide all the opened ActionSheets.
    */
   static hideAll() {
-    ids.forEach((id) => DeviceEventEmitter.emit(`hide_${id}`));
+    ids.forEach((id) => actionSheetEventManager.publish(`hide_${id}`));
   }
 
   static add = (id: string) => {

@@ -1,7 +1,6 @@
 import React, { Component, createRef } from "react";
 import {
   Animated,
-  DeviceEventEmitter,
   Dimensions,
   EmitterSubscription,
   FlatList,
@@ -17,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { actionSheetEventManager } from "./eventmanager";
 import { SheetManager } from "./sheetmanager";
 import { styles } from "./styles";
 import type { ActionSheetProps } from "./types";
@@ -99,8 +99,8 @@ export default class ActionSheet extends Component<Props, State, any> {
   underlayScale: Animated.Value = new Animated.Value(1);
   indicatorTranslateY: Animated.Value;
   initialScrolling: boolean = false;
-  sheetManagerHideEvent: EmitterSubscription | null = null;
-  sheetManagerShowEvent: EmitterSubscription | null = null;
+  sheetManagerHideEvent: (() => void) | null = null;
+  sheetManagerShowEvent: (() => void) | null = null;
 
   keyboardShowSubscription: EmitterSubscription | null = null;
   KeyboardHideSubscription: EmitterSubscription | null = null;
@@ -236,7 +236,7 @@ export default class ActionSheet extends Component<Props, State, any> {
             this.deviceLayoutCalled = false;
             this.props.onClose && this.props.onClose(data);
             if (this.props.id) {
-              DeviceEventEmitter.emit(`onclose_${this.props.id}`, data);
+              actionSheetEventManager.publish(`onclose_${this.props.id}`, data);
             }
           }
         );
@@ -378,13 +378,12 @@ export default class ActionSheet extends Component<Props, State, any> {
         let scrollOffset =
           this.actionSheetHeight * this.currentOffsetFromBottom +
           correction +
-          (extraScroll ?? 100);
+          (extraScroll ?? 0);
 
         if (this.initialScrolling) {
           this.initialScrolling = false;
           scrollOffset = this.prevScroll;
         }
-
         this._scrollTo(scrollOffset);
         await waitAsync(300);
         this.isRecoiling = false;
@@ -539,11 +538,11 @@ export default class ActionSheet extends Component<Props, State, any> {
       this._onKeyboardHide
     );
     if (this.props.id) {
-      this.sheetManagerShowEvent = DeviceEventEmitter.addListener(
+      this.sheetManagerShowEvent = actionSheetEventManager.subscribe(
         `show_${this.props.id}`,
         this.onSheetManagerShow
       );
-      this.sheetManagerHideEvent = DeviceEventEmitter.addListener(
+      this.sheetManagerHideEvent = actionSheetEventManager.subscribe(
         `hide_${this.props.id}`,
         this.onSheetMangerHide
       );
@@ -554,8 +553,8 @@ export default class ActionSheet extends Component<Props, State, any> {
     this.props.id && SheetManager.remove(this.props.id);
     this.keyboardShowSubscription?.remove();
     this.KeyboardHideSubscription?.remove();
-    this.sheetManagerHideEvent?.remove();
-    this.sheetManagerShowEvent?.remove();
+    this.sheetManagerHideEvent && this.sheetManagerHideEvent();
+    this.sheetManagerShowEvent && this.sheetManagerShowEvent();
   }
 
   _onKeyboardShow = (event: KeyboardEvent) => {
@@ -566,6 +565,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         keyboard: true,
         keyboardPadding: event.endCoordinates.height + correction,
       });
+
       waitAsync(300).then(() => {
         this.isRecoiling = false;
       });
@@ -664,21 +664,32 @@ export default class ActionSheet extends Component<Props, State, any> {
     }, 1);
   };
 
+  getScrollPositionFromOffset(offset: number, correction: number) {
+    return this.props.gestureEnabled
+      ? this.actionSheetHeight * offset +
+          correction +
+          (this.props.extraScroll ?? 0)
+      : this.actionSheetHeight + correction + (this.props.extraScroll ?? 0);
+  }
+
   getInitialScrollPosition() {
     this._applyHeightLimiter();
     let correction = this.state.deviceHeight * 0.15;
-    let scrollPosition = this.props.gestureEnabled
-      ? this.actionSheetHeight * (this.props.initialOffsetFromBottom ?? 1) +
-        correction +
-        (this.props.extraScroll ?? 0)
-      : this.actionSheetHeight + correction + (this.props.extraScroll ?? 0);
-    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 0;
+    let scrollPosition = this.getScrollPositionFromOffset(
+      this.props.initialOffsetFromBottom ?? 1,
+      correction
+    );
+    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 1;
     this.updateActionSheetPosition(scrollPosition);
 
     return scrollPosition;
   }
 
   _keyExtractor = (item: string) => item;
+
+  onSafeAreaLayout = (event: LayoutChangeEvent) => {
+    console.log(event.nativeEvent.layout);
+  };
 
   render() {
     let { scrollable, modalVisible } = this.state;
@@ -718,6 +729,7 @@ export default class ActionSheet extends Component<Props, State, any> {
               position: "absolute",
               width: 0,
             }}
+            onLayout={this.onSafeAreaLayout}
             ref={this.safeAreaViewRef}
           >
             <View />
@@ -740,11 +752,11 @@ export default class ActionSheet extends Component<Props, State, any> {
               keyboardShouldPersistTaps={keyboardShouldPersistTaps}
               keyboardDismissMode={keyboardDismissMode}
               ref={this.scrollViewRef}
-              scrollEventThrottle={5}
+              scrollEventThrottle={16}
               overScrollMode="never"
               showsVerticalScrollIndicator={false}
               onMomentumScrollBegin={this._onScrollBegin}
-              onMomentumScrollEnd={this._onScrollEnd}
+              onScrollEndDrag={this._onScrollEnd}
               scrollEnabled={scrollable}
               onScrollBeginDrag={this._onScrollBeginDrag}
               onTouchEnd={this._onTouchEnd}
