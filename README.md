@@ -50,45 +50,56 @@ src="https://imgur.com/g6LLkl4.gif"
 # How to use
 
 Create your ActionSheet component and register it with a unique id. Remember that you do not need to render the ActionSheet in any components.
+
 ```jsx
 import React from "react";
-import ActionSheet, { SheetManager,SheetProps,registerSheet } from "react-native-actions-sheet";
+import ActionSheet, {
+  SheetManager,
+  SheetProps,
+  registerSheet,
+} from "react-native-actions-sheet";
 
-function MySheet(props:SheetProps) {
-
-return <ActionSheet id={props.sheetId}>
-  <View>
-    <Text>Hello World</Text>
-  </View>
-</ActionSheet>;
+function MySheet(props: SheetProps) {
+  return (
+    <ActionSheet id={props.sheetId}>
+      <View>
+        <Text>Hello World</Text>
+      </View>
+    </ActionSheet>
+  );
 }
 
 // Register your Sheet component.
-registerSheet('mysheet', MySheet);
+registerSheet("mysheet", MySheet);
 
 export default MySheet;
 ```
+
 Create a `sheets.tsx` or `sheets.js` file.
 
 ```tsx
 // Import all the sheets here as follows
-import "mysheet.tsx"
+import "mysheet.tsx";
 export {};
 ```
+
 In `App.js` import `sheets.tsx` and wrap your app in `SheetProvider`.
+
 ```tsx
 import { SheetProvider } from "react-native-actions-sheet";
 import "sheets.tsx"; // here
 
 function App() {
-
-  return <SheetProvider>
-    {
-      // your app components
-    }
-  </SheetProvider>;
+  return (
+    <SheetProvider>
+      {
+        // your app components
+      }
+    </SheetProvider>
+  );
 }
 ```
+
 Now you can open the ActionSheet from anywhere in the app.
 
 ```jsx
@@ -106,29 +117,36 @@ onBeforeShow={(data) => {
 }}
 id="helloworld_sheet">
 ```
+
 Hiding the sheet is easy. Enable gestures or do the following.
+
 ```jsx
 await SheetManager.hide("mysheet");
 ```
+
 Close all opened ActionSheets
+
 ```jsx
 SheetManager.hideAll();
 ```
 
 ### Showing ActionSheet without `SheetProvider`
+
 You can also show the sheet without SheetProvider.
+
 ```js
 <ActionSheet id="mysheet">
   <View>
     <Text>Hello World</Text>
   </View>
-</ActionSheet>;
+</ActionSheet>
 ```
+
 And then show it;
+
 ```js
 SheetManager.show("mysheet");
 ```
-
 
 # Features
 
@@ -147,7 +165,7 @@ SheetManager.show("mysheet");
 13. Global Sheet Manager
 14. Proper resizing on Android & iOS on Keyboard show/hide.
 
-## Consider supporting with a ⭐️ [star on GitHub](https://github.com/ammarahm-ed/react-native-mmkv-storage/)
+## Consider supporting with a ⭐️ [star on GitHub](https://github.com/ammarahm-ed/react-native-actions-sheet/)
 
 If you are using the library in one of your projects, consider supporting with a star. It takes a lot of time and effort to keep this maintained and address issues and bugs. Thank you.
 
@@ -162,7 +180,7 @@ If you are using the library in one of your projects, consider supporting with a
 A unique id for the ActionSheet. You must set this if you are using `SheetManager`.
 
 | Type | Required |
-|------|----------|
+| ---- | -------- |
 | id   | false    |
 
 #
@@ -172,7 +190,7 @@ A unique id for the ActionSheet. You must set this if you are using `SheetManage
 Assigns a ref to ActionSheet component to use methods.
 
 | Type | Required |
-|------|----------|
+| ---- | -------- |
 | ref  | false    |
 
 #
@@ -182,7 +200,7 @@ Assigns a ref to ActionSheet component to use methods.
 Test ID for unit testing
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | string | no       |
 
 #
@@ -192,10 +210,11 @@ Test ID for unit testing
 Set this to false to use a simple View instead of a Modal to show the ActionSheet.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 default:`true`
+
 #
 
 #### `initialOffsetFromBottom`
@@ -203,7 +222,7 @@ default:`true`
 Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true` **
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | number | no       |
 
 Default: `1`
@@ -215,7 +234,7 @@ Default: `1`
 Normally when the ActionSheet is fully opened, a small portion from the bottom is hidden by default. Use this prop if you want the ActionSheet to hover over the bottom of screen and not hide a little behind it.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | number | no       |
 
 Default: `0`
@@ -227,7 +246,7 @@ Default: `0`
 Style the top indicator bar in ActionSheet.
 
 | Type        | Required |
-|-------------|----------|
+| ----------- | -------- |
 | `ViewStyle` | no       |
 
 #
@@ -237,7 +256,7 @@ Style the top indicator bar in ActionSheet.
 Any custom styles for the container.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | Object | no       |
 
 #
@@ -247,7 +266,7 @@ Any custom styles for the container.
 Delay draw of ActionSheet on open for android.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `false`
@@ -259,7 +278,7 @@ Default: `false`
 Delay draw of ActionSheet on open for android time.
 
 | Type        | Required |
-|-------------|----------|
+| ----------- | -------- |
 | number (ms) | no       |
 
 Default: `50`
@@ -271,7 +290,7 @@ Default: `50`
 Your custom header component. Using this will hide the default indicator.
 
 | Type             | Required |
-|------------------|----------|
+| ---------------- | -------- |
 | React. ReactNode | no       |
 
 #
@@ -281,7 +300,7 @@ Your custom header component. Using this will hide the default indicator.
 Render a component over the ActionSheet. Useful for rendering Toast components with which user can interact.
 
 | Type             | Required |
-|------------------|----------|
+| ---------------- | -------- |
 | React. ReactNode | no       |
 
 #
@@ -291,7 +310,7 @@ Render a component over the ActionSheet. Useful for rendering Toast components w
 Keep the header always visible even when gestures are disabled.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `false`
@@ -303,7 +322,7 @@ Default: `false`
 Animate the opening and closing of ActionSheet.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `true`
@@ -315,7 +334,7 @@ Default: `true`
 Speed of opening animation. Higher means the ActionSheet will open more quickly. Use it in combination with `bounciness` prop to have optimize the bounce/spring effect on ActionSheet open.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | number | no       |
 
 Default: `12`
@@ -327,7 +346,7 @@ Default: `12`
 Duration of closing animation.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | number | no       |
 
 Default: `300`
@@ -339,7 +358,7 @@ Default: `300`
 Enables gesture control of ActionSheet
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `false`
@@ -351,7 +370,7 @@ Default: `false`
 Control closing ActionSheet by touching on backdrop.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `true`
@@ -363,7 +382,7 @@ Default: `true`
 Bounces the ActionSheet on open.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `false`
@@ -375,7 +394,7 @@ Default: `false`
 How much you want the ActionSheet to bounce when it is opened.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | number | no       |
 
 Default: `8`
@@ -387,7 +406,7 @@ Default: `8`
 When touch ends and user has not moved farther from the set springOffset, the ActionSheet will return to previous position.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | number | no       |
 
 Default: `50`
@@ -399,7 +418,7 @@ Default: `50`
 Add elevation to the ActionSheet container.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | number | no       |
 
 Default: `0`
@@ -411,7 +430,7 @@ Default: `0`
 Color of the gestureEnabled Indicator.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | string | no       |
 
 Default: `"#f0f0f0"`
@@ -423,7 +442,7 @@ Default: `"#f0f0f0"`
 Color of the overlay/backdrop.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | string | no       |
 
 Default: `"black"`
@@ -435,7 +454,7 @@ Default: `"black"`
 Default opacity of the overlay/backdrop.
 
 | Type         | Required |
-|--------------|----------|
+| ------------ | -------- |
 | number 0 - 1 | no       |
 
 Default: `0.3`
@@ -447,7 +466,7 @@ Default: `0.3`
 Prevent ActionSheet from closing on gesture or tapping on backdrop. Instead snap it to `bottomOffset` location
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `true`
@@ -459,7 +478,7 @@ Default: `true`
 Snap ActionSheet to this location if `closable` is set to false. By default it will snap to the location on first open.
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | number | no       |
 
 Default: `0`
@@ -471,7 +490,7 @@ Default: `0`
 Setting the keyboard persistence of the `ScrollView` component. Should be one of "never", "always" or "handled"
 
 | Type   | Required |
-|--------|----------|
+| ------ | -------- |
 | string | no       |
 
 Default: `never`
@@ -484,7 +503,7 @@ Allow to choose will content change position when keyboard is visible.
 This is enabled by default.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `true`
@@ -496,7 +515,7 @@ Default: `true`
 Set how keyboard should behave on tapping the ActionSheet.
 
 | Type                                 | Required |
-|--------------------------------------|----------|
+| ------------------------------------ | -------- |
 | `"on-drag"` `"none"` `"interactive"` | no       |
 
 Default : `"none"`
@@ -508,7 +527,7 @@ Default : `"none"`
 Determine whether the modal should go under the system statusbar.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `true`
@@ -520,7 +539,7 @@ Default: `true`
 Will the ActionSheet close on `hardwareBackPress` event.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `true`
@@ -532,7 +551,7 @@ Default: `true`
 Allow ActionSheet to draw under the StatusBar. This is enabled by default.
 
 | Type    | Required |
-|---------|----------|
+| ------- | -------- |
 | boolean | no       |
 
 Default: `false`
@@ -544,7 +563,7 @@ Default: `false`
 Event called when position of ActionSheet changes.
 
 | Type     | Required |
-|----------|----------|
+| -------- | -------- |
 | function | no       |
 
 #
@@ -554,7 +573,7 @@ Event called when position of ActionSheet changes.
 Event called when the ActionSheet closes.
 
 | Type     | Required |
-|----------|----------|
+| -------- | -------- |
 | function | no       |
 
 #
@@ -564,7 +583,7 @@ Event called when the ActionSheet closes.
 An event called when the ActionSheet Opens.
 
 | Type     | Required |
-|----------|----------|
+| -------- | -------- |
 | function | no       |
 
 ## Methods
