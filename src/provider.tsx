@@ -83,4 +83,4 @@ function SheetProvider({
   );
 }
 
-export default React.memo(SheetProvider, () => true);
+export default SheetProvider;
