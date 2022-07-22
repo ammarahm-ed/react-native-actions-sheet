@@ -24,9 +24,9 @@ export class SheetManager {
     return new Promise((resolve) => {
       let sub: () => void;
       const handler = (data: ReturnPayload) => {
-        resolve(data);
         onClose && onClose(data);
         sub && sub();
+        resolve(data);
       };
       sub = actionSheetEventManager.subscribe(`onclose_${id}`, handler);
       actionSheetEventManager.publish(`show_${id}`, data);
@@ -46,8 +46,8 @@ export class SheetManager {
     return new Promise((resolve) => {
       let sub: () => void;
       const handler = (data: ReturnPayload) => {
-        resolve(data);
         sub && sub();
+        resolve(data);
       };
       sub = actionSheetEventManager.subscribe(`onclose_${id}`, handler);
       actionSheetEventManager.publish(`hide_${id}`, data);

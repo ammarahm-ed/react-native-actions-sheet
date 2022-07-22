@@ -92,6 +92,11 @@ const RenderSheet = ({ id, context }: { id: string; context: string }) => {
     setVisible(true);
   };
 
+  const onClose = () => {
+    setVisible(false);
+    setPayload(undefined);
+  };
+
   useEffect(() => {
     if (visible) {
       SheetManager.get(id)?.show();
@@ -99,12 +104,9 @@ const RenderSheet = ({ id, context }: { id: string; context: string }) => {
   }, [visible]);
 
   useEffect(() => {
-    const subs = [
+    let subs = [
       actionSheetEventManager.subscribe(`show_${id}`, onShow),
-      actionSheetEventManager.subscribe(`onclose_${id}`, () => {
-        setVisible(false);
-        setPayload(undefined);
-      }),
+      actionSheetEventManager.subscribe(`onclose_${id}`, onClose),
     ];
     return () => {
       subs.forEach((s) => s && s());

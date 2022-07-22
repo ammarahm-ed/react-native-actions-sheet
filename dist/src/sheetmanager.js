@@ -58,9 +58,9 @@ var SheetManager = /** @class */ (function () {
                 return [2 /*return*/, new Promise(function (resolve) {
                         var sub;
                         var handler = function (data) {
-                            resolve(data);
                             onClose && onClose(data);
                             sub && sub();
+                            resolve(data);
                         };
                         sub = actionSheetEventManager.subscribe("onclose_".concat(id), handler);
                         actionSheetEventManager.publish("show_".concat(id), data);
@@ -80,8 +80,8 @@ var SheetManager = /** @class */ (function () {
                 return [2 /*return*/, new Promise(function (resolve) {
                         var sub;
                         var handler = function (data) {
-                            resolve(data);
                             sub && sub();
+                            resolve(data);
                         };
                         sub = actionSheetEventManager.subscribe("onclose_".concat(id), handler);
                         actionSheetEventManager.publish("hide_".concat(id), data);

@@ -64,6 +64,10 @@ var RenderSheet = function (_a) {
         setPayload(data);
         setVisible(true);
     };
+    var onClose = function () {
+        setVisible(false);
+        setPayload(undefined);
+    };
     useEffect(function () {
         var _a;
         if (visible) {
@@ -73,10 +77,7 @@ var RenderSheet = function (_a) {
     useEffect(function () {
         var subs = [
             actionSheetEventManager.subscribe("show_".concat(id), onShow),
-            actionSheetEventManager.subscribe("onclose_".concat(id), function () {
-                setVisible(false);
-                setPayload(undefined);
-            }),
+            actionSheetEventManager.subscribe("onclose_".concat(id), onClose),
         ];
         return function () {
             subs.forEach(function (s) { return s && s(); });
