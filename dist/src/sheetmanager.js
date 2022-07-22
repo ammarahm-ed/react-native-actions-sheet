@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 import { actionSheetEventManager } from "./eventmanager";
 // Array of all the ids of ActionSheets currently rendered in the app.
 var ids = [];
+var refs = {};
 /**
  * SheetManager can be used to imperitively show/hide any ActionSheet with a
  * unique id prop.
@@ -93,6 +94,17 @@ var SheetManager = /** @class */ (function () {
      */
     SheetManager.hideAll = function () {
         ids.forEach(function (id) { return actionSheetEventManager.publish("hide_".concat(id)); });
+    };
+    SheetManager.registerRef = function (id, instance) {
+        refs[id] = instance;
+    };
+    /**
+     *
+     * Get internal ref of a sheet by the given id.
+     * @returns
+     */
+    SheetManager.get = function (id) {
+        return refs[id];
     };
     SheetManager.add = function (id) {
         if (ids.indexOf(id) < 0) {

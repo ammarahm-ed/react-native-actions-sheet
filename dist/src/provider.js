@@ -1,5 +1,6 @@
-import React, { useEffect, useReducer, useRef, } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import { actionSheetEventManager } from "./eventmanager";
+import { SheetManager } from "./sheetmanager";
 /**
  * An object that holds all the sheet components against their ids.
  */
@@ -54,17 +55,33 @@ function SheetProvider(_a) {
 }
 var RenderSheet = function (_a) {
     var id = _a.id, context = _a.context;
-    var payload = useRef();
+    var _b = useState(), payload = _b[0], setPayload = _b[1];
+    var _c = useState(false), visible = _c[0], setVisible = _c[1];
     var Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
     if (!Sheet)
         return null;
-    var onShow = function (data) { return (payload.current = data); };
+    var onShow = function (data) {
+        setPayload(data);
+        setVisible(true);
+    };
     useEffect(function () {
-        var sub = actionSheetEventManager.subscribe("show_".concat(id), onShow);
+        var _a;
+        if (visible) {
+            (_a = SheetManager.get(id)) === null || _a === void 0 ? void 0 : _a.show();
+        }
+    }, [visible]);
+    useEffect(function () {
+        var subs = [
+            actionSheetEventManager.subscribe("show_".concat(id), onShow),
+            actionSheetEventManager.subscribe("onclose_".concat(id), function () {
+                setVisible(false);
+                setPayload(undefined);
+            }),
+        ];
         return function () {
-            sub && sub();
+            subs.forEach(function (s) { return s && s(); });
         };
     }, [id, context]);
-    return <Sheet sheetId={id} payload={payload}/>;
+    return !visible ? null : <Sheet sheetId={id} payload={payload}/>;
 };
 export default React.memo(SheetProvider, function () { return true; });

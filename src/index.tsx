@@ -534,7 +534,10 @@ export default class ActionSheet extends Component<Props, State, any> {
   };
 
   componentDidMount() {
-    this.props.id && SheetManager.add(this.props.id);
+    if (this.props.id) {
+      SheetManager.add(this.props.id);
+      SheetManager.registerRef(this.props.id, this);
+    }
 
     this.keyboardShowSubscription = Keyboard.addListener(
       Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",

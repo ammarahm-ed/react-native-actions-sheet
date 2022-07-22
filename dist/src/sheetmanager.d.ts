@@ -1,3 +1,4 @@
+import ActionSheet from ".";
 /**
  * SheetManager can be used to imperitively show/hide any ActionSheet with a
  * unique id prop.
@@ -22,6 +23,13 @@ export declare class SheetManager {
      * Hide all the opened ActionSheets.
      */
     static hideAll(): void;
+    static registerRef: (id: string, instance: ActionSheet) => void;
+    /**
+     *
+     * Get internal ref of a sheet by the given id.
+     * @returns
+     */
+    static get: (id: string) => ActionSheet;
     static add: (id: string) => void;
     static remove: (id: string) => void;
 }

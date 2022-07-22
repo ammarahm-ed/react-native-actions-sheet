@@ -1,11 +1,6 @@
-import React, {
-  ReactNode,
-  RefObject,
-  useEffect,
-  useReducer,
-  useRef,
-} from "react";
+import React, { ReactNode, useEffect, useReducer, useState } from "react";
 import { actionSheetEventManager } from "./eventmanager";
+import { SheetManager } from "./sheetmanager";
 
 /**
  * An object that holds all the sheet components against their ids.
@@ -16,7 +11,7 @@ const sheetsRegistry: {
 
 export interface SheetProps<BeforeShowPayload extends any> {
   sheetId: string;
-  payload: RefObject<BeforeShowPayload>;
+  payload: BeforeShowPayload;
 }
 
 // Registers your Sheet with the SheetProvider.
@@ -87,20 +82,36 @@ function SheetProvider({
 }
 
 const RenderSheet = ({ id, context }: { id: string; context: string }) => {
-  const payload = useRef();
+  const [payload, setPayload] = useState();
+  const [visible, setVisible] = useState(false);
   const Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
   if (!Sheet) return null;
 
-  const onShow = (data: any) => (payload.current = data);
+  const onShow = (data: any) => {
+    setPayload(data);
+    setVisible(true);
+  };
 
   useEffect(() => {
-    const sub = actionSheetEventManager.subscribe(`show_${id}`, onShow);
+    if (visible) {
+      SheetManager.get(id)?.show();
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    const subs = [
+      actionSheetEventManager.subscribe(`show_${id}`, onShow),
+      actionSheetEventManager.subscribe(`onclose_${id}`, () => {
+        setVisible(false);
+        setPayload(undefined);
+      }),
+    ];
     return () => {
-      sub && sub();
+      subs.forEach((s) => s && s());
     };
   }, [id, context]);
 
-  return <Sheet sheetId={id} payload={payload} />;
+  return !visible ? null : <Sheet sheetId={id} payload={payload} />;
 };
 
 export default React.memo(SheetProvider, () => true);

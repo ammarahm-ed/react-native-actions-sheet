@@ -666,7 +666,10 @@ var ActionSheet = /** @class */ (function (_super) {
         this._scrollTo(scrollOffset);
     };
     ActionSheet.prototype.componentDidMount = function () {
-        this.props.id && SheetManager.add(this.props.id);
+        if (this.props.id) {
+            SheetManager.add(this.props.id);
+            SheetManager.registerRef(this.props.id, this);
+        }
         this.keyboardShowSubscription = Keyboard.addListener(Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow", this._onKeyboardShow);
         this.KeyboardHideSubscription = Keyboard.addListener(Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide", this._onKeyboardHide);
         if (this.props.id) {
