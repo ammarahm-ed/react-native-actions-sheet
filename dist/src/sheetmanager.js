@@ -49,26 +49,40 @@ var SheetManager = /** @class */ (function () {
      *
      * @param id id of the ActionSheet to show
      * @param data Any data to pass to the ActionSheet. Will be available from `onBeforeShow` prop.
+     * @param onClose Recieve payload from the Sheet when it closes
      */
-    SheetManager.show = function (id, data) {
-        actionSheetEventManager.publish("show_".concat(id), data);
+    SheetManager.show = function (id, data, onClose) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve) {
+                        var sub;
+                        var handler = function (data) {
+                            resolve(data);
+                            onClose && onClose(data);
+                            sub && sub();
+                        };
+                        sub = actionSheetEventManager.subscribe("onclose_".concat(id), handler);
+                        actionSheetEventManager.publish("show_".concat(id), data);
+                    })];
+            });
+        });
     };
     /**
      * An async hide function. This is useful when you want to show one ActionSheet after closing another.
      *
      * @param id id of the ActionSheet to show
-     * @param data An data to pass to the ActionSheet. Will be available from `onClose` prop.
+     * @param data @deprecated Use the `payload` prop instead.
      */
     SheetManager.hide = function (id, data) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
                         var sub;
-                        var fn = function () {
-                            resolve(true);
+                        var handler = function (data) {
+                            resolve(data);
                             sub && sub();
                         };
-                        sub = actionSheetEventManager.subscribe("onclose_".concat(id), fn);
+                        sub = actionSheetEventManager.subscribe("onclose_".concat(id), handler);
                         actionSheetEventManager.publish("hide_".concat(id), data);
                     })];
             });

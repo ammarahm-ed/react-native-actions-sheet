@@ -8,15 +8,16 @@ export declare class SheetManager {
      *
      * @param id id of the ActionSheet to show
      * @param data Any data to pass to the ActionSheet. Will be available from `onBeforeShow` prop.
+     * @param onClose Recieve payload from the Sheet when it closes
      */
-    static show(id: string, data?: unknown): void;
+    static show<BeforeShowPayload extends any, ReturnPayload extends any>(id: string, data?: BeforeShowPayload, onClose?: (data: ReturnPayload) => void): Promise<ReturnPayload>;
     /**
      * An async hide function. This is useful when you want to show one ActionSheet after closing another.
      *
      * @param id id of the ActionSheet to show
-     * @param data An data to pass to the ActionSheet. Will be available from `onClose` prop.
+     * @param data @deprecated Use the `payload` prop instead.
      */
-    static hide(id: string, data?: unknown): Promise<boolean>;
+    static hide<ReturnPayload extends any>(id: string, data?: unknown): Promise<ReturnPayload>;
     /**
      * Hide all the opened ActionSheets.
      */

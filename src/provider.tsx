@@ -1,4 +1,10 @@
-import React, { ReactNode, useEffect, useReducer } from "react";
+import React, {
+  ReactNode,
+  RefObject,
+  useEffect,
+  useReducer,
+  useRef,
+} from "react";
 import { actionSheetEventManager } from "./eventmanager";
 
 /**
@@ -8,8 +14,9 @@ const sheetsRegistry: {
   [context: string]: { [id: string]: React.ElementType };
 } = {};
 
-export interface SheetProps {
+export interface SheetProps<BeforeShowPayload extends any> {
   sheetId: string;
+  payload: RefObject<BeforeShowPayload>;
 }
 
 // Registers your Sheet with the SheetProvider.
@@ -69,18 +76,31 @@ function SheetProvider({
     };
   }, [onRegister]);
 
-  const renderSheet = React.useCallback((key) => {
-    const Sheet = sheetsRegistry[context] && sheetsRegistry[context][key];
-    if (!Sheet) return null;
-    return <Sheet key={key} sheetId={key} />;
-  }, []);
-
   return (
     <>
       {children}
-      {Object.keys(sheetsRegistry[context] || {}).map(renderSheet)}
+      {Object.keys(sheetsRegistry[context] || {}).map((key) => (
+        <RenderSheet key={key} context={context} />
+      ))}
     </>
   );
 }
+
+const RenderSheet = ({ key, context }: { key: string; context: string }) => {
+  const payload = useRef();
+  const Sheet = sheetsRegistry[context] && sheetsRegistry[context][key];
+  if (!Sheet) return null;
+
+  const onShow = (data: any) => (payload.current = data);
+
+  useEffect(() => {
+    const sub = actionSheetEventManager.subscribe(`show_${key}`, onShow);
+    return () => {
+      sub && sub();
+    };
+  }, [key, context]);
+
+  return <Sheet key={key} sheetId={key} payload={payload} />;
+};
 
 export default React.memo(SheetProvider, () => true);
