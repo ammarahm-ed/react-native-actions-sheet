@@ -56,6 +56,7 @@ function SheetProvider({
   children: ReactNode;
 }) {
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  const sheetIds = Object.keys(sheetsRegistry[context] || {});
   const onRegister = React.useCallback(() => {
     // Rerender when a new sheet is added.
     forceUpdate();
@@ -67,16 +68,18 @@ function SheetProvider({
       onRegister
     );
     return () => {
-      unsub && unsub();
+      unsub?.unsubscribe();
     };
   }, [onRegister]);
+
+  const renderSheet = (sheetId: string) => (
+    <RenderSheet key={sheetId} id={sheetId} context={context} />
+  );
 
   return (
     <>
       {children}
-      {Object.keys(sheetsRegistry[context] || {}).map((key) => (
-        <RenderSheet key={key} id={key} context={context} />
-      ))}
+      {sheetIds.map(renderSheet)}
     </>
   );
 }
@@ -109,7 +112,7 @@ const RenderSheet = ({ id, context }: { id: string; context: string }) => {
       actionSheetEventManager.subscribe(`onclose_${id}`, onClose),
     ];
     return () => {
-      subs.forEach((s) => s && s());
+      subs.forEach((s) => s.unsubscribe());
     };
   }, [id, context]);
 

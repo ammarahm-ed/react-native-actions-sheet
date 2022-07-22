@@ -38,6 +38,7 @@ registerSheet('local-sheet', LocalSheet,'local-context');
 function SheetProvider(_a) {
     var _b = _a.context, context = _b === void 0 ? "global" : _b, children = _a.children;
     var _c = useReducer(function (x) { return x + 1; }, 0), forceUpdate = _c[1];
+    var sheetIds = Object.keys(sheetsRegistry[context] || {});
     var onRegister = React.useCallback(function () {
         // Rerender when a new sheet is added.
         forceUpdate();
@@ -45,12 +46,13 @@ function SheetProvider(_a) {
     useEffect(function () {
         var unsub = actionSheetEventManager.subscribe("".concat(context, "-on-register"), onRegister);
         return function () {
-            unsub && unsub();
+            unsub === null || unsub === void 0 ? void 0 : unsub.unsubscribe();
         };
     }, [onRegister]);
+    var renderSheet = function (sheetId) { return (<RenderSheet key={sheetId} id={sheetId} context={context}/>); };
     return (<>
       {children}
-      {Object.keys(sheetsRegistry[context] || {}).map(function (key) { return (<RenderSheet key={key} id={key} context={context}/>); })}
+      {sheetIds.map(renderSheet)}
     </>);
 }
 var RenderSheet = function (_a) {
@@ -80,7 +82,7 @@ var RenderSheet = function (_a) {
             actionSheetEventManager.subscribe("onclose_".concat(id), onClose),
         ];
         return function () {
-            subs.forEach(function (s) { return s && s(); });
+            subs.forEach(function (s) { return s.unsubscribe(); });
         };
     }, [id, context]);
     return !visible ? null : <Sheet sheetId={id} payload={payload}/>;

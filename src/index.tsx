@@ -18,7 +18,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { actionSheetEventManager } from "./eventmanager";
+import {
+  actionSheetEventManager,
+  EventHandlerSubscription,
+} from "./eventmanager";
 import { SheetManager } from "./sheetmanager";
 import { styles } from "./styles";
 import type { ActionSheetProps } from "./types";
@@ -102,8 +105,8 @@ export default class ActionSheet extends Component<Props, State, any> {
   underlayScale: Animated.Value = new Animated.Value(1);
   indicatorTranslateY: Animated.Value;
   initialScrolling: boolean = false;
-  sheetManagerHideEvent: (() => void) | null = null;
-  sheetManagerShowEvent: (() => void) | null = null;
+  sheetManagerHideEvent: EventHandlerSubscription | null = null;
+  sheetManagerShowEvent: EventHandlerSubscription | null = null;
 
   keyboardShowSubscription: EmitterSubscription | null = null;
   KeyboardHideSubscription: EmitterSubscription | null = null;
@@ -564,8 +567,8 @@ export default class ActionSheet extends Component<Props, State, any> {
     this.props.id && SheetManager.remove(this.props.id);
     this.keyboardShowSubscription?.remove();
     this.KeyboardHideSubscription?.remove();
-    this.sheetManagerHideEvent && this.sheetManagerHideEvent();
-    this.sheetManagerShowEvent && this.sheetManagerShowEvent();
+    this.sheetManagerHideEvent?.unsubscribe();
+    this.sheetManagerShowEvent?.unsubscribe();
   }
 
   _onKeyboardShow = (event: KeyboardEvent) => {

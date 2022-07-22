@@ -42,8 +42,29 @@ var refs = {};
  * SheetManager can be used to imperitively show/hide any ActionSheet with a
  * unique id prop.
  */
-var SheetManager = /** @class */ (function () {
-    function SheetManager() {
+var SM = /** @class */ (function () {
+    function SM() {
+        this.registerRef = function (id, instance) {
+            refs[id] = instance;
+        };
+        /**
+         *
+         * Get internal ref of a sheet by the given id.
+         * @returns
+         */
+        this.get = function (id) {
+            return refs[id];
+        };
+        this.add = function (id) {
+            if (ids.indexOf(id) < 0) {
+                ids[ids.length] = id;
+            }
+        };
+        this.remove = function (id) {
+            if (ids.indexOf(id) > 0) {
+                ids.splice(ids.indexOf(id));
+            }
+        };
     }
     /**
      * Show an ActionSheet with a given id.
@@ -52,17 +73,16 @@ var SheetManager = /** @class */ (function () {
      * @param data Any data to pass to the ActionSheet. Will be available from `onBeforeShow` prop.
      * @param onClose Recieve payload from the Sheet when it closes
      */
-    SheetManager.show = function (id, data, onClose) {
+    SM.prototype.show = function (id, data, onClose) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
-                        var sub;
                         var handler = function (data) {
                             onClose && onClose(data);
-                            sub && sub();
+                            sub === null || sub === void 0 ? void 0 : sub.unsubscribe();
                             resolve(data);
                         };
-                        sub = actionSheetEventManager.subscribe("onclose_".concat(id), handler);
+                        var sub = actionSheetEventManager.subscribe("onclose_".concat(id), handler);
                         actionSheetEventManager.publish("show_".concat(id), data);
                     })];
             });
@@ -74,16 +94,15 @@ var SheetManager = /** @class */ (function () {
      * @param id id of the ActionSheet to show
      * @param data Return some data to the caller on closing the Sheet.
      */
-    SheetManager.hide = function (id, data) {
+    SM.prototype.hide = function (id, data) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
-                        var sub;
-                        var handler = function (data) {
-                            sub && sub();
+                        var hideHandler = function (data) {
+                            sub === null || sub === void 0 ? void 0 : sub.unsubscribe();
                             resolve(data);
                         };
-                        sub = actionSheetEventManager.subscribe("onclose_".concat(id), handler);
+                        var sub = actionSheetEventManager.subscribe("onclose_".concat(id), hideHandler);
                         actionSheetEventManager.publish("hide_".concat(id), data);
                     })];
             });
@@ -92,30 +111,9 @@ var SheetManager = /** @class */ (function () {
     /**
      * Hide all the opened ActionSheets.
      */
-    SheetManager.hideAll = function () {
+    SM.prototype.hideAll = function () {
         ids.forEach(function (id) { return actionSheetEventManager.publish("hide_".concat(id)); });
     };
-    SheetManager.registerRef = function (id, instance) {
-        refs[id] = instance;
-    };
-    /**
-     *
-     * Get internal ref of a sheet by the given id.
-     * @returns
-     */
-    SheetManager.get = function (id) {
-        return refs[id];
-    };
-    SheetManager.add = function (id) {
-        if (ids.indexOf(id) < 0) {
-            ids[ids.length] = id;
-        }
-    };
-    SheetManager.remove = function (id) {
-        if (ids.indexOf(id) > 0) {
-            ids.splice(ids.indexOf(id));
-        }
-    };
-    return SheetManager;
+    return SM;
 }());
-export { SheetManager };
+export var SheetManager = new SM();

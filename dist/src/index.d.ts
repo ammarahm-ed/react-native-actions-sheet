@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { Animated, EmitterSubscription, KeyboardEvent, LayoutChangeEvent, NativeEventSubscription, NativeScrollEvent, NativeSyntheticEvent } from "react-native";
+import { EventHandlerSubscription } from "./eventmanager";
 import type { ActionSheetProps } from "./types";
 declare type State = {
     modalVisible: boolean;
@@ -84,8 +85,8 @@ export default class ActionSheet extends Component<Props, State, any> {
     underlayScale: Animated.Value;
     indicatorTranslateY: Animated.Value;
     initialScrolling: boolean;
-    sheetManagerHideEvent: (() => void) | null;
-    sheetManagerShowEvent: (() => void) | null;
+    sheetManagerHideEvent: EventHandlerSubscription | null;
+    sheetManagerShowEvent: EventHandlerSubscription | null;
     keyboardShowSubscription: EmitterSubscription | null;
     KeyboardHideSubscription: EmitterSubscription | null;
     hardwareBackPressEvent: NativeEventSubscription | null;

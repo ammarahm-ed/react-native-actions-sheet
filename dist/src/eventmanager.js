@@ -1,39 +1,46 @@
 var EventManager = /** @class */ (function () {
     function EventManager() {
-        this._registry = {};
+        this._registry = new Map();
     }
     EventManager.prototype.unsubscribeAll = function () {
-        this._registry = {};
+        this._registry.clear();
     };
-    EventManager.prototype.subscribe = function (name, handler) {
+    EventManager.prototype.subscribe = function (name, handler, once) {
         var _this = this;
+        if (once === void 0) { once = false; }
         if (!name || !handler)
             throw new Error("name and handler are required.");
-        if (!this._registry[name])
-            this._registry[name] = [];
-        this._registry[name].push(handler);
-        return function () { return _this.unsubscribe(name, handler); };
+        this._registry.set(handler, { name: name, once: once });
+        return { unsubscribe: function () { return _this.unsubscribe(name, handler); } };
     };
-    EventManager.prototype.unsubscribe = function (name, handler) {
-        if (!this._registry[name])
-            return;
-        var index = this._registry[name].indexOf(handler);
-        if (index <= -1)
-            return;
-        this._registry[name].splice(index, 1);
+    EventManager.prototype.unsubscribe = function (_name, handler) {
+        return this._registry["delete"](handler);
     };
     EventManager.prototype.publish = function (name) {
+        var _this = this;
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        if (!this._registry[name])
-            return;
-        var handlers = this._registry[name];
-        handlers.forEach(function (handler) {
-            handler.apply(void 0, args);
+        this._registry.forEach(function (props, handler) {
+            if (props.name === name)
+                handler.apply(void 0, args);
+            if (props.once)
+                _this._registry["delete"](handler);
+        });
+    };
+    EventManager.prototype.remove = function () {
+        var _this = this;
+        var names = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            names[_i] = arguments[_i];
+        }
+        this._registry.forEach(function (props, handler) {
+            if (names.includes(props.name))
+                _this._registry["delete"](handler);
         });
     };
     return EventManager;
 }());
+export default EventManager;
 export var actionSheetEventManager = new EventManager();
