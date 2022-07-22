@@ -80,27 +80,27 @@ function SheetProvider({
     <>
       {children}
       {Object.keys(sheetsRegistry[context] || {}).map((key) => (
-        <RenderSheet key={key} context={context} />
+        <RenderSheet key={key} id={key} context={context} />
       ))}
     </>
   );
 }
 
-const RenderSheet = ({ key, context }: { key: string; context: string }) => {
+const RenderSheet = ({ id, context }: { id: string; context: string }) => {
   const payload = useRef();
-  const Sheet = sheetsRegistry[context] && sheetsRegistry[context][key];
+  const Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
   if (!Sheet) return null;
 
   const onShow = (data: any) => (payload.current = data);
 
   useEffect(() => {
-    const sub = actionSheetEventManager.subscribe(`show_${key}`, onShow);
+    const sub = actionSheetEventManager.subscribe(`show_${id}`, onShow);
     return () => {
       sub && sub();
     };
-  }, [key, context]);
+  }, [id, context]);
 
-  return <Sheet key={key} sheetId={key} payload={payload} />;
+  return <Sheet sheetId={id} payload={payload} />;
 };
 
 export default React.memo(SheetProvider, () => true);

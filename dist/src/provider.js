@@ -49,22 +49,22 @@ function SheetProvider(_a) {
     }, [onRegister]);
     return (<>
       {children}
-      {Object.keys(sheetsRegistry[context] || {}).map(function (key) { return (<RenderSheet key={key} context={context}/>); })}
+      {Object.keys(sheetsRegistry[context] || {}).map(function (key) { return (<RenderSheet key={key} id={key} context={context}/>); })}
     </>);
 }
 var RenderSheet = function (_a) {
-    var key = _a.key, context = _a.context;
+    var id = _a.id, context = _a.context;
     var payload = useRef();
-    var Sheet = sheetsRegistry[context] && sheetsRegistry[context][key];
+    var Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
     if (!Sheet)
         return null;
     var onShow = function (data) { return (payload.current = data); };
     useEffect(function () {
-        var sub = actionSheetEventManager.subscribe("show_".concat(key), onShow);
+        var sub = actionSheetEventManager.subscribe("show_".concat(id), onShow);
         return function () {
             sub && sub();
         };
-    }, [key, context]);
-    return <Sheet key={key} sheetId={key} payload={payload}/>;
+    }, [id, context]);
+    return <Sheet sheetId={id} payload={payload}/>;
 };
 export default React.memo(SheetProvider, function () { return true; });
