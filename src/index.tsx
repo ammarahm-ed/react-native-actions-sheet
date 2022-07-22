@@ -240,7 +240,10 @@ export default class ActionSheet extends Component<Props, State, any> {
             this.deviceLayoutCalled = false;
             this.props.onClose && this.props.onClose(data);
             if (this.props.id) {
-              actionSheetEventManager.publish(`onclose_${this.props.id}`, data);
+              actionSheetEventManager.publish(
+                `onclose_${this.props.id}`,
+                this.props.payload || data
+              );
             }
           }
         );

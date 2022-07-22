@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useRef, } from "react";
 import { actionSheetEventManager } from "./eventmanager";
 /**
  * An object that holds all the sheet components against their ids.
@@ -47,15 +47,24 @@ function SheetProvider(_a) {
             unsub && unsub();
         };
     }, [onRegister]);
-    var renderSheet = React.useCallback(function (key) {
-        var Sheet = sheetsRegistry[context] && sheetsRegistry[context][key];
-        if (!Sheet)
-            return null;
-        return <Sheet key={key} sheetId={key}/>;
-    }, []);
     return (<>
       {children}
-      {Object.keys(sheetsRegistry[context] || {}).map(renderSheet)}
+      {Object.keys(sheetsRegistry[context] || {}).map(function (key) { return (<RenderSheet key={key} context={context}/>); })}
     </>);
 }
+var RenderSheet = function (_a) {
+    var key = _a.key, context = _a.context;
+    var payload = useRef();
+    var Sheet = sheetsRegistry[context] && sheetsRegistry[context][key];
+    if (!Sheet)
+        return null;
+    var onShow = function (data) { return (payload.current = data); };
+    useEffect(function () {
+        var sub = actionSheetEventManager.subscribe("show_".concat(key), onShow);
+        return function () {
+            sub && sub();
+        };
+    }, [key, context]);
+    return <Sheet key={key} sheetId={key} payload={payload}/>;
+};
 export default React.memo(SheetProvider, function () { return true; });

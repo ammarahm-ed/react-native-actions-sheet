@@ -628,7 +628,7 @@ var ActionSheet = /** @class */ (function (_super) {
                     _this.deviceLayoutCalled = false;
                     _this.props.onClose && _this.props.onClose(data);
                     if (_this.props.id) {
-                        actionSheetEventManager.publish("onclose_".concat(_this.props.id), data);
+                        actionSheetEventManager.publish("onclose_".concat(_this.props.id), _this.props.payload || data);
                     }
                 });
             }
