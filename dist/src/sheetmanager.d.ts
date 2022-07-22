@@ -15,7 +15,7 @@ export declare class SheetManager {
      * An async hide function. This is useful when you want to show one ActionSheet after closing another.
      *
      * @param id id of the ActionSheet to show
-     * @param data @deprecated Use the `payload` prop instead.
+     * @param data Return some data to the caller on closing the Sheet.
      */
     static hide<ReturnPayload extends any>(id: string, data?: unknown): Promise<ReturnPayload>;
     /**
