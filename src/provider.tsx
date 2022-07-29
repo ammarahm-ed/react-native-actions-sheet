@@ -1,5 +1,6 @@
-import React, { ReactNode, useEffect, useReducer } from "react";
+import React, { ReactNode, useEffect, useReducer, useState } from "react";
 import { actionSheetEventManager } from "./eventmanager";
+import { SheetManager } from "./sheetmanager";
 
 /**
  * An object that holds all the sheet components against their ids.
@@ -8,8 +9,9 @@ const sheetsRegistry: {
   [context: string]: { [id: string]: React.ElementType };
 } = {};
 
-export interface SheetProps {
+export interface SheetProps<BeforeShowPayload extends any> {
   sheetId: string;
+  payload: BeforeShowPayload;
 }
 
 // Registers your Sheet with the SheetProvider.
@@ -54,6 +56,7 @@ function SheetProvider({
   children: ReactNode;
 }) {
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  const sheetIds = Object.keys(sheetsRegistry[context] || {});
   const onRegister = React.useCallback(() => {
     // Rerender when a new sheet is added.
     forceUpdate();
@@ -65,22 +68,56 @@ function SheetProvider({
       onRegister
     );
     return () => {
-      unsub && unsub();
+      unsub?.unsubscribe();
     };
   }, [onRegister]);
 
-  const renderSheet = React.useCallback((key) => {
-    const Sheet = sheetsRegistry[context] && sheetsRegistry[context][key];
-    if (!Sheet) return null;
-    return <Sheet key={key} sheetId={key} />;
-  }, []);
+  const renderSheet = (sheetId: string) => (
+    <RenderSheet key={sheetId} id={sheetId} context={context} />
+  );
 
   return (
     <>
       {children}
-      {Object.keys(sheetsRegistry[context] || {}).map(renderSheet)}
+      {sheetIds.map(renderSheet)}
     </>
   );
 }
 
+const RenderSheet = ({ id, context }: { id: string; context: string }) => {
+  const [payload, setPayload] = useState();
+  const [visible, setVisible] = useState(false);
+  const Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
+  if (!Sheet) return null;
+
+  const onShow = (data: any) => {
+    setPayload(data);
+    setVisible(true);
+  };
+
+  const onClose = () => {
+    setVisible(false);
+    setPayload(undefined);
+  };
+
+  useEffect(() => {
+    if (visible) {
+      SheetManager.get(id)?.show();
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    let subs = [
+      actionSheetEventManager.subscribe(`show_${id}`, onShow),
+      actionSheetEventManager.subscribe(`onclose_${id}`, onClose),
+    ];
+    return () => {
+      subs.forEach((s) => s.unsubscribe());
+    };
+  }, [id, context]);
+
+  return !visible ? null : <Sheet sheetId={id} payload={payload} />;
+};
+
 export default SheetProvider;
+

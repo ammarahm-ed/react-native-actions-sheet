@@ -36,6 +36,13 @@ export type ActionSheetProps = {
   elevation?: number;
 
   /**
+   * Since `SheetManager.show` is now awaitable. You can return some data
+   * to the caller by setting this prop. When the Sheet closes
+   * the promise will resolve with the data.
+   */
+  payload?: unknown;
+
+  /**
    * Color of the gestureEnabled Indicator.
    *
    * Default: `"#f0f0f0"`

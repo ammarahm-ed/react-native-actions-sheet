@@ -62,7 +62,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import React, { Component, createRef } from "react";
 import { Animated, BackHandler, Dimensions, FlatList, Keyboard, Modal, Platform, SafeAreaView, StatusBar, TouchableOpacity, View, } from "react-native";
-import { actionSheetEventManager } from "./eventmanager";
+import { actionSheetEventManager, } from "./eventmanager";
 import { SheetManager } from "./sheetmanager";
 import { styles } from "./styles";
 import { getDeviceHeight, getElevation, SUPPORTED_ORIENTATIONS, waitAsync, } from "./utils";
@@ -628,7 +628,7 @@ var ActionSheet = /** @class */ (function (_super) {
                     _this.deviceLayoutCalled = false;
                     _this.props.onClose && _this.props.onClose(data);
                     if (_this.props.id) {
-                        actionSheetEventManager.publish("onclose_".concat(_this.props.id), data);
+                        actionSheetEventManager.publish("onclose_".concat(_this.props.id), _this.props.payload || data);
                     }
                 });
             }
@@ -666,7 +666,10 @@ var ActionSheet = /** @class */ (function (_super) {
         this._scrollTo(scrollOffset);
     };
     ActionSheet.prototype.componentDidMount = function () {
-        this.props.id && SheetManager.add(this.props.id);
+        if (this.props.id) {
+            SheetManager.add(this.props.id);
+            SheetManager.registerRef(this.props.id, this);
+        }
         this.keyboardShowSubscription = Keyboard.addListener(Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow", this._onKeyboardShow);
         this.KeyboardHideSubscription = Keyboard.addListener(Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide", this._onKeyboardHide);
         if (this.props.id) {
@@ -675,12 +678,12 @@ var ActionSheet = /** @class */ (function (_super) {
         }
     };
     ActionSheet.prototype.componentWillUnmount = function () {
-        var _a, _b;
+        var _a, _b, _c, _d;
         this.props.id && SheetManager.remove(this.props.id);
         (_a = this.keyboardShowSubscription) === null || _a === void 0 ? void 0 : _a.remove();
         (_b = this.KeyboardHideSubscription) === null || _b === void 0 ? void 0 : _b.remove();
-        this.sheetManagerHideEvent && this.sheetManagerHideEvent();
-        this.sheetManagerShowEvent && this.sheetManagerShowEvent();
+        (_c = this.sheetManagerHideEvent) === null || _c === void 0 ? void 0 : _c.unsubscribe();
+        (_d = this.sheetManagerShowEvent) === null || _d === void 0 ? void 0 : _d.unsubscribe();
     };
     ActionSheet.prototype.getScrollPositionFromOffset = function (offset, correction) {
         var _a, _b;
