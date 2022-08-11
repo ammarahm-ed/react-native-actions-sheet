@@ -87,4 +87,4 @@ var RenderSheet = function (_a) {
     }, [id, context]);
     return !visible ? null : <Sheet sheetId={id} payload={payload}/>;
 };
-export default React.memo(SheetProvider, function () { return true; });
+export default SheetProvider;

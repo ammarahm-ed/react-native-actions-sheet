@@ -27,6 +27,5 @@ declare function SheetProvider({ context, children, }: {
     context?: string;
     children: ReactNode;
 }): JSX.Element;
-declare const _default: React.MemoExoticComponent<typeof SheetProvider>;
-export default _default;
+export default SheetProvider;
 //# sourceMappingURL=provider.d.ts.map
