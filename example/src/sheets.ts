@@ -1,4 +1,9 @@
-import './examplesheet';
+import ExampleSheet from './examplesheet';
+import ConfirmSheet from './confirm';
+import {registerSheet} from 'react-native-actions-sheet';
+registerSheet('confirm-sheet', ConfirmSheet);
+registerSheet('example-sheet', ExampleSheet);
+
 export {};
 
 /**

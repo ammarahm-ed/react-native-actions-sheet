@@ -13,6 +13,20 @@ const ExampleScreen = () => {
           style={styles.btn}>
           <Text style={styles.btnTitle}>Open ActionSheet</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={async () => {
+            let confirmed = await SheetManager.show('confirm-sheet');
+            console.log('confirmation status:', confirmed);
+          }}
+          style={[
+            styles.btn,
+            {
+              marginTop: 10,
+            },
+          ]}>
+          <Text style={styles.btnTitle}>Open Confirm Sheet</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     </>
   );

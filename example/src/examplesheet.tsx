@@ -18,14 +18,16 @@ const items = [
   205, 176, 86, 46, 106, 66, 152, 203, 173, 81, 42,
 ];
 
-function ExampleSheet({sheetId}: SheetProps) {
+function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
   const actionSheetRef = useRef<ActionSheet>(null);
   return (
     <ActionSheet
       initialOffsetFromBottom={0.4}
-      onBeforeShow={data => console.log(data)}
       id={sheetId}
       ref={actionSheetRef}
+      onOpen={() => {
+        console.log('sheet payload', payload?.data);
+      }}
       statusBarTranslucent
       bounceOnOpen={true}
       drawUnderStatusBar={true}
