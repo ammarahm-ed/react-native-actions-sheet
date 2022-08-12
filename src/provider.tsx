@@ -9,9 +9,9 @@ const sheetsRegistry: {
   [context: string]: { [id: string]: React.ElementType };
 } = {};
 
-export interface SheetProps<BeforeShowPayload extends any> {
+export interface SheetProps<BeforeShowPayload = any> {
   sheetId: string;
-  payload: BeforeShowPayload;
+  payload?: BeforeShowPayload;
 }
 
 // Registers your Sheet with the SheetProvider.
@@ -120,4 +120,3 @@ const RenderSheet = ({ id, context }: { id: string; context: string }) => {
 };
 
 export default SheetProvider;
-

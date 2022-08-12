@@ -36,7 +36,7 @@ let safeAreaInnerHeight = 0;
 const dummyData = ["dummy"];
 let safeAreaPaddingTop =
   Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
-let calculatedDeviceHeight = Dimensions.get("window").height;
+let calculatedDeviceHeight = 0;
 
 type State = {
   modalVisible: boolean;
@@ -238,6 +238,7 @@ export default class ActionSheet extends Component<Props, State, any> {
             this.isClosing = false;
             this.isReachedTop = false;
             this.props.onPositionChanged && this.props.onPositionChanged(false);
+
             this.indicatorTranslateY.setValue(-this.state.paddingTop);
             this.layoutHasCalled = false;
             this.deviceLayoutCalled = false;
@@ -424,6 +425,7 @@ export default class ActionSheet extends Component<Props, State, any> {
         this.actionSheetHeight + correction - scrollPosition;
       if (distanceFromTop < safeAreaPaddingTop) {
         if (!this.props.drawUnderStatusBar) return;
+
         this.indicatorTranslateY.setValue(0);
       } else {
         this.indicatorTranslateY.setValue(-safeAreaPaddingTop);
@@ -505,7 +507,6 @@ export default class ActionSheet extends Component<Props, State, any> {
     if (this.actionSheetHeight >= this.state.deviceHeight - 1) {
       if (distanceFromTop < this.state.paddingTop) {
         if (!this.props.drawUnderStatusBar) return;
-
         this.indicatorTranslateY.setValue(
           -this.state.paddingTop + (this.state.paddingTop - distanceFromTop)
         );
@@ -643,19 +644,13 @@ export default class ActionSheet extends Component<Props, State, any> {
     if (this.timeout) {
       clearTimeout(this.timeout);
     }
-
     this.timeout = setTimeout(async () => {
       let safeMarginFromTop = 0;
-      let measuredPadding =
-        Platform.OS === "ios" ? await this.measure() : StatusBar.currentHeight;
-
       if (!this.props.drawUnderStatusBar) {
         if (Platform.OS === "android" && !this.props.statusBarTranslucent)
           return;
-        safeMarginFromTop = measuredPadding ?? 0;
-        if (measuredPadding) {
-          this.indicatorTranslateY.setValue(-measuredPadding);
-        }
+
+        this.indicatorTranslateY.setValue(-safeAreaPaddingTop);
       } else {
         this.updateActionSheetPosition(this.offsetY);
       }
@@ -673,9 +668,9 @@ export default class ActionSheet extends Component<Props, State, any> {
         deviceHeight: height,
         deviceWidth: width,
         portrait: height > width,
-        paddingTop: measuredPadding ?? 0,
+        paddingTop: safeAreaPaddingTop,
       });
-    }, 1);
+    }, 500);
   };
 
   getScrollPositionFromOffset(offset: number, correction: number) {
@@ -760,17 +755,27 @@ export default class ActionSheet extends Component<Props, State, any> {
         };
     return !modalVisible ? null : (
       <>
-        <Root {...rootProps}>
+        {Platform.OS === "ios" ? (
           <SafeAreaView
             pointerEvents="none"
+            onLayout={(event) => {
+              let height = event.nativeEvent.layout.height;
+              if (height) {
+                safeAreaPaddingTop = event.nativeEvent.layout.height;
+              }
+            }}
             style={{
               position: "absolute",
               width: 0,
+              left: -9999,
+              top: -9999,
             }}
             ref={this.safeAreaViewRef}
           >
             <View />
           </SafeAreaView>
+        ) : null}
+        <Root {...rootProps}>
           <Animated.View
             onLayout={this._onDeviceLayout}
             style={[
