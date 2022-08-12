@@ -109,13 +109,45 @@ SheetManager.show("mysheet");
 Want to pass some data on opening the sheet or update the state?
 
 ```jsx
-SheetManager.show("mysheet",{value:"data"});
+SheetManager.show("mysheet", { value: "data" });
 
-<ActionSheet
-onBeforeShow={(data) => {
-  setData(data);
-}}
-id="helloworld_sheet">
+function MySheet(props: SheetProps<{ value: string }>) {
+  return (
+    <ActionSheet id={props.sheetId}>
+      <Text>{props.payload?.value}</Text>
+    </ActionSheet>
+  );
+}
+```
+
+Since v0.8.0 you can return some data to the caller if needed as follows.
+
+```jsx
+let confirmed = await SheetManager.show("confirm-sheet");
+if (confirmed) {
+  /// do your stuff.
+}
+
+// And in your Sheet component
+
+function MySheet(props: SheetProps<any>) {
+  return (
+    <ActionSheet id={props.sheetId}>
+      <Button
+        title="No"
+        onPress={() => {
+          SheetManager.hide(props.sheetId, false);
+        }}
+      />
+      <Button
+        title="Yes"
+        onPress={() => {
+          SheetManager.hide(props.sheetId, true);
+        }}
+      />
+    </ActionSheet>
+  );
+}
 ```
 
 Hiding the sheet is easy. Enable gestures or do the following.
@@ -214,6 +246,12 @@ Set this to false to use a simple View instead of a Modal to show the ActionShee
 | boolean | no       |
 
 default:`true`
+
+#
+
+#### `payload`
+
+Since `SheetManager.show` is now awaitable. You can return some data to the caller by setting this prop. When the Sheet closes he promise will resolve with the data.
 
 #
 

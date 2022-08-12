@@ -69,7 +69,7 @@ import { getDeviceHeight, getElevation, SUPPORTED_ORIENTATIONS, waitAsync, } fro
 var safeAreaInnerHeight = 0;
 var dummyData = ["dummy"];
 var safeAreaPaddingTop = Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
-var calculatedDeviceHeight = Dimensions.get("window").height;
+var calculatedDeviceHeight = 0;
 var defaultProps = {
     animated: true,
     closeOnPressBack: true,
@@ -514,51 +514,35 @@ var ActionSheet = /** @class */ (function (_super) {
                     clearTimeout(this.timeout);
                 }
                 this.timeout = setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
-                    var safeMarginFromTop, measuredPadding, _a, height, width;
-                    var _b;
-                    return __generator(this, function (_c) {
-                        switch (_c.label) {
-                            case 0:
-                                safeMarginFromTop = 0;
-                                if (!(Platform.OS === "ios")) return [3 /*break*/, 2];
-                                return [4 /*yield*/, this.measure()];
-                            case 1:
-                                _a = _c.sent();
-                                return [3 /*break*/, 3];
-                            case 2:
-                                _a = StatusBar.currentHeight;
-                                _c.label = 3;
-                            case 3:
-                                measuredPadding = _a;
-                                if (!this.props.drawUnderStatusBar) {
-                                    if (Platform.OS === "android" && !this.props.statusBarTranslucent)
-                                        return [2 /*return*/];
-                                    safeMarginFromTop = measuredPadding !== null && measuredPadding !== void 0 ? measuredPadding : 0;
-                                    if (measuredPadding) {
-                                        this.indicatorTranslateY.setValue(-measuredPadding);
-                                    }
-                                }
-                                else {
-                                    this.updateActionSheetPosition(this.offsetY);
-                                }
-                                height = event.nativeEvent.layout.height - safeMarginFromTop;
-                                width = Dimensions.get("window").width;
-                                if ((height === null || height === void 0 ? void 0 : height.toFixed(0)) === (calculatedDeviceHeight === null || calculatedDeviceHeight === void 0 ? void 0 : calculatedDeviceHeight.toFixed(0)) &&
-                                    (width === null || width === void 0 ? void 0 : width.toFixed(0)) === ((_b = this.state.deviceWidth) === null || _b === void 0 ? void 0 : _b.toFixed(0)) &&
-                                    this.deviceLayoutCalled)
-                                    return [2 /*return*/];
-                                this.deviceLayoutCalled = true;
-                                calculatedDeviceHeight = height;
-                                this.setState({
-                                    deviceHeight: height,
-                                    deviceWidth: width,
-                                    portrait: height > width,
-                                    paddingTop: measuredPadding !== null && measuredPadding !== void 0 ? measuredPadding : 0
-                                });
+                    var safeMarginFromTop, height, width;
+                    var _a;
+                    return __generator(this, function (_b) {
+                        safeMarginFromTop = 0;
+                        if (!this.props.drawUnderStatusBar) {
+                            if (Platform.OS === "android" && !this.props.statusBarTranslucent)
                                 return [2 /*return*/];
+                            this.indicatorTranslateY.setValue(-safeAreaPaddingTop);
                         }
+                        else {
+                            this.updateActionSheetPosition(this.offsetY);
+                        }
+                        height = event.nativeEvent.layout.height - safeMarginFromTop;
+                        width = Dimensions.get("window").width;
+                        if ((height === null || height === void 0 ? void 0 : height.toFixed(0)) === (calculatedDeviceHeight === null || calculatedDeviceHeight === void 0 ? void 0 : calculatedDeviceHeight.toFixed(0)) &&
+                            (width === null || width === void 0 ? void 0 : width.toFixed(0)) === ((_a = this.state.deviceWidth) === null || _a === void 0 ? void 0 : _a.toFixed(0)) &&
+                            this.deviceLayoutCalled)
+                            return [2 /*return*/];
+                        this.deviceLayoutCalled = true;
+                        calculatedDeviceHeight = height;
+                        this.setState({
+                            deviceHeight: height,
+                            deviceWidth: width,
+                            portrait: height > width,
+                            paddingTop: safeAreaPaddingTop
+                        });
+                        return [2 /*return*/];
                     });
-                }); }, 1);
+                }); }, 500);
                 return [2 /*return*/];
             });
         }); };
@@ -736,13 +720,20 @@ var ActionSheet = /** @class */ (function (_super) {
                 }
             };
         return !modalVisible ? null : (<>
-        <Root {...rootProps}>
-          <SafeAreaView pointerEvents="none" style={{
-                position: "absolute",
-                width: 0
-            }} ref={this.safeAreaViewRef}>
+        {Platform.OS === "ios" ? (<SafeAreaView pointerEvents="none" onLayout={function (event) {
+                    var height = event.nativeEvent.layout.height;
+                    if (height) {
+                        safeAreaPaddingTop = event.nativeEvent.layout.height;
+                    }
+                }} style={{
+                    position: "absolute",
+                    width: 0,
+                    left: -9999,
+                    top: -9999
+                }} ref={this.safeAreaViewRef}>
             <View />
-          </SafeAreaView>
+          </SafeAreaView>) : null}
+        <Root {...rootProps}>
           <Animated.View onLayout={this._onDeviceLayout} style={[
                 styles.parentContainer,
                 {

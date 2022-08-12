@@ -1,7 +1,7 @@
 import React, { ReactNode } from "react";
-export interface SheetProps<BeforeShowPayload extends any> {
+export interface SheetProps<BeforeShowPayload = any> {
     sheetId: string;
-    payload: BeforeShowPayload;
+    payload?: BeforeShowPayload;
 }
 export declare function registerSheet(id: string, Sheet: React.ElementType, context?: string): void;
 /**
