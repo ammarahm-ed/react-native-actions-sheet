@@ -1,9 +1,10 @@
-import ActionSheet from ".";
+import { RefObject } from "react";
+import { ActionSheetRef } from ".";
 import { actionSheetEventManager } from "./eventmanager";
 
 // Array of all the ids of ActionSheets currently rendered in the app.
 const ids: string[] = [];
-const refs: { [name: string]: ActionSheet } = {};
+const refs: { [name: string]: RefObject<ActionSheetRef> } = {};
 /**
  * SheetManager can be used to imperitively show/hide any ActionSheet with a
  * unique id prop.
@@ -59,7 +60,7 @@ class SM {
     ids.forEach((id) => actionSheetEventManager.publish(`hide_${id}`));
   }
 
-  registerRef = (id: string, instance: ActionSheet) => {
+  registerRef = (id: string, instance: RefObject<ActionSheetRef>) => {
     refs[id] = instance;
   };
 

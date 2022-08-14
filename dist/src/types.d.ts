@@ -25,6 +25,7 @@ export declare type ActionSheetProps = {
      * Default: `50`
      */
     springOffset?: number;
+    backgroundInteractionEnabled?: boolean;
     /**
      * Add elevation to the ActionSheet container.
      *

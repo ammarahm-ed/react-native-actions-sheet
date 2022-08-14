@@ -1,6 +1,11 @@
 import ExampleSheet from './examplesheet';
 import ConfirmSheet from './confirm';
 import {registerSheet} from 'react-native-actions-sheet';
+
+/**
+ * Registering the sheets here because otherwise sheet closes on
+ * hot reload during development.
+ */
 registerSheet('confirm-sheet', ConfirmSheet);
 registerSheet('example-sheet', ExampleSheet);
 

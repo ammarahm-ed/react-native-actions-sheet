@@ -1,4 +1,5 @@
-import ActionSheet from ".";
+import { RefObject } from "react";
+import { ActionSheetRef } from ".";
 /**
  * SheetManager can be used to imperitively show/hide any ActionSheet with a
  * unique id prop.
@@ -23,13 +24,13 @@ declare class SM {
      * Hide all the opened ActionSheets.
      */
     hideAll(): void;
-    registerRef: (id: string, instance: ActionSheet) => void;
+    registerRef: (id: string, instance: RefObject<ActionSheetRef>) => void;
     /**
      *
      * Get internal ref of a sheet by the given id.
      * @returns
      */
-    get: (id: string) => ActionSheet;
+    get: (id: string) => RefObject<ActionSheetRef>;
     add: (id: string) => void;
     remove: (id: string) => void;
 }

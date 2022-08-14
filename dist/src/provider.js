@@ -71,9 +71,9 @@ var RenderSheet = function (_a) {
         setPayload(undefined);
     };
     useEffect(function () {
-        var _a;
+        var _a, _b;
         if (visible) {
-            (_a = SheetManager.get(id)) === null || _a === void 0 ? void 0 : _a.show();
+            (_b = (_a = SheetManager.get(id)) === null || _a === void 0 ? void 0 : _a.current) === null || _b === void 0 ? void 0 : _b.show();
         }
     }, [visible]);
     useEffect(function () {

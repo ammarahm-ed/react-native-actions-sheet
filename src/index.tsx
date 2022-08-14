@@ -1,750 +1,223 @@
-import React, { Component, createRef } from "react";
+import React, {
+  forwardRef,
+  RefObject,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import {
   Animated,
   BackHandler,
   Dimensions,
-  EmitterSubscription,
-  FlatList,
-  Keyboard,
-  KeyboardEvent,
+  Easing,
   LayoutChangeEvent,
+  LayoutRectangle,
   Modal,
   NativeEventSubscription,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  Platform,
-  SafeAreaView,
+  PanResponder,
   StatusBar,
-  TouchableOpacity,
   View,
 } from "react-native";
-import {
-  actionSheetEventManager,
-  EventHandlerSubscription,
-} from "./eventmanager";
+import { actionSheetEventManager } from "./eventmanager";
 import { SheetManager } from "./sheetmanager";
 import { styles } from "./styles";
 import type { ActionSheetProps } from "./types";
-import {
-  getDeviceHeight,
-  getElevation,
-  SUPPORTED_ORIENTATIONS,
-  waitAsync,
-} from "./utils";
-
-let safeAreaInnerHeight = 0;
-const dummyData = ["dummy"];
-let safeAreaPaddingTop =
-  Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
-let calculatedDeviceHeight = 0;
-
-type State = {
-  modalVisible: boolean;
-  scrollable: boolean;
-  layoutHasCalled: boolean;
-  keyboard: boolean;
-  deviceHeight: number;
-  deviceWidth: number;
-  portrait: boolean;
-  safeAreaInnerHeight: number;
-  paddingTop: number;
-  keyboardPadding: number;
+import { getDeviceHeight, getElevation, SUPPORTED_ORIENTATIONS } from "./utils";
+import useSheetManager from "./hooks/use-sheet-manager";
+export type ActionSheetRef = {
+  show: () => void;
+  hide: (data: any) => void;
+  /**
+   * @deprecated Use `show` or `hide` functions or SheetManager to open/close ActionSheet.
+   */
+  setModalVisible: (visible?: boolean) => void;
+  snapToOffset: (offset: number) => void;
+  /**
+   * @removed Use `useScrollHandlers` hook to enable scrolling in ActionSheet.
+   */
+  handleChildScrollEnd: () => void;
+  modifyGesturesForLayout: (
+    id: string,
+    layout: LayoutRectangle | undefined,
+    scrollOffset: number
+  ) => void;
 };
 
-const defaultProps = {
-  animated: true,
-  closeOnPressBack: true,
-  bounciness: 8,
-  extraScroll: 0,
-  closeAnimationDuration: 300,
-  delayActionSheetDrawTime: 0,
-  openAnimationSpeed: 8,
-  springOffset: 100,
-  elevation: 5,
-  initialOffsetFromBottom: 1,
-  indicatorColor: "#f0f0f0",
-  defaultOverlayOpacity: 0.3,
-  overlayColor: "black",
-  closable: true,
-  bottomOffset: 0,
-  closeOnTouchBackdrop: true,
-  drawUnderStatusBar: false,
-  statusBarTranslucent: true,
-  gestureEnabled: false,
-  keyboardDismissMode: "none",
-  keyboardHandlerEnabled: true,
-  isModal: true,
-};
+const CALCULATED_DEVICE_HEIGHT = 0;
 
-type Props = Partial<typeof defaultProps> & ActionSheetProps;
-
-export default class ActionSheet extends Component<Props, State, any> {
-  static defaultProps = defaultProps;
-
-  actionSheetHeight: number = 0;
-  prevScroll: number = 0;
-  timeout: any = null;
-  offsetY: number = 0;
-  currentOffsetFromBottom: number = 0;
-  scrollAnimationEndValue: number = 0;
-
-  hasBounced: boolean = false;
-  layoutHasCalled: boolean = false;
-  isClosing: boolean = false;
-  isRecoiling: boolean = false;
-  isReachedTop: boolean = false;
-  deviceLayoutCalled: boolean = false;
-
-  scrollViewRef: React.RefObject<any>;
-  safeAreaViewRef: React.RefObject<any>;
-
-  transformValue: Animated.Value = new Animated.Value(0);
-  opacityValue: Animated.Value = new Animated.Value(0);
-  borderRadius: Animated.Value = new Animated.Value(10);
-  underlayTranslateY: Animated.Value = new Animated.Value(100);
-  underlayScale: Animated.Value = new Animated.Value(1);
-  indicatorTranslateY: Animated.Value;
-  initialScrolling: boolean = false;
-  sheetManagerHideEvent: EventHandlerSubscription | null = null;
-  sheetManagerShowEvent: EventHandlerSubscription | null = null;
-
-  keyboardShowSubscription: EmitterSubscription | null = null;
-  KeyboardHideSubscription: EmitterSubscription | null = null;
-  hardwareBackPressEvent: NativeEventSubscription | null = null;
-
-  constructor(props: ActionSheetProps) {
-    super(props);
-    this.state = {
-      modalVisible: false,
-      scrollable: false,
-      layoutHasCalled: false,
-      keyboard: false,
-      deviceHeight:
-        calculatedDeviceHeight ||
-        getDeviceHeight(this.props.statusBarTranslucent),
-      deviceWidth: Dimensions.get("window").width,
+export default forwardRef<ActionSheetRef, ActionSheetProps>(
+  function ActionSheet(
+    {
+      animated = true,
+      closeOnPressBack = true,
+      bounciness = 8,
+      extraScroll = 0,
+      closeAnimationDuration = 300,
+      delayActionSheetDrawTime = 0,
+      openAnimationSpeed = 8,
+      springOffset = 50,
+      elevation = 5,
+      initialOffsetFromBottom = 1,
+      indicatorColor = "#f0f0f0",
+      defaultOverlayOpacity = 0.3,
+      overlayColor = "black",
+      closable = true,
+      bottomOffset = 0,
+      closeOnTouchBackdrop = true,
+      drawUnderStatusBar = false,
+      statusBarTranslucent = true,
+      gestureEnabled = false,
+      keyboardDismissMode = "none",
+      keyboardHandlerEnabled = true,
+      isModal = true,
+      ...props
+    },
+    ref
+  ) {
+    const initialValue = useRef(0);
+    const actionSheetHeight = useRef(0);
+    const gestureBoundaries = useRef<{
+      [name: string]: LayoutRectangle & {
+        scrollOffset?: number;
+      };
+    }>({});
+    const [dimensions, setDimensions] = useState({
+      width: Dimensions.get("window").width,
+      height: CALCULATED_DEVICE_HEIGHT || getDeviceHeight(statusBarTranslucent),
       portrait: true,
-      safeAreaInnerHeight,
-      paddingTop: safeAreaPaddingTop,
-      keyboardPadding: 0,
+    });
+    const { visible, setVisible } = useSheetManager({
+      id: props.id,
+      onHide: (data) => {
+        console.log(data);
+        hideSheet(data);
+      },
+      onBeforeShow: props.onBeforeShow,
+    });
+    const [animations] = useState({
+      opacity: new Animated.Value(0),
+      translateY: new Animated.Value(0),
+      underlayTranslateY: new Animated.Value(100),
+    });
+
+    const returnAnimation = (velocity?: number) => {
+      Animated.spring(animations.translateY, {
+        toValue: initialValue.current,
+        useNativeDriver: true,
+        velocity: velocity,
+      }).start();
+    };
+    const hideAnimation = (
+      callback?: ({ finished }: { finished: boolean }) => void
+    ) => {
+      Animated.timing(animations.translateY, {
+        duration: 150,
+        easing: Easing.in(Easing.ease),
+        toValue: dimensions.height * 1.3,
+        useNativeDriver: true,
+      }).start(callback);
     };
 
-    this.scrollViewRef = createRef();
-    this.safeAreaViewRef = createRef();
-
-    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 1;
-    this.indicatorTranslateY = new Animated.Value(-this.state.paddingTop | 0);
-  }
-
-  /**
-   * Snap ActionSheet to given offset.
-   */
-  snapToOffset = (offset: number) => {
-    let correction = this.state.deviceHeight * 0.15;
-    let extraScroll = this.props.extraScroll || 0;
-    let scrollOffset = this.props.gestureEnabled
-      ? offset + correction + extraScroll
-      : offset + correction + extraScroll;
-    this.currentOffsetFromBottom = scrollOffset / this.actionSheetHeight;
-    this.currentOffsetFromBottom = this.currentOffsetFromBottom - 0.15;
-    setTimeout(() => {
-      this._scrollTo(scrollOffset);
-      this.updateActionSheetPosition(scrollOffset);
-    }, 500);
-  };
-
-  /**
-   * Show the ActionSheet
-   */
-  show = () => {
-    this.setModalVisible(true);
-  };
-
-  /**
-   * Hide the ActionSheet
-   */
-  hide = () => {
-    this.setModalVisible(false);
-  };
-
-  /**
-   * Open/Close the ActionSheet
-   */
-  setModalVisible = (visible?: boolean) => {
-    let modalVisible = this.state.modalVisible;
-    this.initialScrolling = false;
-    if (visible !== undefined) {
-      if (modalVisible === visible) {
-        return;
-      }
-      modalVisible = !visible;
-    }
-
-    if (!modalVisible) {
-      this.setState({
-        modalVisible: true,
-        scrollable: this.props.gestureEnabled || false,
-      });
-    } else {
-      this._hideModal(null);
-    }
-  };
-
-  _hideAnimation(data: unknown) {
-    let {
-      animated,
-      closeAnimationDuration,
-      bottomOffset,
-      initialOffsetFromBottom,
-      extraScroll,
-      closable,
-    } = this.props;
-    Animated.parallel([
-      Animated.timing(this.opacityValue, {
-        toValue: closable ? 0 : 1,
-        duration: animated ? closeAnimationDuration : 1,
+    const opacityAnimation = (opacity: number) => {
+      Animated.timing(animations.opacity, {
+        duration: 150,
+        easing: Easing.in(Easing.ease),
+        toValue: opacity,
         useNativeDriver: true,
-      }),
-      Animated.timing(this.transformValue, {
-        toValue: closable ? this.actionSheetHeight * 2 : 0,
-        duration: animated ? closeAnimationDuration : 1,
-        useNativeDriver: true,
-      }),
-    ]).start();
+      }).start();
+    };
 
-    waitAsync((closeAnimationDuration ?? 300) / 1.5).then(() => {
-      if (!closable) {
-        if (bottomOffset && bottomOffset > 0) {
-          this.snapToOffset(bottomOffset);
-        } else {
-          this._scrollTo(
-            this.actionSheetHeight * (initialOffsetFromBottom ?? 1) +
-              this.state.deviceHeight * 0.1 +
-              (extraScroll ?? 0),
-            true
+    const hardwareBackPressEvent = useRef<NativeEventSubscription>();
+    const Root: React.ElementType =
+      isModal && !props?.backgroundInteractionEnabled ? Modal : Animated.View;
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        show: () => {
+          setVisible(true);
+        },
+        hide: (data: any) => {
+          hideSheet(data);
+        },
+        setModalVisible: (visible?: boolean) => {
+          if (visible) {
+            setVisible(true);
+          } else {
+            hideSheet();
+          }
+        },
+        snapToOffset: (offset: number) => {
+          Animated.spring(animations.translateY, {
+            toValue: actionSheetHeight.current - offset,
+            useNativeDriver: true,
+          }).start();
+        },
+        handleChildScrollEnd: () => {
+          console.warn(
+            "handleChildScrollEnd has been removed. Please use `useScrollHandlers` hook to enable scrolling in ActionSheet"
           );
-          this.currentOffsetFromBottom = initialOffsetFromBottom ?? 1;
-        }
+        },
+        modifyGesturesForLayout: (id, layout, scrollOffset) => {
+          //@ts-ignore
+          gestureBoundary.current[id] = {
+            ...layout,
+            scrollOffset: scrollOffset,
+          };
+        },
+      }),
+      []
+    );
 
-        this.isClosing = false;
-      } else {
-        this._scrollTo(0, false);
-        this.currentOffsetFromBottom = initialOffsetFromBottom ?? 1;
-        this.setState(
-          {
-            modalVisible: !closable,
-          },
-          () => {
-            this.isClosing = false;
-            this.isReachedTop = false;
-            this.props.onPositionChanged && this.props.onPositionChanged(false);
-
-            this.indicatorTranslateY.setValue(-this.state.paddingTop);
-            this.layoutHasCalled = false;
-            this.deviceLayoutCalled = false;
-            this.props.onClose && this.props.onClose(data);
-            if (this.props.id) {
-              actionSheetEventManager.publish(
-                `onclose_${this.props.id}`,
-                this.props.payload || data
-              );
+    useEffect(() => {
+      if (props.id) {
+        SheetManager.add(props.id);
+        SheetManager.registerRef(props.id, ref as RefObject<ActionSheetRef>);
+      }
+      const listener = animations.translateY.addListener((value) => {
+        actionSheetEventManager.publish("onoffsetchange", value.value);
+        if (drawUnderStatusBar) {
+          if (actionSheetHeight.current === dimensions.height) {
+            const offsetTop = value.value;
+            if (offsetTop < 100) {
+              animations.underlayTranslateY.setValue(offsetTop);
             }
           }
-        );
-      }
-    });
-  }
-
-  _hideModal = (data?: unknown) => {
-    if (this.isClosing) return;
-    this.isClosing = true;
-    this.hardwareBackPressEvent?.remove();
-    this._hideAnimation(data);
-  };
-
-  measure = async (): Promise<number> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (!this.safeAreaViewRef.current) {
-          safeAreaPaddingTop = 25;
-          resolve(safeAreaPaddingTop);
-          return;
         }
-        this.safeAreaViewRef.current?.measure(
-          (_x: number, _y: number, _width: number, height: number) => {
-            safeAreaPaddingTop = height === 0 ? 25 : height;
-            safeAreaPaddingTop =
-              !this.props.drawUnderStatusBar && safeAreaPaddingTop > 30
-                ? safeAreaPaddingTop - 12
-                : safeAreaPaddingTop;
-            resolve(safeAreaPaddingTop);
-          }
-        );
-      }, 50);
-    });
-  };
-
-  _showModal = async (event: LayoutChangeEvent) => {
-    let { gestureEnabled, delayActionSheetDraw, delayActionSheetDrawTime } =
-      this.props;
-
-    if (!event?.nativeEvent) return;
-    let height = event.nativeEvent.layout.height;
-    if (this.layoutHasCalled) {
-      this.actionSheetHeight = height;
-      this._returnToPrevScrollPosition(height);
-      return;
-    } else {
-      this.initialScrolling = true;
-      this.layoutHasCalled = true;
-      this.actionSheetHeight = height;
-      let scrollOffset = this.getInitialScrollPosition();
-      this.isRecoiling = false;
-      if (Platform.OS === "ios") {
-        await waitAsync(delayActionSheetDrawTime ?? 0);
-      } else {
-        if (delayActionSheetDraw) {
-          await waitAsync(delayActionSheetDrawTime ?? 0);
-        }
-      }
-      this._scrollTo(scrollOffset, false);
-
-      this.prevScroll = scrollOffset;
-      if (Platform.OS === "ios") {
-        await waitAsync(delayActionSheetDrawTime ?? 0 / 2);
-      } else {
-        if (delayActionSheetDraw) {
-          await waitAsync((delayActionSheetDrawTime ?? 0) / 2);
-        }
-      }
-      this._openAnimation(scrollOffset);
-      this.underlayScale.setValue(1);
-      this.underlayTranslateY.setValue(100);
-      if (!gestureEnabled) {
-        this.props.onPositionChanged && this.props.onPositionChanged(true);
-      }
-      this.updateActionSheetPosition(scrollOffset);
-    }
-  };
-
-  _openAnimation = (scrollOffset: number) => {
-    let { bounciness, bounceOnOpen, animated, openAnimationSpeed } = this.props;
-
-    if (animated) {
-      this.transformValue.setValue(scrollOffset);
-      Animated.parallel([
-        Animated.spring(this.transformValue, {
-          toValue: 0,
-          bounciness: bounceOnOpen ? bounciness : 1,
-          speed: openAnimationSpeed,
-          useNativeDriver: true,
-        }),
-        Animated.timing(this.opacityValue, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      this.opacityValue.setValue(1);
-    }
-  };
-
-  _onScrollBegin = async (
-    _event: NativeSyntheticEvent<NativeScrollEvent>
-  ) => {};
-  _onScrollBeginDrag = async (
-    event: NativeSyntheticEvent<NativeScrollEvent>
-  ) => {
-    let verticalOffset = event.nativeEvent.contentOffset.y;
-    this.prevScroll = verticalOffset;
-  };
-
-  _applyHeightLimiter() {
-    if (this.actionSheetHeight > this.state.deviceHeight) {
-      this.actionSheetHeight =
-        (this.actionSheetHeight -
-          (this.actionSheetHeight - this.state.deviceHeight)) *
-        1;
-    }
-  }
-
-  _onScrollEnd = async (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    let { springOffset, extraScroll } = this.props;
-    let verticalOffset = event.nativeEvent.contentOffset.y;
-    let correction = this.state.deviceHeight * 0.15;
-    if (this.isRecoiling) return;
-
-    if (this.prevScroll < verticalOffset || this.initialScrolling) {
-      if (
-        verticalOffset - this.prevScroll > (springOffset ?? 100) * 0.75 ||
-        this.initialScrolling
-      ) {
-        this.isRecoiling = true;
-        this._applyHeightLimiter();
-        this.currentOffsetFromBottom =
-          this.currentOffsetFromBottom <
-          (this.props.initialOffsetFromBottom ?? 1)
-            ? this.props.initialOffsetFromBottom ?? 1
-            : 1;
-        let scrollOffset =
-          this.actionSheetHeight * this.currentOffsetFromBottom +
-          correction +
-          (extraScroll ?? 0);
-
-        if (this.initialScrolling) {
-          this.initialScrolling = false;
-          scrollOffset = this.prevScroll;
-        }
-        this._scrollTo(scrollOffset);
-        await waitAsync(300);
-        this.isRecoiling = false;
-        this.props.onPositionChanged && this.props.onPositionChanged(true);
-      } else {
-        this._returnToPrevScrollPosition(this.actionSheetHeight);
-      }
-    } else {
-      if (this.prevScroll - verticalOffset > (springOffset ?? 100)) {
-        this._hideModal(null);
-      } else {
-        if (this.isRecoiling) {
-          return;
-        }
-        this.isRecoiling = true;
-        this._returnToPrevScrollPosition(this.actionSheetHeight);
-        await waitAsync(300);
-        this.isRecoiling = false;
-      }
-    }
-  };
-
-  updateActionSheetPosition(scrollPosition: number) {
-    if (this.actionSheetHeight >= this.state.deviceHeight - 1) {
-      let correction = this.state.deviceHeight * 0.15;
-      let distanceFromTop =
-        this.actionSheetHeight + correction - scrollPosition;
-      if (distanceFromTop < safeAreaPaddingTop) {
-        if (!this.props.drawUnderStatusBar) return;
-
-        this.indicatorTranslateY.setValue(0);
-      } else {
-        this.indicatorTranslateY.setValue(-safeAreaPaddingTop);
-      }
-    }
-  }
-
-  _returnToPrevScrollPosition(height: number) {
-    let correction = this.state.deviceHeight * 0.15;
-    let scrollOffset =
-      height * this.currentOffsetFromBottom +
-      correction +
-      (this.props.extraScroll ?? 0);
-
-    this.updateActionSheetPosition(scrollOffset);
-    this._scrollTo(scrollOffset);
-  }
-
-  _scrollTo = (y: number, animated = true) => {
-    this.scrollAnimationEndValue = y;
-    this.prevScroll = y;
-    this.scrollViewRef.current?._listRef._scrollRef.scrollTo({
-      x: 0,
-      y: this.scrollAnimationEndValue,
-      animated: animated,
-    });
-    if (this.initialScrolling) {
-      setTimeout(() => {
-        this.initialScrolling = false;
-      }, 500);
-    }
-  };
-
-  _onTouchMove = () => {
-    if (this.props.closeOnTouchBackdrop) {
-      this._hideModal();
-    }
-    this.setState({
-      scrollable: false,
-    });
-  };
-
-  _onTouchStart = () => {
-    if (this.props.closeOnTouchBackdrop) {
-      this._hideModal();
-    }
-    this.setState({
-      scrollable: false,
-    });
-  };
-
-  _onTouchEnd = () => {
-    this._returnToPrevScrollPosition(this.actionSheetHeight);
-    if (this.props.gestureEnabled) {
-      this.setState({
-        scrollable: true,
       });
-    }
-  };
+      return () => {
+        listener && animations.translateY.removeListener(listener);
+        props.id && SheetManager.remove(props.id);
+        hardwareBackPressEvent.current?.remove();
+      };
+    }, [props?.id, dimensions.height]);
 
-  _onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    this.offsetY = event.nativeEvent.contentOffset.y;
+    const onHardwareBackPress = () => {
+      return false;
+    };
 
-    let correction = this.state.deviceHeight * 0.15;
-    let distanceFromTop = this.actionSheetHeight + correction - this.offsetY;
-
-    if (this.actionSheetHeight < this.offsetY) {
-      if (!this.isReachedTop) {
-        this.isReachedTop = true;
-        this.props.onPositionChanged && this.props.onPositionChanged(true);
-      }
-    } else {
-      if (this.isReachedTop) {
-        this.isReachedTop = false;
-        this.props.onPositionChanged && this.props.onPositionChanged(false);
-      }
-    }
-
-    if (this.actionSheetHeight >= this.state.deviceHeight - 1) {
-      if (distanceFromTop < this.state.paddingTop) {
-        if (!this.props.drawUnderStatusBar) return;
-        this.indicatorTranslateY.setValue(
-          -this.state.paddingTop + (this.state.paddingTop - distanceFromTop)
-        );
-      } else {
-        this.indicatorTranslateY.setValue(-this.state.paddingTop);
-      }
-    }
-  };
-
-  _onRequestClose = () => {
-    if (this.props.closeOnPressBack) this._hideModal();
-  };
-
-  _onTouchBackdrop = () => {
-    if (this.props.closeOnTouchBackdrop) {
-      this._hideModal();
-    }
-  };
-
-  onSheetManagerShow = (data?: unknown) => {
-    if (this.props.onBeforeShow) {
-      this.props.onBeforeShow(data);
-    }
-    this.setModalVisible(true);
-  };
-
-  onSheetMangerHide = (data?: unknown) => {
-    this._hideModal(data);
-  };
-
-  componentDidMount() {
-    if (this.props.id) {
-      SheetManager.add(this.props.id);
-      SheetManager.registerRef(this.props.id, this);
-    }
-
-    this.keyboardShowSubscription = Keyboard.addListener(
-      Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
-      this._onKeyboardShow
-    );
-
-    this.KeyboardHideSubscription = Keyboard.addListener(
-      Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
-      this._onKeyboardHide
-    );
-    if (this.props.id) {
-      this.sheetManagerShowEvent = actionSheetEventManager.subscribe(
-        `show_${this.props.id}`,
-        this.onSheetManagerShow
-      );
-      this.sheetManagerHideEvent = actionSheetEventManager.subscribe(
-        `hide_${this.props.id}`,
-        this.onSheetMangerHide
-      );
-    }
-  }
-
-  componentWillUnmount() {
-    this.props.id && SheetManager.remove(this.props.id);
-    this.keyboardShowSubscription?.remove();
-    this.KeyboardHideSubscription?.remove();
-    this.sheetManagerHideEvent?.unsubscribe();
-    this.sheetManagerShowEvent?.unsubscribe();
-  }
-
-  _onKeyboardShow = (event: KeyboardEvent) => {
-    if (this.props.keyboardHandlerEnabled) {
-      this.isRecoiling = true;
-      let correction = Platform.OS === "android" ? 20 : 5;
-      this.setState({
-        keyboard: true,
-        keyboardPadding: event.endCoordinates.height + correction,
-      });
-
-      waitAsync(300).then(() => {
-        this.isRecoiling = false;
-      });
-    }
-  };
-
-  _onKeyboardHide = () => {
-    this.setState({
-      keyboard: false,
-      keyboardPadding: 0,
-    });
-
-    Animated.parallel([
-      Animated.spring(this.transformValue, {
-        toValue: 0,
-        bounciness: this.props.bounceOnOpen ? this.props.bounciness : 1,
-        speed: this.props.openAnimationSpeed,
-        useNativeDriver: true,
-      }),
-      Animated.timing(this.opacityValue, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  /**
-   * Attach this to any child ScrollView Component's onScrollEndDrag,
-   * onMomentumScrollEnd,onScrollAnimationEnd callbacks to handle the ActionSheet
-   * closing and bouncing back properly.
-   */
-
-  handleChildScrollEnd = async () => {
-    if (this.offsetY > this.prevScroll) return;
-    if (this.prevScroll - (this.props.springOffset ?? 100) > this.offsetY) {
-      let scrollOffset = this.getInitialScrollPosition();
-      if (this.offsetY > scrollOffset - 100) {
-        this.isRecoiling = true;
-        this._scrollTo(scrollOffset);
-        this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 1;
-        this.prevScroll = scrollOffset;
-        setTimeout(() => {
-          this.isRecoiling = false;
-        }, 500);
-      } else {
-        this._hideModal();
-      }
-    } else {
-      this.isRecoiling = true;
-      this._scrollTo(this.prevScroll, true);
-      setTimeout(() => {
-        this.isRecoiling = false;
-      }, 500);
-    }
-  };
-
-  _onDeviceLayout = async (_event: LayoutChangeEvent) => {
-    let event = { ..._event };
-
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
-    this.timeout = setTimeout(async () => {
-      let safeMarginFromTop = 0;
-      if (!this.props.drawUnderStatusBar) {
-        if (Platform.OS === "android" && !this.props.statusBarTranslucent)
-          return;
-
-        this.indicatorTranslateY.setValue(-safeAreaPaddingTop);
-      } else {
-        this.updateActionSheetPosition(this.offsetY);
-      }
-      let height = event.nativeEvent.layout.height - safeMarginFromTop;
-      let width = Dimensions.get("window").width;
-      if (
-        height?.toFixed(0) === calculatedDeviceHeight?.toFixed(0) &&
-        width?.toFixed(0) === this.state.deviceWidth?.toFixed(0) &&
-        this.deviceLayoutCalled
-      )
-        return;
-      this.deviceLayoutCalled = true;
-      calculatedDeviceHeight = height;
-      this.setState({
-        deviceHeight: height,
-        deviceWidth: width,
-        portrait: height > width,
-        paddingTop: safeAreaPaddingTop,
-      });
-    }, 500);
-  };
-
-  getScrollPositionFromOffset(offset: number, correction: number) {
-    return this.props.gestureEnabled
-      ? this.actionSheetHeight * offset +
-          correction +
-          (this.props.extraScroll ?? 0)
-      : this.actionSheetHeight + correction + (this.props.extraScroll ?? 0);
-  }
-
-  getInitialScrollPosition() {
-    this._applyHeightLimiter();
-    let correction = this.state.deviceHeight * 0.15;
-    let scrollPosition = this.getScrollPositionFromOffset(
-      this.props.initialOffsetFromBottom ?? 1,
-      correction
-    );
-    this.currentOffsetFromBottom = this.props.initialOffsetFromBottom ?? 1;
-    this.updateActionSheetPosition(scrollPosition);
-
-    return scrollPosition;
-  }
-
-  _keyExtractor = (item: string) => item;
-
-  onHardwareBackPress = () => {
-    this._hideModal();
-    return true;
-  };
-
-  render() {
-    let { scrollable, modalVisible } = this.state;
-    let {
-      testID,
-      onOpen,
-      overlayColor,
-      gestureEnabled,
-      elevation,
-      indicatorColor,
-      defaultOverlayOpacity,
-      children,
-      containerStyle,
-      CustomHeaderComponent,
-      headerAlwaysVisible,
-      keyboardShouldPersistTaps,
-      statusBarTranslucent,
-      keyboardDismissMode,
-      isModal,
-    } = this.props;
-
-    const Root = isModal
-      ? (Modal as React.ElementType)
-      : (View as React.ElementType);
+    const onRequestClose = () => {};
 
     const rootProps = isModal
       ? {
           visible: true,
           animationType: "none",
-          // @ts-ignore
-          testID: testID,
+          testID: props.testID,
           supportedOrientations: SUPPORTED_ORIENTATIONS,
-          onShow: onOpen,
-          onRequestClose: this._onRequestClose,
+          onShow: props.onOpen,
+          onRequestClose: onRequestClose,
           transparent: true,
           statusBarTranslucent: statusBarTranslucent,
         }
       : {
-          testID: testID,
+          testID: props.testID,
           onLayout: () => {
-            this.hardwareBackPressEvent = BackHandler.addEventListener(
+            hardwareBackPressEvent.current = BackHandler.addEventListener(
               "hardwareBackPress",
-              this.onHardwareBackPress
+              onHardwareBackPress
             );
-            onOpen && onOpen();
+            props?.onOpen?.();
           },
           style: {
             position: "absolute",
@@ -752,178 +225,239 @@ export default class ActionSheet extends Component<Props, State, any> {
             width: "100%",
             height: "100%",
           },
+          pointerEvents: props?.backgroundInteractionEnabled
+            ? "box-none"
+            : "auto",
         };
-    return !modalVisible ? null : (
-      <>
-        {Platform.OS === "ios" ? (
-          <SafeAreaView
-            pointerEvents="none"
-            onLayout={(event) => {
-              let height = event.nativeEvent.layout.height;
-              if (height) {
-                safeAreaPaddingTop = event.nativeEvent.layout.height;
-              }
-            }}
-            style={{
-              position: "absolute",
-              width: 0,
-              left: -9999,
-              top: -9999,
-            }}
-            ref={this.safeAreaViewRef}
-          >
-            <View />
-          </SafeAreaView>
-        ) : null}
-        <Root {...rootProps}>
-          <Animated.View
-            onLayout={this._onDeviceLayout}
-            style={[
-              styles.parentContainer,
-              {
-                opacity: this.opacityValue,
+
+    const onDeviceLayout = React.useCallback((event: LayoutChangeEvent) => {
+      const safeMarginFromTop = StatusBar.currentHeight || 0;
+      let height = event.nativeEvent.layout.height - safeMarginFromTop;
+      let width = Dimensions.get("window").width;
+      if (
+        height?.toFixed(0) === CALCULATED_DEVICE_HEIGHT?.toFixed(0) &&
+        width?.toFixed(0) === dimensions.width.toFixed(0)
+      )
+        return;
+      initialValue.current =
+        actionSheetHeight.current -
+        actionSheetHeight.current * initialOffsetFromBottom;
+      animations.translateY.setValue(actionSheetHeight.current * 1.3);
+      setDimensions({
+        width,
+        height,
+        portrait: height > width,
+      });
+      opacityAnimation(1);
+      returnAnimation();
+    }, []);
+
+    const hideSheet = (data?: any) => {
+      hideAnimation(({ finished }) => {
+        if (closable) opacityAnimation(0);
+        if (finished) {
+          if (closable) {
+            setVisible(false);
+            if (props.id) {
+              actionSheetEventManager.publish(
+                `onclose_${props.id}`,
+                data || props.payload
+              );
+            }
+          } else {
+            returnAnimation();
+          }
+        }
+      });
+    };
+
+    const handlers = React.useMemo(
+      () =>
+        !gestureEnabled
+          ? { panHandlers: {} }
+          : PanResponder.create({
+              onMoveShouldSetPanResponderCapture: (event, gesture) => {
+                let lock = false;
+                for (let key in gestureBoundaries.current) {
+                  const gestureBoundary = gestureBoundaries.current[key];
+                  if (
+                    //@ts-ignore
+                    animations.translateY._value > 3 ||
+                    !gestureBoundary
+                  )
+                    lock = false;
+
+                  const scrollOffset = gestureBoundary?.scrollOffset || 0;
+
+                  if (
+                    event.nativeEvent.pageY > gestureBoundary?.y &&
+                    gesture.vy > 0 &&
+                    scrollOffset <= 0
+                  ) {
+                    lock = true;
+                  } else {
+                    lock = false;
+                  }
+                }
+
+                return !lock;
+              },
+              onStartShouldSetPanResponder: () => true,
+              onPanResponderMove: (_event, gesture) => {
+                //@ts-ignore
+                if (animations.translateY._value <= -30 && gesture.dy <= 0)
+                  return;
+                animations.translateY.setValue(
+                  //@ts-ignore
+                  animations.translateY._value < 0
+                    ? 0 + gesture.dy / 15
+                    : initialValue.current + gesture.dy
+                );
+              },
+              onPanResponderEnd: (_event, gesture) => {
+                if (
+                  //@ts-ignore
+                  animations.translateY._value <
+                  initialValue.current - springOffset
+                ) {
+                  Animated.spring(animations.translateY, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    velocity: gesture.vy,
+                  }).start();
+
+                  initialValue.current = 0;
+                  return;
+                }
+                if (gesture.dy > springOffset) {
+                  if (bottomOffset) {
+                    initialValue.current = bottomOffset;
+                    returnAnimation(gesture.vy);
+                    return;
+                  }
+                  initialValue.current = dimensions.height * 1.3;
+                  hideSheet();
+                  return;
+                }
+                returnAnimation(gesture.vy);
+              },
+            }),
+      [hideSheet, gestureEnabled, bottomOffset, closable]
+    );
+
+    const onTouch = () => {
+      if (closeOnTouchBackdrop) {
+        hideSheet();
+      }
+    };
+
+    const onSheetLayout = (event: LayoutChangeEvent) => {
+      actionSheetHeight.current = event.nativeEvent.layout.height;
+    };
+
+    if (!visible) return null;
+    return (
+      <Root {...rootProps}>
+        <Animated.View
+          onLayout={onDeviceLayout}
+          pointerEvents={
+            props?.backgroundInteractionEnabled ? "box-none" : "auto"
+          }
+          style={[
+            styles.parentContainer,
+            {
+              opacity: animations.opacity,
+              width: "100%",
+              justifyContent: "flex-end",
+            },
+          ]}
+        >
+          {!props?.backgroundInteractionEnabled ? (
+            <View
+              onTouchEnd={onTouch}
+              onTouchMove={onTouch}
+              onTouchStart={onTouch}
+              testID={props.testIDs?.backdrop}
+              style={{
+                height: "100%",
                 width: "100%",
+                position: "absolute",
+                zIndex: 1,
+                backgroundColor: overlayColor,
+                opacity: defaultOverlayOpacity,
+              }}
+            />
+          ) : null}
+
+          <Animated.View
+            {...handlers.panHandlers}
+            onLayout={onSheetLayout}
+            style={[
+              styles.container,
+              {
+                borderTopRightRadius: 10,
+                borderTopLeftRadius: 10,
+                ...getElevation(elevation || 5),
+              },
+              props.containerStyle,
+              {
+                zIndex: 10,
+                maxHeight: dimensions.height,
+                transform: [
+                  {
+                    translateY: animations.translateY,
+                  },
+                ],
               },
             ]}
           >
-            {this.props.ExtraOverlayComponent}
+            {drawUnderStatusBar ? (
+              <Animated.View
+                style={{
+                  height: 100,
+                  position: "absolute",
+                  top: -50,
+                  backgroundColor:
+                    props.containerStyle?.backgroundColor || "white",
+                  width: "100%",
+                  borderRadius: props.containerStyle?.borderRadius || 10,
+                  transform: [
+                    {
+                      translateY: animations.underlayTranslateY,
+                    },
+                  ],
+                }}
+              />
+            ) : null}
+            {gestureEnabled || props.headerAlwaysVisible ? (
+              props.CustomHeaderComponent ? (
+                props.CustomHeaderComponent
+              ) : (
+                <Animated.View
+                  style={[
+                    styles.indicator,
+                    { backgroundColor: indicatorColor },
+                    props.indicatorStyle,
+                  ]}
+                />
+              )
+            ) : null}
 
-            <FlatList
-              testID={this.props.testIDs?.scrollview}
-              bounces={false}
-              keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-              keyboardDismissMode={keyboardDismissMode}
-              ref={this.scrollViewRef}
-              scrollEventThrottle={16}
-              overScrollMode="never"
-              showsVerticalScrollIndicator={false}
-              onMomentumScrollBegin={this._onScrollBegin}
-              onScrollEndDrag={this._onScrollEnd}
-              onMomentumScrollEnd={this._onScrollEnd}
-              scrollEnabled={scrollable}
-              onScrollBeginDrag={this._onScrollBeginDrag}
-              onTouchEnd={this._onTouchEnd}
-              onScroll={this._onScroll}
-              scrollsToTop={false}
-              style={[
-                styles.scrollView,
-                {
-                  width: this.state.deviceWidth,
-                },
-              ]}
-              contentContainerStyle={{
-                width: this.state.deviceWidth,
+            {props?.children}
+
+            <Animated.View
+              style={{
+                height: 100,
+                position: "absolute",
+                bottom: -100,
+                backgroundColor:
+                  props.containerStyle?.backgroundColor || "white",
+                width: dimensions.width,
               }}
-              data={dummyData}
-              keyExtractor={this._keyExtractor}
-              renderItem={() => (
-                <View
-                  style={{
-                    width: "100%",
-                  }}
-                >
-                  <Animated.View
-                    onTouchStart={this._onTouchBackdrop}
-                    onTouchMove={this._onTouchBackdrop}
-                    onTouchEnd={this._onTouchBackdrop}
-                    style={{
-                      height: "100%",
-                      width: "100%",
-                      position: "absolute",
-                      zIndex: 1,
-                      backgroundColor: overlayColor,
-                      opacity: defaultOverlayOpacity,
-                    }}
-                  />
-                  <View
-                    onTouchMove={this._onTouchMove}
-                    onTouchStart={this._onTouchStart}
-                    onTouchEnd={this._onTouchEnd}
-                    style={{
-                      height: this.state.deviceHeight * 1.15,
-                      width: "100%",
-                      zIndex: 10,
-                    }}
-                  >
-                    <TouchableOpacity
-                      testID={this.props.testIDs?.backdrop}
-                      onPress={this._onTouchBackdrop}
-                      onLongPress={this._onTouchBackdrop}
-                      style={{
-                        height: this.state.deviceHeight * 1.15,
-                        width: "100%",
-                      }}
-                    />
-                  </View>
-
-                  <Animated.View
-                    onLayout={this._showModal}
-                    style={[
-                      styles.container,
-                      {
-                        borderRadius: 10,
-                      },
-                      containerStyle,
-                      {
-                        ...getElevation(elevation ?? 5),
-                        zIndex: 11,
-                        opacity: this.opacityValue,
-                        transform: [
-                          {
-                            translateY: this.transformValue,
-                          },
-                        ],
-                        maxHeight: this.state.deviceHeight,
-                        paddingBottom: this.state.keyboardPadding,
-                      },
-                    ]}
-                  >
-                    <Animated.View
-                      style={{
-                        maxHeight: this.state.deviceHeight,
-                        transform: [
-                          {
-                            translateY: this.indicatorTranslateY,
-                          },
-                        ],
-                        marginTop: this.state.paddingTop,
-                        marginBottom: -this.state.paddingTop,
-                      }}
-                    >
-                      {gestureEnabled || headerAlwaysVisible ? (
-                        CustomHeaderComponent ? (
-                          CustomHeaderComponent
-                        ) : (
-                          <Animated.View
-                            style={[
-                              styles.indicator,
-                              { backgroundColor: indicatorColor },
-                              this.props.indicatorStyle,
-                            ]}
-                          />
-                        )
-                      ) : null}
-
-                      {children}
-                    </Animated.View>
-
-                    <View
-                      style={{
-                        height: 200,
-                        backgroundColor:
-                          containerStyle?.backgroundColor || "#ffffff",
-                        position: "absolute",
-                        bottom: -195,
-                        width: containerStyle?.width || "100%",
-                      }}
-                    />
-                  </Animated.View>
-                </View>
-              )}
             />
           </Animated.View>
-        </Root>
-      </>
+        </Animated.View>
+      </Root>
     );
   }
-}
+);

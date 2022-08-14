@@ -15,12 +15,14 @@ function ConfirmSheet(props: SheetProps) {
       bounciness={4}
       gestureEnabled={true}
       containerStyle={{
-        padding: 12,
+        paddingHorizontal: 12,
       }}
+      springOffset={10}
       defaultOverlayOpacity={0.3}>
       <Text
         style={{
           marginBottom: 10,
+          color: 'black',
         }}>
         Pressing yes or no will return the result back to the caller.
       </Text>
@@ -39,11 +41,6 @@ function ConfirmSheet(props: SheetProps) {
         title="Yes"
         onPress={() => {
           SheetManager.hide(props.sheetId, true);
-        }}
-      />
-      <View
-        style={{
-          height: 10,
         }}
       />
     </ActionSheet>

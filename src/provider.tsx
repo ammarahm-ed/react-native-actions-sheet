@@ -102,7 +102,7 @@ const RenderSheet = ({ id, context }: { id: string; context: string }) => {
 
   useEffect(() => {
     if (visible) {
-      SheetManager.get(id)?.show();
+      SheetManager.get(id)?.current?.show();
     }
   }, [visible]);
 

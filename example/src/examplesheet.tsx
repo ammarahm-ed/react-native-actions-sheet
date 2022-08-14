@@ -11,21 +11,23 @@ import ActionSheet, {
   SheetManager,
   SheetProps,
 } from 'react-native-actions-sheet';
+import {ActionSheetRef, useScrollHandler} from 'react-native-actions-sheet/src';
 
 const colors = ['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'];
 const items = [
   100, 60, 150, 200, 170, 80, 41, 101, 61, 151, 202, 172, 82, 43, 103, 64, 155,
   205, 176, 86, 46, 106, 66, 152, 203, 173, 81, 42,
 ];
-
 function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
-  const actionSheetRef = useRef<ActionSheet>(null);
+  const actionSheetRef = useRef<ActionSheetRef>(null);
+  const scrollHandlers = useScrollHandler(actionSheetRef);
+
   return (
     <ActionSheet
-      initialOffsetFromBottom={0.4}
+      initialOffsetFromBottom={0.5}
       id={sheetId}
       ref={actionSheetRef}
-      onOpen={() => {
+      onBeforeShow={() => {
         console.log('sheet payload', payload?.data);
       }}
       statusBarTranslucent
@@ -37,6 +39,8 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
       <View
         style={{
           paddingHorizontal: 12,
+          height: 500,
+          maxHeight: 500,
         }}>
         <View style={styles.container}>
           {colors.map(color => (
@@ -55,12 +59,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
           ))}
         </View>
 
-        <ScrollView
-          nestedScrollEnabled
-          onMomentumScrollEnd={() => {
-            actionSheetRef.current?.handleChildScrollEnd();
-          }}
-          style={styles.scrollview}>
+        <ScrollView {...scrollHandlers} style={styles.scrollview}>
           <TextInput
             style={styles.input}
             multiline={true}
