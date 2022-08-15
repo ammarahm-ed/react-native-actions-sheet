@@ -103,7 +103,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         },
         modifyGesturesForLayout: function (id, layout, scrollOffset) {
             //@ts-ignore
-            gestureBoundary.current[id] = __assign(__assign({}, layout), { scrollOffset: scrollOffset });
+            gestureBoundaries.current[id] = __assign(__assign({}, layout), { scrollOffset: scrollOffset });
         }
     }); }, []);
     useEffect(function () {
@@ -203,25 +203,25 @@ export default forwardRef(function ActionSheet(_a, ref) {
             ? { panHandlers: {} }
             : PanResponder.create({
                 onMoveShouldSetPanResponderCapture: function (event, gesture) {
-                    var lock = false;
-                    for (var key in gestureBoundaries.current) {
-                        var gestureBoundary = gestureBoundaries.current[key];
+                    var gestures = true;
+                    for (var id in gestureBoundaries.current) {
+                        var gestureBoundary = gestureBoundaries.current[id];
                         if (
                         //@ts-ignore
                         animations.translateY._value > 3 ||
                             !gestureBoundary)
-                            lock = false;
+                            gestures = true;
                         var scrollOffset = (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.scrollOffset) || 0;
                         if (event.nativeEvent.pageY > (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.y) &&
                             gesture.vy > 0 &&
                             scrollOffset <= 0) {
-                            lock = true;
+                            gestures = true;
                         }
                         else {
-                            lock = false;
+                            gestures = false;
                         }
                     }
-                    return !lock;
+                    return gestures;
                 },
                 onStartShouldSetPanResponder: function () { return true; },
                 onPanResponderMove: function (_event, gesture) {

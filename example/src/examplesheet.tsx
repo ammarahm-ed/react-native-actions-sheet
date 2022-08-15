@@ -11,7 +11,7 @@ import ActionSheet, {
   SheetManager,
   SheetProps,
 } from 'react-native-actions-sheet';
-import {ActionSheetRef, useScrollHandler} from 'react-native-actions-sheet/src';
+import {ActionSheetRef, useScrollHandlers} from 'react-native-actions-sheet';
 
 const colors = ['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'];
 const items = [
@@ -20,7 +20,7 @@ const items = [
 ];
 function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
   const actionSheetRef = useRef<ActionSheetRef>(null);
-  const scrollHandlers = useScrollHandler(actionSheetRef);
+  const scrollHandlers = useScrollHandlers('1', actionSheetRef);
 
   return (
     <ActionSheet

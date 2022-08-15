@@ -161,7 +161,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         },
         modifyGesturesForLayout: (id, layout, scrollOffset) => {
           //@ts-ignore
-          gestureBoundary.current[id] = {
+          gestureBoundaries.current[id] = {
             ...layout,
             scrollOffset: scrollOffset,
           };
@@ -270,22 +270,21 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
       });
     };
-
     const handlers = React.useMemo(
       () =>
         !gestureEnabled
           ? { panHandlers: {} }
           : PanResponder.create({
               onMoveShouldSetPanResponderCapture: (event, gesture) => {
-                let lock = false;
-                for (let key in gestureBoundaries.current) {
-                  const gestureBoundary = gestureBoundaries.current[key];
+                let gestures = true;
+                for (let id in gestureBoundaries.current) {
+                  const gestureBoundary = gestureBoundaries.current[id];
                   if (
                     //@ts-ignore
                     animations.translateY._value > 3 ||
                     !gestureBoundary
                   )
-                    lock = false;
+                    gestures = true;
 
                   const scrollOffset = gestureBoundary?.scrollOffset || 0;
 
@@ -294,13 +293,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                     gesture.vy > 0 &&
                     scrollOffset <= 0
                   ) {
-                    lock = true;
+                    gestures = true;
                   } else {
-                    lock = false;
+                    gestures = false;
                   }
                 }
-
-                return !lock;
+                return gestures;
               },
               onStartShouldSetPanResponder: () => true,
               onPanResponderMove: (_event, gesture) => {
