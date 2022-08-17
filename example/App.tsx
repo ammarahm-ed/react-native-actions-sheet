@@ -1,5 +1,5 @@
 import React from 'react';
-import {SheetProvider} from 'react-native-actions-sheet';
+import {SheetProvider} from '../';
 import ExampleScreen from './src/screen';
 import './src/sheets';
 

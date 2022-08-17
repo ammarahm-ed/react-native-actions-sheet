@@ -1,18 +1,13 @@
 import React from 'react';
 import {Button, Text, View} from 'react-native';
-import ActionSheet, {
-  SheetManager,
-  SheetProps,
-} from 'react-native-actions-sheet';
+import ActionSheet, {SheetManager, SheetProps} from '../../index';
 
 function ConfirmSheet(props: SheetProps) {
   return (
     <ActionSheet
       id={props.sheetId}
       statusBarTranslucent={false}
-      bounceOnOpen={true}
       drawUnderStatusBar={false}
-      bounciness={4}
       gestureEnabled={true}
       containerStyle={{
         paddingHorizontal: 12,

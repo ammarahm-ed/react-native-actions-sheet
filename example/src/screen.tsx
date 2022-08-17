@@ -1,72 +1,9 @@
 /* eslint-disable curly */
-import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {
-  Animated,
-  Easing,
-  PanResponder,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import {SheetManager} from 'react-native-actions-sheet';
+import React from 'react';
+import {SafeAreaView, StyleSheet, Text, TouchableOpacity} from 'react-native';
+import {SheetManager} from '../../';
 
 const ExampleScreen = () => {
-  const initialValue = useRef(250);
-  const [value] = useState(() => new Animated.Value(250));
-  const returnAnimation = useMemo(
-    () =>
-      Animated.spring(value, {
-        toValue: 250,
-        useNativeDriver: true,
-      }),
-    [value],
-  );
-  const hideAnimation = useMemo(
-    () =>
-      Animated.timing(value, {
-        duration: 150,
-        easing: Easing.in(Easing.ease),
-        toValue: 1000,
-        useNativeDriver: true,
-      }),
-    [value],
-  );
-  const [handlers] = useState(() =>
-    PanResponder.create({
-      onMoveShouldSetPanResponder: () => true,
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (event, gesture) => {
-        //@ts-ignore
-        if (value._value <= 0 && gesture.dy <= 0) return;
-        value.setValue(initialValue.current + gesture.dy);
-      },
-      onPanResponderEnd: (e, g) => {
-        //@ts-ignore
-        if (value._value < 100) {
-          Animated.spring(value, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-
-          initialValue.current = 0;
-          return;
-        }
-        if (g.dy > 150) {
-          initialValue.current = -1000;
-          hideAnimation.start();
-        } else {
-          initialValue.current = 250;
-          returnAnimation.start();
-        }
-      },
-    }),
-  );
-
-  useEffect(() => {
-    returnAnimation.start();
-  }, []);
   return (
     <>
       <SafeAreaView style={styles.safeareview}>
@@ -100,23 +37,6 @@ const ExampleScreen = () => {
           ]}>
           <Text style={styles.btnTitle}>Open Confirm Sheet</Text>
         </TouchableOpacity>
-
-        {/* <Animated.View
-          {...handlers.panHandlers}
-          style={{
-            height: 500,
-            width: '100%',
-            backgroundColor: 'red',
-            position: 'absolute',
-            bottom: 0,
-            borderRadius: 15,
-            transform: [
-              {
-                translateY: value,
-              },
-            ],
-          }}
-        /> */}
       </SafeAreaView>
     </>
   );

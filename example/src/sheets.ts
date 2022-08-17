@@ -1,6 +1,6 @@
 import ExampleSheet from './examplesheet';
 import ConfirmSheet from './confirm';
-import {registerSheet} from 'react-native-actions-sheet';
+import {registerSheet} from '../..';
 
 /**
  * Registering the sheets here because otherwise sheet closes on

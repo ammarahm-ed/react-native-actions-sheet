@@ -4,7 +4,6 @@ import {
   LayoutRectangle,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  ScrollView,
 } from "react-native";
 import { actionSheetEventManager } from "../eventmanager";
 import { ActionSheetRef } from "../index";
@@ -16,9 +15,9 @@ import { ActionSheetRef } from "../index";
  * @param ref ref of the ActionSheet in which the ScrollView is present.
  * @returns
  */
-const useScrollHandlers = (id: string, ref: RefObject<ActionSheetRef>) => {
+function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
   //const [enabled,setEnabled] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<T>(null);
   const scrollLayout = useRef<LayoutRectangle>();
   const scrollOffset = useRef(0);
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -30,16 +29,13 @@ const useScrollHandlers = (id: string, ref: RefObject<ActionSheetRef>) => {
     );
   };
 
-  // const onMomentumScrollEnd = (
-  //   event: NativeSyntheticEvent<NativeScrollEvent>
-  // ) => {};
-
   useEffect(() => {
     const subscription = actionSheetEventManager.subscribe(
       "onoffsetchange",
       (offset: number) => {
         if (offset < 3) {
-          scrollRef.current?.setNativeProps({
+          //@ts-ignore
+          scrollRef.current?.setNativeProps?.({
             scrollEnabled: true,
           });
           ref.current?.modifyGesturesForLayout(
@@ -48,7 +44,8 @@ const useScrollHandlers = (id: string, ref: RefObject<ActionSheetRef>) => {
             scrollOffset.current
           );
         } else {
-          scrollRef.current?.setNativeProps({
+          //@ts-ignore
+          scrollRef.current?.setNativeProps?.({
             scrollEnabled: false,
           });
           ref.current?.modifyGesturesForLayout(id, undefined, 0);
@@ -60,8 +57,6 @@ const useScrollHandlers = (id: string, ref: RefObject<ActionSheetRef>) => {
     };
   });
 
-  // const onTouchStart = () => {};
-
   const onLayout = (event: LayoutChangeEvent) => {
     scrollLayout.current = event.nativeEvent.layout;
   };
@@ -72,6 +67,6 @@ const useScrollHandlers = (id: string, ref: RefObject<ActionSheetRef>) => {
     ref: scrollRef,
     onLayout: onLayout,
   };
-};
+}
 
 export default useScrollHandlers;

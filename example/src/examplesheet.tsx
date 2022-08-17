@@ -10,8 +10,9 @@ import ActionSheet, {
   registerSheet,
   SheetManager,
   SheetProps,
-} from 'react-native-actions-sheet';
-import {ActionSheetRef, useScrollHandlers} from 'react-native-actions-sheet';
+  ActionSheetRef,
+} from '../..';
+import useScrollHandlers from '../../src/hooks/use-scroll-handlers';
 
 const colors = ['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'];
 const items = [
@@ -20,20 +21,19 @@ const items = [
 ];
 function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
   const actionSheetRef = useRef<ActionSheetRef>(null);
-  const scrollHandlers = useScrollHandlers('1', actionSheetRef);
+  const scrollHandlers = useScrollHandlers<ScrollView>('1', actionSheetRef);
 
   return (
     <ActionSheet
-      initialOffsetFromBottom={0.5}
       id={sheetId}
       ref={actionSheetRef}
       onBeforeShow={() => {
         console.log('sheet payload', payload?.data);
       }}
+      snapPoints={[30, 60]}
+      initialSnapIndex={0}
       statusBarTranslucent
-      bounceOnOpen={true}
       drawUnderStatusBar={true}
-      bounciness={4}
       gestureEnabled={true}
       defaultOverlayOpacity={0.3}>
       <View
