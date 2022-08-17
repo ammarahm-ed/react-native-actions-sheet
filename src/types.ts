@@ -1,5 +1,5 @@
 import React from "react";
-import { ViewStyle } from "react-native";
+import { Animated, KeyboardAvoidingView, ViewStyle } from "react-native";
 
 export type ActionSheetProps = {
   children: React.ReactNode;
@@ -16,24 +16,77 @@ export type ActionSheetProps = {
   animated?: boolean;
 
   /**
-   * Use if you want to show the ActionSheet Partially on Opening. **Requires `gestureEnabled=true`**
-   *
-   * Default:`1`
-   */
-  initialOffsetFromBottom?: number;
-
-  /**
-   * When touch ends and user has not moved farther from the set springOffset, the ActionSheet will return to previous position.
+   * Choose how far off the user needs to drag the action sheet to make it snap to next point. The default is `50` which means
+   * that user needs to drag the sheet up or down at least 50 display pixels for it to close or move to next snap point.
+   * Otherwise it will just return to the initial position.
    *
    * Default: `50`
    */
   springOffset?: number;
 
+  /**
+   * When the action sheet is pulled beyond top position, it overdraws and bounces back. Set this to false if you need to disable this behaviour.
+   */
+  overdrawEnabled?: boolean;
+  /**
+   * Set how quickly the sheet will overdraw on pulling beyond top position. A lower value means faster overdraw.
+   *
+   * Default: `15`
+   */
+  overdrawFactor?: number;
+
+  /**
+   * Set the height of the overdraw View. If you set the `overdrawFactor` to a lower value, you should increase the size of the overdraw
+   * to prevent the action sheet from showing background views etc.
+   *
+   * Default : `100`
+   */
+  overdrawSize?: number;
+
+  /**
+   * The open animation is a spring animation. You can modify it using the config below.
+   */
+  openAnimationConfig?: Omit<
+    Omit<Animated.SpringAnimationConfig, "toValue">,
+    "useNativeDriver"
+  >;
+  /**
+   * The open animation is a timing animation. You can modify it by providing a custom config.
+   */
+  closeAnimationConfig?: Omit<
+    Omit<Animated.TimingAnimationConfig, "toValue">,
+    "useNativeDriver"
+  >;
+  /**
+   * Provide snap points ranging from 0 to 100. ActionSheet will snap between these points. If no snap points
+   * are provided, the default is a single snap point set to `100` which means that the sheet will be opened
+   * 100% on becoming visible.
+   */
+  snapPoints?: number[];
+  /**
+   * When you have set the `snapPoints` prop. You can use this prop to set the inital snap point for the sheet. For example
+   * if i have snap points set to `[30,60,100]` then setting this prop to `1` would mean the action sheet will snap to 60% on
+   * becoming visible.
+   */
+  initialSnapIndex?: number;
+
+  /**
+   * Enable background interation. This way the user will be able to interact with the screen in background of the action sheet
+   * when it is opened.
+   */
   backgroundInteractionEnabled?: boolean;
+
+  /**
+   * Props for the internal `KeyboardAvoidingView`.
+   */
+  keyboardAvoidingViewProps?: Omit<
+    Omit<KeyboardAvoidingView["props"], "style">,
+    "children"
+  >;
   /**
    * Add elevation to the ActionSheet container.
    *
-   * Default: `0`
+   * Default: `5`
    */
   elevation?: number;
 
@@ -45,25 +98,10 @@ export type ActionSheetProps = {
   payload?: unknown;
 
   /**
-   * Color of the gestureEnabled Indicator.
-   *
-   * Default: `"#f0f0f0"`
-   *
-   * @deprecated use `indicatorStyle` prop instead.
-   */
-  indicatorColor?: string;
-
-  /**
    * Style the top indicator bar in ActionSheet.
    */
   indicatorStyle?: ViewStyle;
 
-  /**
-   * Normally when the ActionSheet is fully opened, a small portion from the bottom is hidden by default. Use this prop if you want the ActionSheet to hover over the bottom of screen and not hide a little behind it.
-   *
-   * Default:`0`
-   */
-  extraScroll?: number;
   /**
    * Color of the overlay/backdrop.
    *
@@ -77,22 +115,6 @@ export type ActionSheetProps = {
    * Default: `false`
    */
   headerAlwaysVisible?: boolean;
-
-  /**
-   * Delay draw of ActionSheet on open for android.
-   *
-   * Default: `false`
-   */
-
-  delayActionSheetDraw?: boolean;
-
-  /**
-   * Delay draw of ActionSheet on open for android time.
-   *
-   * Default: `50`
-   */
-
-  delayActionSheetDrawTime?: number;
 
   /**
    * Your custom header component. Using this will hide the default indicator.
@@ -120,25 +142,6 @@ export type ActionSheetProps = {
   ExtraOverlayComponent?: React.ReactNode;
 
   /**
-   * Speed of opening animation. Higher means the ActionSheet will open more quickly.
-   *
-   * Default: `12`
-   */
-  openAnimationSpeed?: number;
-  /**
-   * Duration of closing animation.
-   *
-   * Default: `300`
-   */
-  closeAnimationDuration?: number;
-  /**
-   * How much you want the ActionSheet to bounce when it is opened.
-   *
-   * Default: `8`
-   */
-  bounciness?: number;
-
-  /**
    * Will the ActionSheet close on `hardwareBackPress` event.
    *
    * Default: `true`
@@ -157,27 +160,6 @@ export type ActionSheetProps = {
    * Default: `false`
    */
   gestureEnabled?: boolean;
-
-  /**
-   * Bounces the ActionSheet on open.
-   *
-   * Default: `false`
-   */
-  bounceOnOpen?: boolean;
-
-  /**
-   * Setting the keyboard persistance of the ScrollView component, should be one of "never", "always", or "handled".
-   *
-   * Default: `"never"`
-   */
-  keyboardShouldPersistTaps?: boolean | "always" | "never" | "handled";
-
-  /**
-   * Set how keyboard should behave on tapping the ActionSheet.
-   *
-   * Default : `'none'`
-   */
-  keyboardDismissMode?: "on-drag" | "none" | "interactive";
 
   /**
    * Determine whether the modal should go under the system statusbar.
@@ -203,21 +185,6 @@ export type ActionSheetProps = {
   drawUnderStatusBar?: boolean;
 
   /**
-   * Snap ActionSheet to this location if `closable` is set to false;
-   *
-   * */
-  bottomOffset?: number;
-
-  /**
-   * Allow to choose will content change position when keyboard is visible.
-   * This is enabled by default.
-   *
-   * Default: `true`
-   */
-
-  keyboardHandlerEnabled?: boolean;
-
-  /**
    * Set this to false to use a View instead of a Modal to show Sheet.
    */
   isModal?: boolean;
@@ -234,10 +201,6 @@ export type ActionSheetProps = {
      * Test id for backdrop. Can be used to close sheet in e2e tests.
      */
     backdrop?: string;
-    /**
-     * Test id for internal scroll view.
-     */
-    scrollview?: string;
   };
 
   /**
@@ -258,8 +221,5 @@ export type ActionSheetProps = {
    * */
   onOpen?: () => void;
 
-  /**
-   * Event called when position of ActionSheet changes.
-   */
-  onPositionChanged?: (hasReachedTop: boolean) => void;
+  onChange?: (position: number) => void;
 };
