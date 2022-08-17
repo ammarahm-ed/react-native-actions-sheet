@@ -1,5 +1,5 @@
 import { RefObject } from "react";
-import { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from "react-native";
+import { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from "react-native";
 import { ActionSheetRef } from "../index";
 /**
  * If you are using a `ScrollView` or `FlatList` in ActionSheet. You must attach `scrollHandlers`
@@ -8,10 +8,10 @@ import { ActionSheetRef } from "../index";
  * @param ref ref of the ActionSheet in which the ScrollView is present.
  * @returns
  */
-declare const useScrollHandlers: (id: string, ref: RefObject<ActionSheetRef>) => {
+declare function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>): {
     scrollEnabled: boolean;
     onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
-    ref: RefObject<ScrollView>;
+    ref: RefObject<T>;
     onLayout: (event: LayoutChangeEvent) => void;
 };
 export default useScrollHandlers;
