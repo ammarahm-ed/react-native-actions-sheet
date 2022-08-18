@@ -66,6 +66,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     onScroll,
     ref: scrollRef,
     onLayout: onLayout,
+    scrollEventThrottle: 30,
   };
 }
 

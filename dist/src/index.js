@@ -30,7 +30,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState, } from "react";
-import { Animated, BackHandler, Dimensions, Easing, KeyboardAvoidingView, Modal, PanResponder, Platform, StatusBar, View, } from "react-native";
+import { Animated, BackHandler, Dimensions, Easing, KeyboardAvoidingView, Modal, PanResponder, Platform, SafeAreaView, StatusBar, View, } from "react-native";
 import { actionSheetEventManager } from "./eventmanager";
 import { SheetManager } from "./sheetmanager";
 import { styles } from "./styles";
@@ -45,6 +45,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             ? __spreadArray(__spreadArray([], snapPoints, true), [100], false) : snapPoints;
     var initialValue = useRef(0);
     var actionSheetHeight = useRef(0);
+    var safeAreaPaddingTop = useRef(0);
     var currentSnapIndex = useRef(initialSnapIndex);
     var gestureBoundaries = useRef({});
     var _y = useState({
@@ -55,7 +56,6 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var _z = useSheetManager({
         id: props.id,
         onHide: function (data) {
-            console.log(data);
             hideSheet(data);
         },
         onBeforeShow: props.onBeforeShow
@@ -83,7 +83,10 @@ export default forwardRef(function ActionSheet(_a, ref) {
     };
     var getCurrentPosition = function () {
         //@ts-ignore
-        return animations.translateY._value;
+        return animations.translateY._value < 0
+            ? 0
+            : //@ts-ignore
+                animations.translateY._value;
     };
     var getNextPosition = function (snapIndex) {
         return (actionSheetHeight.current -
@@ -101,14 +104,18 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var Root = isModal && !(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? Modal : Animated.View;
     useImperativeHandle(ref, function () { return ({
         show: function () {
-            setVisible(true);
+            setTimeout(function () {
+                setVisible(true);
+            }, 1);
         },
         hide: function (data) {
             hideSheet(data);
         },
         setModalVisible: function (visible) {
             if (visible) {
-                setVisible(true);
+                setTimeout(function () {
+                    setVisible(true);
+                }, 1);
             }
             else {
                 hideSheet();
@@ -197,26 +204,19 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 : "auto"
         };
     var onDeviceLayout = React.useCallback(function (event) {
-        var safeMarginFromTop = StatusBar.currentHeight || 0;
+        var safeMarginFromTop = Platform.OS === "ios"
+            ? safeAreaPaddingTop.current || 0
+            : StatusBar.currentHeight || 0;
         var height = event.nativeEvent.layout.height - safeMarginFromTop;
         var width = Dimensions.get("window").width;
         if ((height === null || height === void 0 ? void 0 : height.toFixed(0)) === (CALCULATED_DEVICE_HEIGHT === null || CALCULATED_DEVICE_HEIGHT === void 0 ? void 0 : CALCULATED_DEVICE_HEIGHT.toFixed(0)) &&
             (width === null || width === void 0 ? void 0 : width.toFixed(0)) === dimensions.width.toFixed(0))
             return;
-        if (!initialValue.current) {
-            animations.translateY.setValue(actionSheetHeight.current * 1.3);
-        }
-        initialValue.current =
-            actionSheetHeight.current -
-                (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-                    100;
         setDimensions({
             width: width,
             height: height,
             portrait: height > width
         });
-        opacityAnimation(1);
-        returnAnimation();
     }, []);
     var hideSheet = function (data) {
         hideAnimation(function (_a) {
@@ -260,14 +260,17 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 },
                 onStartShouldSetPanResponder: function () { return true; },
                 onPanResponderMove: function (_event, gesture) {
-                    if (getCurrentPosition() <= -overdrawSize / 2 &&
+                    if (
+                    //@ts-ignore
+                    animations.translateY._value <= -overdrawSize / 2 &&
                         gesture.dy <= 0)
                         return;
-                    animations.translateY.setValue(getCurrentPosition() < 0
+                    var value = initialValue.current + gesture.dy;
+                    animations.translateY.setValue(value <= 0
                         ? overdrawEnabled
-                            ? 0 + gesture.dy / overdrawFactor
+                            ? value / overdrawFactor
                             : 0
-                        : initialValue.current + gesture.dy);
+                        : value);
                 },
                 onPanResponderEnd: function (_event, gesture) {
                     var isMovingUp = getCurrentPosition() < initialValue.current;
@@ -298,10 +301,15 @@ export default forwardRef(function ActionSheet(_a, ref) {
         }
         var nextSnapPoint = 0;
         var nextSnapIndex = 0;
-        for (var i = currentSnapIndex.current; i < snapPoints.length; i++) {
-            if (getNextPosition(i) < getCurrentPosition()) {
-                nextSnapPoint = snapPoints[(nextSnapIndex = i)];
-                break;
+        if (getCurrentPosition() === 0) {
+            nextSnapPoint = snapPoints[(nextSnapIndex = snapPoints.length - 1)];
+        }
+        else {
+            for (var i = currentSnapIndex.current; i < snapPoints.length; i++) {
+                if (getNextPosition(i) < getCurrentPosition()) {
+                    nextSnapPoint = snapPoints[(nextSnapIndex = i)];
+                    break;
+                }
             }
         }
         if (nextSnapPoint > 100) {
@@ -351,71 +359,93 @@ export default forwardRef(function ActionSheet(_a, ref) {
     };
     var onSheetLayout = function (event) {
         actionSheetHeight.current = event.nativeEvent.layout.height;
+        if (!initialValue.current) {
+            animations.translateY.setValue(actionSheetHeight.current * 1.3);
+        }
+        initialValue.current =
+            actionSheetHeight.current -
+                (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
+                    100;
+        opacityAnimation(1);
+        returnAnimation();
     };
-    if (!visible)
-        return null;
-    return (<Root {...rootProps}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{
-            height: "100%",
-            width: "100%"
-        }} {...props.keyboardAvoidingViewProps}>
-          <Animated.View onLayout={onDeviceLayout} pointerEvents={(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? "box-none" : "auto"} style={[
-            styles.parentContainer,
-            {
-                opacity: animations.opacity,
-                width: "100%",
-                justifyContent: "flex-end"
-            },
-        ]}>
-            {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<View onTouchEnd={onTouch} onTouchMove={onTouch} onTouchStart={onTouch} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
+    return (<>
+        {Platform.OS === "ios" ? (<SafeAreaView pointerEvents="none" onLayout={function (event) {
+                var height = event.nativeEvent.layout.height;
+                if (height) {
+                    safeAreaPaddingTop.current = event.nativeEvent.layout.height;
+                }
+            }} style={{
+                position: "absolute",
+                width: 1,
+                left: 0,
+                top: 0
+            }}>
+            <View />
+          </SafeAreaView>) : null}
+        {visible ? (<Root {...rootProps}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{
                 height: "100%",
-                width: "100%",
-                position: "absolute",
-                zIndex: 1,
-                backgroundColor: overlayColor,
-                opacity: defaultOverlayOpacity
-            }}/>) : null}
+                width: "100%"
+            }} {...props.keyboardAvoidingViewProps}>
+              <Animated.View onLayout={onDeviceLayout} pointerEvents={(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? "box-none" : "auto"} style={[
+                styles.parentContainer,
+                {
+                    opacity: animations.opacity,
+                    width: "100%",
+                    justifyContent: "flex-end"
+                },
+            ]}>
+                {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<View onTouchEnd={onTouch} onTouchMove={onTouch} onTouchStart={onTouch} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
+                    height: "100%",
+                    width: "100%",
+                    position: "absolute",
+                    zIndex: 1,
+                    backgroundColor: overlayColor,
+                    opacity: defaultOverlayOpacity
+                }}/>) : null}
 
-            <Animated.View {...handlers.panHandlers} onLayout={onSheetLayout} style={[
-            styles.container,
-            __assign({ borderTopRightRadius: 10, borderTopLeftRadius: 10 }, getElevation(typeof elevation === "number" ? elevation : 5)),
-            props.containerStyle,
-            {
-                zIndex: 10,
-                maxHeight: dimensions.height,
-                transform: [
-                    {
-                        translateY: animations.translateY
-                    },
-                ]
-            },
-        ]}>
-              {drawUnderStatusBar ? (<Animated.View style={{
-                height: 100,
-                position: "absolute",
-                top: -50,
-                backgroundColor: ((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.backgroundColor) || "white",
-                width: "100%",
-                borderRadius: ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.borderRadius) || 10,
-                transform: [
-                    {
-                        translateY: animations.underlayTranslateY
-                    },
-                ]
-            }}/>) : null}
-              {gestureEnabled || props.headerAlwaysVisible ? (props.CustomHeaderComponent ? (props.CustomHeaderComponent) : (<Animated.View style={[styles.indicator, props.indicatorStyle]}/>)) : null}
+                <Animated.View {...handlers.panHandlers} onLayout={onSheetLayout} style={[
+                styles.container,
+                __assign({ borderTopRightRadius: 10, borderTopLeftRadius: 10 }, getElevation(typeof elevation === "number" ? elevation : 5)),
+                props.containerStyle,
+                {
+                    zIndex: 10,
+                    maxHeight: dimensions.height,
+                    transform: [
+                        {
+                            translateY: animations.translateY
+                        },
+                    ]
+                },
+            ]}>
+                  {drawUnderStatusBar ? (<Animated.View style={{
+                    height: 100,
+                    position: "absolute",
+                    top: -50,
+                    backgroundColor: ((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.backgroundColor) || "white",
+                    width: "100%",
+                    borderRadius: ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.borderRadius) || 10,
+                    transform: [
+                        {
+                            translateY: animations.underlayTranslateY
+                        },
+                    ]
+                }}/>) : null}
+                  {gestureEnabled || props.headerAlwaysVisible ? (props.CustomHeaderComponent ? (props.CustomHeaderComponent) : (<Animated.View style={[styles.indicator, props.indicatorStyle]}/>)) : null}
 
-              {props === null || props === void 0 ? void 0 : props.children}
+                  {props === null || props === void 0 ? void 0 : props.children}
 
-              {overdrawEnabled ? (<Animated.View style={{
-                height: overdrawSize,
-                position: "absolute",
-                bottom: -overdrawSize,
-                backgroundColor: ((_e = props.containerStyle) === null || _e === void 0 ? void 0 : _e.backgroundColor) || "white",
-                width: dimensions.width
-            }}/>) : null}
-            </Animated.View>
-          </Animated.View>
-        </KeyboardAvoidingView>
-      </Root>);
+                  {overdrawEnabled ? (<Animated.View style={{
+                    height: overdrawSize,
+                    position: "absolute",
+                    bottom: -overdrawSize,
+                    backgroundColor: ((_e = props.containerStyle) === null || _e === void 0 ? void 0 : _e.backgroundColor) || "white",
+                    width: dimensions.width
+                }}/>) : null}
+                </Animated.View>
+              </Animated.View>
+            </KeyboardAvoidingView>
+          </Root>) : null}
+      </>);
 });

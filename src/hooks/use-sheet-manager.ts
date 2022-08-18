@@ -17,7 +17,9 @@ const useSheetManager = ({
     const subscriptions = [
       actionSheetEventManager.subscribe(`show_${id}`, (data: any) => {
         onBeforeShow?.(data);
-        setVisible(true);
+        setTimeout(() => {
+          setVisible(true);
+        }, 1);
       }),
       actionSheetEventManager.subscribe(`hide_${id}`, (data: any) => {
         onHide?.(data);

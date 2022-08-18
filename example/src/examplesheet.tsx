@@ -39,8 +39,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
       <View
         style={{
           paddingHorizontal: 12,
-          height: 500,
-          maxHeight: 500,
+          maxHeight: '100%',
         }}>
         <View style={styles.container}>
           {colors.map(color => (

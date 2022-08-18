@@ -9,7 +9,9 @@ var useSheetManager = function (_a) {
         var subscriptions = [
             actionSheetEventManager.subscribe("show_".concat(id), function (data) {
                 onBeforeShow === null || onBeforeShow === void 0 ? void 0 : onBeforeShow(data);
-                setVisible(true);
+                setTimeout(function () {
+                    setVisible(true);
+                }, 1);
             }),
             actionSheetEventManager.subscribe("hide_".concat(id), function (data) {
                 onHide === null || onHide === void 0 ? void 0 : onHide(data);

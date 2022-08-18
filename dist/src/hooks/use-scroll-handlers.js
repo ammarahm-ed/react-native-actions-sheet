@@ -46,7 +46,8 @@ function useScrollHandlers(id, ref) {
         scrollEnabled: false,
         onScroll: onScroll,
         ref: scrollRef,
-        onLayout: onLayout
+        onLayout: onLayout,
+        scrollEventThrottle: 30
     };
 }
 export default useScrollHandlers;

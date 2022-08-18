@@ -18,6 +18,7 @@ import {
   NativeEventSubscription,
   PanResponder,
   Platform,
+  SafeAreaView,
   StatusBar,
   View,
 } from "react-native";
@@ -101,6 +102,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         : snapPoints;
     const initialValue = useRef(0);
     const actionSheetHeight = useRef(0);
+    const safeAreaPaddingTop = useRef(0);
     const currentSnapIndex = useRef(initialSnapIndex);
     const gestureBoundaries = useRef<{
       [name: string]: LayoutRectangle & {
@@ -115,7 +117,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const { visible, setVisible } = useSheetManager({
       id: props.id,
       onHide: (data) => {
-        console.log(data);
         hideSheet(data);
       },
       onBeforeShow: props.onBeforeShow,
@@ -125,7 +126,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       translateY: new Animated.Value(0),
       underlayTranslateY: new Animated.Value(100),
     });
-
     const returnAnimation = (velocity?: number) => {
       if (!animated) {
         animations.translateY.setValue(initialValue.current);
@@ -158,7 +158,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const getCurrentPosition = () => {
       //@ts-ignore
-      return animations.translateY._value as number;
+      return animations.translateY._value < 0
+        ? 0
+        : //@ts-ignore
+          (animations.translateY._value as number);
     };
 
     const getNextPosition = (snapIndex: number) => {
@@ -185,14 +188,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       ref,
       () => ({
         show: () => {
-          setVisible(true);
+          setTimeout(() => {
+            setVisible(true);
+          }, 1);
         },
         hide: (data: any) => {
           hideSheet(data);
         },
         setModalVisible: (visible?: boolean) => {
           if (visible) {
-            setVisible(true);
+            setTimeout(() => {
+              setVisible(true);
+            }, 1);
           } else {
             hideSheet();
           }
@@ -299,7 +306,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         };
 
     const onDeviceLayout = React.useCallback((event: LayoutChangeEvent) => {
-      const safeMarginFromTop = StatusBar.currentHeight || 0;
+      const safeMarginFromTop =
+        Platform.OS === "ios"
+          ? safeAreaPaddingTop.current || 0
+          : StatusBar.currentHeight || 0;
       let height = event.nativeEvent.layout.height - safeMarginFromTop;
       let width = Dimensions.get("window").width;
       if (
@@ -308,22 +318,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       )
         return;
 
-      if (!initialValue.current) {
-        animations.translateY.setValue(actionSheetHeight.current * 1.3);
-      }
-
-      initialValue.current =
-        actionSheetHeight.current -
-        (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-          100;
-
       setDimensions({
         width,
         height,
         portrait: height > width,
       });
-      opacityAnimation(1);
-      returnAnimation();
     }, []);
 
     const hideSheet = (data?: any) => {
@@ -373,16 +372,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               onStartShouldSetPanResponder: () => true,
               onPanResponderMove: (_event, gesture) => {
                 if (
-                  getCurrentPosition() <= -overdrawSize / 2 &&
+                  //@ts-ignore
+                  animations.translateY._value <= -overdrawSize / 2 &&
                   gesture.dy <= 0
                 )
                   return;
+                const value = initialValue.current + gesture.dy;
                 animations.translateY.setValue(
-                  getCurrentPosition() < 0
+                  value <= 0
                     ? overdrawEnabled
-                      ? 0 + gesture.dy / overdrawFactor
+                      ? value / overdrawFactor
                       : 0
-                    : initialValue.current + gesture.dy
+                    : value
                 );
               },
               onPanResponderEnd: (_event, gesture) => {
@@ -418,10 +419,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       }
       let nextSnapPoint = 0;
       let nextSnapIndex = 0;
-      for (let i = currentSnapIndex.current; i < snapPoints.length; i++) {
-        if (getNextPosition(i) < getCurrentPosition()) {
-          nextSnapPoint = snapPoints[(nextSnapIndex = i)];
-          break;
+      if (getCurrentPosition() === 0) {
+        nextSnapPoint = snapPoints[(nextSnapIndex = snapPoints.length - 1)];
+      } else {
+        for (let i = currentSnapIndex.current; i < snapPoints.length; i++) {
+          if (getNextPosition(i) < getCurrentPosition()) {
+            nextSnapPoint = snapPoints[(nextSnapIndex = i)];
+            break;
+          }
         }
       }
 
@@ -475,120 +480,150 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const onSheetLayout = (event: LayoutChangeEvent) => {
       actionSheetHeight.current = event.nativeEvent.layout.height;
+      if (!initialValue.current) {
+        animations.translateY.setValue(actionSheetHeight.current * 1.3);
+      }
+      initialValue.current =
+        actionSheetHeight.current -
+        (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
+          100;
+      opacityAnimation(1);
+      returnAnimation();
     };
-
-    if (!visible) return null;
     return (
-      <Root {...rootProps}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{
-            height: "100%",
-            width: "100%",
-          }}
-          {...props.keyboardAvoidingViewProps}
-        >
-          <Animated.View
-            onLayout={onDeviceLayout}
-            pointerEvents={
-              props?.backgroundInteractionEnabled ? "box-none" : "auto"
-            }
-            style={[
-              styles.parentContainer,
-              {
-                opacity: animations.opacity,
-                width: "100%",
-                justifyContent: "flex-end",
-              },
-            ]}
+      <>
+        {Platform.OS === "ios" ? (
+          <SafeAreaView
+            pointerEvents="none"
+            onLayout={(event) => {
+              let height = event.nativeEvent.layout.height;
+              if (height) {
+                safeAreaPaddingTop.current = event.nativeEvent.layout.height;
+              }
+            }}
+            style={{
+              position: "absolute",
+              width: 1,
+              left: 0,
+              top: 0,
+            }}
           >
-            {!props?.backgroundInteractionEnabled ? (
-              <View
-                onTouchEnd={onTouch}
-                onTouchMove={onTouch}
-                onTouchStart={onTouch}
-                testID={props.testIDs?.backdrop}
-                style={{
-                  height: "100%",
-                  width: "100%",
-                  position: "absolute",
-                  zIndex: 1,
-                  backgroundColor: overlayColor,
-                  opacity: defaultOverlayOpacity,
-                }}
-              />
-            ) : null}
-
-            <Animated.View
-              {...handlers.panHandlers}
-              onLayout={onSheetLayout}
-              style={[
-                styles.container,
-                {
-                  borderTopRightRadius: 10,
-                  borderTopLeftRadius: 10,
-                  ...getElevation(
-                    typeof elevation === "number" ? elevation : 5
-                  ),
-                },
-                props.containerStyle,
-                {
-                  zIndex: 10,
-                  maxHeight: dimensions.height,
-                  transform: [
-                    {
-                      translateY: animations.translateY,
-                    },
-                  ],
-                },
-              ]}
+            <View />
+          </SafeAreaView>
+        ) : null}
+        {visible ? (
+          <Root {...rootProps}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={{
+                height: "100%",
+                width: "100%",
+              }}
+              {...props.keyboardAvoidingViewProps}
             >
-              {drawUnderStatusBar ? (
-                <Animated.View
-                  style={{
-                    height: 100,
-                    position: "absolute",
-                    top: -50,
-                    backgroundColor:
-                      props.containerStyle?.backgroundColor || "white",
+              <Animated.View
+                onLayout={onDeviceLayout}
+                pointerEvents={
+                  props?.backgroundInteractionEnabled ? "box-none" : "auto"
+                }
+                style={[
+                  styles.parentContainer,
+                  {
+                    opacity: animations.opacity,
                     width: "100%",
-                    borderRadius: props.containerStyle?.borderRadius || 10,
-                    transform: [
-                      {
-                        translateY: animations.underlayTranslateY,
-                      },
-                    ],
-                  }}
-                />
-              ) : null}
-              {gestureEnabled || props.headerAlwaysVisible ? (
-                props.CustomHeaderComponent ? (
-                  props.CustomHeaderComponent
-                ) : (
-                  <Animated.View
-                    style={[styles.indicator, props.indicatorStyle]}
+                    justifyContent: "flex-end",
+                  },
+                ]}
+              >
+                {!props?.backgroundInteractionEnabled ? (
+                  <View
+                    onTouchEnd={onTouch}
+                    onTouchMove={onTouch}
+                    onTouchStart={onTouch}
+                    testID={props.testIDs?.backdrop}
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      position: "absolute",
+                      zIndex: 1,
+                      backgroundColor: overlayColor,
+                      opacity: defaultOverlayOpacity,
+                    }}
                   />
-                )
-              ) : null}
+                ) : null}
 
-              {props?.children}
-
-              {overdrawEnabled ? (
                 <Animated.View
-                  style={{
-                    height: overdrawSize,
-                    position: "absolute",
-                    bottom: -overdrawSize,
-                    backgroundColor:
-                      props.containerStyle?.backgroundColor || "white",
-                    width: dimensions.width,
-                  }}
-                />
-              ) : null}
-            </Animated.View>
-          </Animated.View>
-        </KeyboardAvoidingView>
-      </Root>
+                  {...handlers.panHandlers}
+                  onLayout={onSheetLayout}
+                  style={[
+                    styles.container,
+                    {
+                      borderTopRightRadius: 10,
+                      borderTopLeftRadius: 10,
+                      ...getElevation(
+                        typeof elevation === "number" ? elevation : 5
+                      ),
+                    },
+                    props.containerStyle,
+                    {
+                      zIndex: 10,
+                      maxHeight: dimensions.height,
+                      transform: [
+                        {
+                          translateY: animations.translateY,
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  {drawUnderStatusBar ? (
+                    <Animated.View
+                      style={{
+                        height: 100,
+                        position: "absolute",
+                        top: -50,
+                        backgroundColor:
+                          props.containerStyle?.backgroundColor || "white",
+                        width: "100%",
+                        borderRadius: props.containerStyle?.borderRadius || 10,
+                        transform: [
+                          {
+                            translateY: animations.underlayTranslateY,
+                          },
+                        ],
+                      }}
+                    />
+                  ) : null}
+                  {gestureEnabled || props.headerAlwaysVisible ? (
+                    props.CustomHeaderComponent ? (
+                      props.CustomHeaderComponent
+                    ) : (
+                      <Animated.View
+                        style={[styles.indicator, props.indicatorStyle]}
+                      />
+                    )
+                  ) : null}
+
+                  {props?.children}
+
+                  {overdrawEnabled ? (
+                    <Animated.View
+                      style={{
+                        height: overdrawSize,
+                        position: "absolute",
+                        bottom: -overdrawSize,
+                        backgroundColor:
+                          props.containerStyle?.backgroundColor || "white",
+                        width: dimensions.width,
+                      }}
+                    />
+                  ) : null}
+                </Animated.View>
+              </Animated.View>
+            </KeyboardAvoidingView>
+          </Root>
+        ) : null}
+      </>
     );
   }
 );

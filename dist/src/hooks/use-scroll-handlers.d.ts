@@ -13,6 +13,7 @@ declare function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>
     onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
     ref: RefObject<T>;
     onLayout: (event: LayoutChangeEvent) => void;
+    scrollEventThrottle: number;
 };
 export default useScrollHandlers;
 //# sourceMappingURL=use-scroll-handlers.d.ts.map
