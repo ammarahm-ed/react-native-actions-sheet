@@ -184,66 +184,66 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const Root: React.ElementType =
       isModal && !props?.backgroundInteractionEnabled ? Modal : Animated.View;
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        show: () => {
+    const getRef = (): ActionSheetRef => ({
+      show: () => {
+        setTimeout(() => {
+          setVisible(true);
+        }, 1);
+      },
+      hide: (data: any) => {
+        hideSheet(data);
+      },
+      setModalVisible: (visible?: boolean) => {
+        if (visible) {
           setTimeout(() => {
             setVisible(true);
           }, 1);
-        },
-        hide: (data: any) => {
-          hideSheet(data);
-        },
-        setModalVisible: (visible?: boolean) => {
-          if (visible) {
-            setTimeout(() => {
-              setVisible(true);
-            }, 1);
-          } else {
-            hideSheet();
-          }
-        },
-        snapToOffset: (offset: number) => {
-          initialValue.current =
-            actionSheetHeight.current -
-            (actionSheetHeight.current * offset) / 100;
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...props.openAnimationConfig,
-          }).start();
-        },
-        snapToIndex: (index: number) => {
-          if (index > snapPoints.length || index < 0) return;
-          currentSnapIndex.current = index;
-          initialValue.current = getNextPosition(index);
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...props.openAnimationConfig,
-          }).start();
-        },
-        handleChildScrollEnd: () => {
-          console.warn(
-            "handleChildScrollEnd has been removed. Please use `useScrollHandlers` hook to enable scrolling in ActionSheet"
-          );
-        },
-        modifyGesturesForLayout: (id, layout, scrollOffset) => {
-          //@ts-ignore
-          gestureBoundaries.current[id] = {
-            ...layout,
-            scrollOffset: scrollOffset,
-          };
-        },
-      }),
-      []
-    );
+        } else {
+          hideSheet();
+        }
+      },
+      snapToOffset: (offset: number) => {
+        initialValue.current =
+          actionSheetHeight.current -
+          (actionSheetHeight.current * offset) / 100;
+        Animated.spring(animations.translateY, {
+          toValue: initialValue.current,
+          useNativeDriver: true,
+          ...props.openAnimationConfig,
+        }).start();
+      },
+      snapToIndex: (index: number) => {
+        if (index > snapPoints.length || index < 0) return;
+        currentSnapIndex.current = index;
+        initialValue.current = getNextPosition(index);
+        Animated.spring(animations.translateY, {
+          toValue: initialValue.current,
+          useNativeDriver: true,
+          ...props.openAnimationConfig,
+        }).start();
+      },
+      handleChildScrollEnd: () => {
+        console.warn(
+          "handleChildScrollEnd has been removed. Please use `useScrollHandlers` hook to enable scrolling in ActionSheet"
+        );
+      },
+      modifyGesturesForLayout: (id, layout, scrollOffset) => {
+        //@ts-ignore
+        gestureBoundaries.current[id] = {
+          ...layout,
+          scrollOffset: scrollOffset,
+        };
+      },
+    });
+
+    useImperativeHandle(ref, getRef, []);
 
     useEffect(() => {
       if (props.id) {
         SheetManager.add(props.id);
-        SheetManager.registerRef(props.id, ref as RefObject<ActionSheetRef>);
+        SheetManager.registerRef(props.id, {
+          current: getRef(),
+        } as RefObject<ActionSheetRef>);
       }
       const listener = animations.translateY.addListener((value) => {
         props?.onChange?.(value.value);
@@ -334,7 +334,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             if (props.id) {
               actionSheetEventManager.publish(
                 `onclose_${props.id}`,
-                data || props.payload
+                data || props.payload || data
               );
             }
           } else {

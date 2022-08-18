@@ -102,7 +102,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     };
     var hardwareBackPressEvent = useRef();
     var Root = isModal && !(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? Modal : Animated.View;
-    useImperativeHandle(ref, function () { return ({
+    var getRef = function () { return ({
         show: function () {
             setTimeout(function () {
                 setVisible(true);
@@ -141,11 +141,14 @@ export default forwardRef(function ActionSheet(_a, ref) {
             //@ts-ignore
             gestureBoundaries.current[id] = __assign(__assign({}, layout), { scrollOffset: scrollOffset });
         }
-    }); }, []);
+    }); };
+    useImperativeHandle(ref, getRef, []);
     useEffect(function () {
         if (props.id) {
             SheetManager.add(props.id);
-            SheetManager.registerRef(props.id, ref);
+            SheetManager.registerRef(props.id, {
+                current: getRef()
+            });
         }
         var listener = animations.translateY.addListener(function (value) {
             var _a;
@@ -227,7 +230,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 if (closable) {
                     setVisible(false);
                     if (props.id) {
-                        actionSheetEventManager.publish("onclose_".concat(props.id), data || props.payload);
+                        actionSheetEventManager.publish("onclose_".concat(props.id), data || props.payload || data);
                     }
                 }
                 else {
