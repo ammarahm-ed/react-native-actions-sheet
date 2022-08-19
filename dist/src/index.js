@@ -261,7 +261,6 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     var gestures = true;
                     for (var id in gestureBoundaries.current) {
                         var gestureBoundary = gestureBoundaries.current[id];
-                        console.log(gestureBoundaries.current);
                         if (getCurrentPosition() > 3 || !gestureBoundary)
                             gestures = true;
                         var scrollOffset = (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.scrollOffset) || 0;

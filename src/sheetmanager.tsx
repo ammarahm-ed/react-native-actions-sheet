@@ -50,7 +50,6 @@ class SM {
           }
         }
       }
-      console.log("called", isRegisteredWithSheetProvider, sheetsRegistry);
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
         options?.payload,

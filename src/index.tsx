@@ -374,7 +374,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 let gestures = true;
                 for (let id in gestureBoundaries.current) {
                   const gestureBoundary = gestureBoundaries.current[id];
-                  console.log(gestureBoundaries.current);
                   if (getCurrentPosition() > 3 || !gestureBoundary)
                     gestures = true;
 

@@ -90,7 +90,6 @@ var SM = /** @class */ (function () {
                                 }
                             }
                         }
-                        console.log("called", isRegisteredWithSheetProvider, sheetsRegistry);
                         actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "show_wrap_".concat(id) : "show_".concat(id), options === null || options === void 0 ? void 0 : options.payload, options === null || options === void 0 ? void 0 : options.context);
                     })];
             });
