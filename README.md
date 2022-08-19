@@ -15,36 +15,17 @@ target="_blank">
 
 </div>
 
-## Get started
+## Installation
 
-Install the ActionSheet with `yarn` on `npm`:
+Check out the [installation]() section of our docs for the detailed installation instructions.
 
-```fish
-npm install react-native-actions-sheet --save
-```
+## Documentation
 
-or
+Check out our dedicated documentation page for info about this library, API reference and more: https://docs.swmansion.com/react-native-reanimated/docs/
 
-```fish
-yarn add react-native-actions-sheet
-```
+## Examples
 
-# Features
-
-1.  Cross Platform (iOS and Android)
-2.  Native Animations & Performance
-3.  Identical Working on Android and iOS
-4.  Control ActionSheet with **Gestures**
-5.  **Raw ActionSheet** - You can Add Anything
-6.  Allow ActionSheet to be partially shown when opened
-7.  Support TextInputs
-8.  Cool **bounce effect** on open.
-9.  **Tablets and iPads**
-10. **Horizontal Layout**
-11. **Nested Scrolling or Scrollable Content.**
-12. Virtualization Support
-13. Global Sheet Manager
-14. Proper resizing on Android & iOS on Keyboard show/hide.
+The source code for the example (showcase) app is under the example/ directory. If you want to play with the ActionSheet but don't feel like trying it on a real app, you can run the example project.
 
 ## Consider supporting with a ⭐️ [star on GitHub](https://github.com/ammarahm-ed/react-native-actions-sheet/)
 
