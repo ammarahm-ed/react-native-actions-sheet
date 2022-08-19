@@ -12,7 +12,7 @@ function ConfirmSheet(props: SheetProps) {
       containerStyle={{
         paddingHorizontal: 12,
       }}
-      springOffset={10}
+      springOffset={50}
       defaultOverlayOpacity={0.3}>
       <Text
         style={{

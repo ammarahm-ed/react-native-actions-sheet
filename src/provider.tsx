@@ -1,11 +1,10 @@
 import React, { ReactNode, useEffect, useReducer, useState } from "react";
 import { actionSheetEventManager } from "./eventmanager";
-import { SheetManager } from "./sheetmanager";
 
 /**
  * An object that holds all the sheet components against their ids.
  */
-const sheetsRegistry: {
+export const sheetsRegistry: {
   [context: string]: { [id: string]: React.ElementType };
 } = {};
 
@@ -18,15 +17,18 @@ export interface SheetProps<BeforeShowPayload = any> {
 export function registerSheet(
   id: string,
   Sheet: React.ElementType,
-  context?: string
+  ...contexts: string[]
 ) {
   if (!id || !Sheet) return;
-  context = context || "global";
-  const registry = !sheetsRegistry[context]
-    ? (sheetsRegistry[context] = {})
-    : sheetsRegistry[context];
-  registry[id] = Sheet;
-  actionSheetEventManager.publish(`${context}-on-register`);
+  if (!contexts) contexts = ["global"];
+  for (let context of contexts) {
+    context = context || "global";
+    const registry = !sheetsRegistry[context]
+      ? (sheetsRegistry[context] = {})
+      : sheetsRegistry[context];
+    registry[id] = Sheet;
+    actionSheetEventManager.publish(`${context}-on-register`);
+  }
 }
 
 /**
@@ -90,7 +92,8 @@ const RenderSheet = ({ id, context }: { id: string; context: string }) => {
   const Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
   if (!Sheet) return null;
 
-  const onShow = (data: any) => {
+  const onShow = (data: any, ctx = "global") => {
+    if (ctx !== context) return;
     setPayload(data);
     setVisible(true);
   };
@@ -100,16 +103,22 @@ const RenderSheet = ({ id, context }: { id: string; context: string }) => {
     setPayload(undefined);
   };
 
+  const onHide = (data: any, ctx = "global") => {
+    if (ctx !== context) return;
+    actionSheetEventManager.publish(`hide_${id}`, data);
+  };
+
   useEffect(() => {
     if (visible) {
-      SheetManager.get(id)?.current?.show();
+      actionSheetEventManager.publish(`show_${id}`, payload, context);
     }
   }, [visible]);
 
   useEffect(() => {
     let subs = [
-      actionSheetEventManager.subscribe(`show_${id}`, onShow),
+      actionSheetEventManager.subscribe(`show_wrap_${id}`, onShow),
       actionSheetEventManager.subscribe(`onclose_${id}`, onClose),
+      actionSheetEventManager.subscribe(`hide_wrap_${id}`, onHide),
     ];
     return () => {
       subs.forEach((s) => s.unsubscribe());

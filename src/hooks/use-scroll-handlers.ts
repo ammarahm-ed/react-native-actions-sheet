@@ -33,7 +33,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     const subscription = actionSheetEventManager.subscribe(
       "onoffsetchange",
       (offset: number) => {
-        if (offset < 3) {
+        if (offset < 3 || !ref.current?.isGestureEnabled()) {
           //@ts-ignore
           scrollRef.current?.setNativeProps?.({
             scrollEnabled: true,
@@ -55,7 +55,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     return () => {
       subscription?.unsubscribe();
     };
-  });
+  }, []);
 
   const onLayout = (event: LayoutChangeEvent) => {
     scrollLayout.current = event.nativeEvent.layout;

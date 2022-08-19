@@ -1,0 +1,27 @@
+# Passing data to ActionSheet
+
+When using `SheetProvider` & `SheetManager` to show ActionSheet it becomes difficult to dynamically change the data in the ActionSheet. For example you are scrolling in a list and each tapping on each item should show properties of that item. One way would be to use some kind of state or events which is fine but not scalable when you have many sheets in the app.
+
+ActionSheet for React Native provides a very easy way to do this by passing the data in your `show` function and getting it via prop in your ActionSheet component automatically.
+
+```ts
+SheetManager.show("example-sheet", {
+  payload: { value: "Hello World" },
+});
+```
+
+And then in your `ExampleSheet` component.
+
+```tsx
+function ExampleSheet(props: SheetProps<{ value: string }>) {
+  return (
+    <ActionSheet id={props.sheetId}>
+      <View>
+        <Text>{props.payload?.value}</Text>
+      </View>
+    </ActionSheet>
+  );
+}
+```
+
+Simple eh?

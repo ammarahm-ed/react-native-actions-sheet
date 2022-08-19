@@ -1,0 +1,83 @@
+# ActionSheetRef
+
+A reference for all the methods that can be invoked on the action sheet ref.
+
+```tsx
+import { ActionSheetRef } from "react-native-actions-sheet";
+
+const ref = useRef<ActionSheetRef>(null);
+```
+
+## `show`
+
+Show the action sheet.
+
+```ts
+ref.current?.show();
+```
+
+## `hide`
+
+Hide the action sheet.
+
+```ts
+ref.current?.hide();
+```
+
+Parameters:
+
+`data`
+
+The hide function takes an optional `data` parameter which can be used to return some data to the caller, i.e the function that called `SheetManager.show` initially.
+
+| Type | Required |
+| ---- | -------- |
+| any  | true     |
+
+```ts
+ref.current?.hide({ confirmed: true });
+```
+
+## `snapToOffset`
+
+Provide a value between `0` to `100` for the action sheet to snap to.
+
+Parameters:
+
+`offset`
+
+A value between 0 to 100.
+
+| Type   | Required |
+| ------ | -------- |
+| number | true     |
+
+```ts
+ref.current?.snapToOffset(20);
+```
+
+## `snapToIndex`
+
+When multiple snap points are set on the action sheet, use this to snap it to different position.
+
+Parameters:
+
+`index`
+
+Snap to the snap point at given index.
+
+| Type   | Required |
+| ------ | -------- |
+| number | true     |
+
+```ts
+ref.current?.snapToIndex(1);
+```
+
+## `isOpen`
+
+Check if the action sheet is open or closed.
+
+## `isGestureEnabled`
+
+Check if the action sheet has gestures enabled or disabled.

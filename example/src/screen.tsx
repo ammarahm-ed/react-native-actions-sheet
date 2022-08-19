@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 12,
     alignItems: 'center',
+    marginHorizontal: 12,
   },
   btnTitle: {
     color: 'white',

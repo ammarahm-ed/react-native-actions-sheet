@@ -45,7 +45,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
           {colors.map(color => (
             <TouchableOpacity
               onPress={() => {
-                actionSheetRef.current?.snapToOffset(500);
+                actionSheetRef.current?.snapToOffset(20);
               }}
               key={color}
               style={[

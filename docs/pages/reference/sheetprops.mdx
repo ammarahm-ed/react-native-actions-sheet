@@ -1,0 +1,32 @@
+import { Callout } from "nextra-theme-docs";
+
+# SheetProps
+
+Default props on any action sheet component registered with `SheetProvider`.
+
+## `id`
+
+Id of the current action sheet.
+
+## `payload`
+
+Any data that has been passed to the action sheet when calling `SheetManager.show` can be accessed from here.
+
+```tsx
+function ExampleSheet(props: SheetProps<{ title: string }>) {
+  return (
+    <ActionSheet id={props.sheetId}>
+      <View>
+        <Text>{props.payload?.title}</Text>
+      </View>
+    </ActionSheet>
+  );
+}
+```
+
+<Callout>
+  `id` is assigned when calling `registerSheet` method. `payload` can be sent to
+  the action sheet through `SheetManager.show` function. `payload` is recieved
+  by the component before it is visible to the user therefore the action sheet
+  always renders with the correct information.
+</Callout>

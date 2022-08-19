@@ -1,0 +1,13 @@
+# Ref access from anywhere
+
+You can access the [`ActionSheetRef`](/reference/actionsheetref) from anywhere in the app using [`SheetManager`](/reference/sheetmanager).
+
+```ts
+SheetManager.get("example-sheet").snapToOffset(50);
+```
+
+You can also get ref of an action sheet in a specific `SheetProvider`.
+
+```ts
+SheetManager.get("example-sheet", "local-context").snapToOffset(50);
+```

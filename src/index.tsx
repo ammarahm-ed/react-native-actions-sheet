@@ -68,6 +68,10 @@ export type ActionSheetRef = {
     layout: LayoutRectangle | undefined,
     scrollOffset: number
   ) => void;
+
+  isGestureEnabled: () => boolean;
+
+  isOpen: () => boolean;
 };
 
 const CALCULATED_DEVICE_HEIGHT = 0;
@@ -92,6 +96,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       overdrawEnabled = true,
       overdrawFactor = 15,
       overdrawSize = 100,
+      zIndex = 9999,
       ...props
     },
     ref
@@ -103,6 +108,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const initialValue = useRef(0);
     const actionSheetHeight = useRef(0);
     const safeAreaPaddingTop = useRef(0);
+    const contextRef = useRef("global");
     const currentSnapIndex = useRef(initialSnapIndex);
     const gestureBoundaries = useRef<{
       [name: string]: LayoutRectangle & {
@@ -120,6 +126,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         hideSheet(data);
       },
       onBeforeShow: props.onBeforeShow,
+      onContextUpdate: (context) => {
+        if (props.id) {
+          contextRef.current = context || "global";
+          SheetManager.add(props.id, contextRef.current);
+          SheetManager.registerRef(props.id, contextRef.current, {
+            current: getRef(),
+          } as RefObject<ActionSheetRef>);
+        }
+      },
     });
     const [animations] = useState({
       opacity: new Animated.Value(0),
@@ -140,6 +155,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       }).start();
     };
     const hideAnimation = (
+      vy?: number,
       callback?: ({ finished }: { finished: boolean }) => void
     ) => {
       if (!animated) {
@@ -147,9 +163,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         return;
       }
       const config = props.closeAnimationConfig;
-      Animated.timing(animations.translateY, {
-        duration: 150,
-        easing: Easing.in(Easing.ease),
+      Animated.spring(animations.translateY, {
+        velocity: vy,
         toValue: dimensions.height * 1.3,
         useNativeDriver: true,
         ...config,
@@ -234,17 +249,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           scrollOffset: scrollOffset,
         };
       },
+      isGestureEnabled: () => gestureEnabled,
+      isOpen: () => visible,
     });
 
     useImperativeHandle(ref, getRef, []);
 
     useEffect(() => {
-      if (props.id) {
-        SheetManager.add(props.id);
-        SheetManager.registerRef(props.id, {
-          current: getRef(),
-        } as RefObject<ActionSheetRef>);
-      }
       const listener = animations.translateY.addListener((value) => {
         props?.onChange?.(value.value);
         actionSheetEventManager.publish("onoffsetchange", value.value);
@@ -259,7 +270,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       });
       return () => {
         listener && animations.translateY.removeListener(listener);
-        props.id && SheetManager.remove(props.id);
+        props.id && SheetManager.remove(props.id, contextRef.current);
         hardwareBackPressEvent.current?.remove();
       };
     }, [props?.id, dimensions.height]);
@@ -278,7 +289,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       ? {
           visible: true,
           animationType: "none",
-          testID: props.testID,
+          testID: props.testIDs?.modal || props.testID,
           supportedOrientations: SUPPORTED_ORIENTATIONS,
           onShow: props.onOpen,
           onRequestClose: onRequestClose,
@@ -286,7 +297,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           statusBarTranslucent: statusBarTranslucent,
         }
       : {
-          testID: props.testID,
+          testID: props.testIDs?.root || props.testID,
           onLayout: () => {
             hardwareBackPressEvent.current = BackHandler.addEventListener(
               "hardwareBackPress",
@@ -296,7 +307,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           },
           style: {
             position: "absolute",
-            zIndex: 9999,
+            zIndex: zIndex,
             width: "100%",
             height: "100%",
           },
@@ -325,8 +336,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       });
     }, []);
 
-    const hideSheet = (data?: any) => {
-      hideAnimation(({ finished }) => {
+    const hideSheet = (vy?: number, data?: any) => {
+      hideAnimation(vy, ({ finished }) => {
         if (closable) opacityAnimation(0);
         if (finished) {
           if (closable) {
@@ -446,7 +457,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       if (currentSnapIndex.current === 0) {
         if (closable) {
           initialValue.current = dimensions.height * 1.3;
-          hideSheet();
+          hideSheet(vy);
         } else {
           returnAnimation(vy);
         }
@@ -555,6 +566,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 <Animated.View
                   {...handlers.panHandlers}
                   onLayout={onSheetLayout}
+                  testID={props.testIDs?.sheet}
                   style={[
                     styles.container,
                     {

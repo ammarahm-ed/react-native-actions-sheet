@@ -51,10 +51,10 @@ export type ActionSheetProps = {
     "useNativeDriver"
   >;
   /**
-   * The open animation is a timing animation. You can modify it by providing a custom config.
+   * The open animation is a spring animation. You can modify it by providing a custom config.
    */
   closeAnimationConfig?: Omit<
-    Omit<Animated.TimingAnimationConfig, "toValue">,
+    Omit<Animated.SpringAnimationConfig, "toValue">,
     "useNativeDriver"
   >;
   /**
@@ -190,9 +190,18 @@ export type ActionSheetProps = {
   isModal?: boolean;
 
   /**
+   * The default zIndex of wrapper `View` when `isModal` is set to false or background interaction is enabled is 9999. You can change it here.
+   */
+
+  zIndex?: number;
+
+  /**
    * Test ID for sheet modal.
+   *
+   * @deprecated Use `testIDs.modal` instead.
    */
   testID?: string;
+
   /**
    * Test id for various sheet components for testing
    */
@@ -201,6 +210,19 @@ export type ActionSheetProps = {
      * Test id for backdrop. Can be used to close sheet in e2e tests.
      */
     backdrop?: string;
+    /**
+     * Test id for the modal
+     */
+    modal?: string;
+
+    /**
+     * Test id for the container that wraps all your components inside the sheet.
+     */
+    sheet?: string;
+    /**
+     * Test id for the root container when `isModal` is set to `false`.
+     */
+    root?: string;
   };
 
   /**

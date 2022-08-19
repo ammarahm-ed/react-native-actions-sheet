@@ -1,0 +1,29 @@
+# Using `ScrollView`
+
+Using `ScrollView` or `FlatList` inside a action sheet can become tricky because you have to handle gestures along with scrolling at the same time. I have finally been able to work out a simple solution that should work with any ScrollView based components.
+
+The [`useScrollHandlers`](/reference/usescrollhandler) hook let's us control the `ScrollView` properly inside ActionSheets.
+
+```tsx
+import ActionSheet, {
+  useScrollHandlers,
+  ActionSheetRef,
+  SheetProps,
+} from "react-native-actions-sheet";
+
+const ExampleSheet = (props: SheetProps) => {
+  const actionSheetRef = useRef<ActionSheetRef>(null);
+  const scrollHandlers = useScrollHandlers<ScrollView>(
+    "scrollview-1",
+    actionSheetRef
+  );
+
+  return (
+    <ActionSheet ref={actionSheetRef}>
+      <ScrollView {...scrollHandlers}></ScrollView>
+    </ActionSheet>
+  );
+};
+```
+
+That's all.
