@@ -17,11 +17,11 @@ target="_blank">
 
 ## Installation
 
-Check out the [installation]() section of our docs for the detailed installation instructions.
+Check out the [installation](https://rnas.vercel.app/installation) section of our docs for the detailed installation instructions.
 
 ## Documentation
 
-Check out our dedicated documentation page for info about this library, API reference and more: https://docs.swmansion.com/react-native-reanimated/docs/
+Check out our dedicated documentation page for info about this library, API reference and more: [https://rnas.vercel.app](https://rnas.vercel.app)
 
 ## Examples
 
