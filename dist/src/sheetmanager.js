@@ -90,7 +90,8 @@ var SM = /** @class */ (function () {
                                 }
                             }
                         }
-                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "show_wrap_".concat(id) : "show_".concat(id), options.payload, options.context);
+                        console.log("called", isRegisteredWithSheetProvider, sheetsRegistry);
+                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "show_wrap_".concat(id) : "show_".concat(id), options === null || options === void 0 ? void 0 : options.payload, options === null || options === void 0 ? void 0 : options.context);
                     })];
             });
         });
@@ -119,7 +120,7 @@ var SM = /** @class */ (function () {
                                 }
                             }
                         }
-                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "hide_wrap_".concat(id) : "hide_".concat(id), options.payload, options.context);
+                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "hide_wrap_".concat(id) : "hide_".concat(id), options === null || options === void 0 ? void 0 : options.payload, options === null || options === void 0 ? void 0 : options.context);
                     })];
             });
         });

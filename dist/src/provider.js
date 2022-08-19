@@ -12,11 +12,10 @@ export function registerSheet(id, Sheet) {
     }
     if (!id || !Sheet)
         return;
-    if (!contexts)
+    if (!contexts || contexts.length === 0)
         contexts = ["global"];
     for (var _a = 0, contexts_1 = contexts; _a < contexts_1.length; _a++) {
         var context = contexts_1[_a];
-        context = context || "global";
         var registry = !sheetsRegistry[context]
             ? (sheetsRegistry[context] = {})
             : sheetsRegistry[context];

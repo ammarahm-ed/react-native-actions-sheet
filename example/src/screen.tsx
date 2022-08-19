@@ -18,7 +18,9 @@ const ExampleScreen = () => {
         </Text>
         <TouchableOpacity
           onPress={() => {
-            SheetManager.show('example-sheet', {data: 'hello world'});
+            SheetManager.show('example-sheet', {
+              payload: {data: 'hello world'},
+            });
           }}
           style={styles.btn}>
           <Text style={styles.btnTitle}>Open ActionSheet</Text>

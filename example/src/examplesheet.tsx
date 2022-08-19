@@ -22,7 +22,7 @@ const items = [
 function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
   const actionSheetRef = useRef<ActionSheetRef>(null);
   const scrollHandlers = useScrollHandlers<ScrollView>('1', actionSheetRef);
-
+  console.log('ExampleSheet', sheetId, payload);
   return (
     <ActionSheet
       id={sheetId}
@@ -70,7 +70,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
               <TouchableOpacity
                 key={item}
                 onPress={() => {
-                  SheetManager.hide(sheetId, null);
+                  SheetManager.hide(sheetId);
                 }}
                 style={styles.listItem}>
                 <View

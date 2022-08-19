@@ -24,7 +24,9 @@ function ConfirmSheet(props: SheetProps) {
       <Button
         title="No"
         onPress={() => {
-          SheetManager.hide(props.sheetId, false);
+          SheetManager.hide(props.sheetId, {
+            payload: false,
+          });
         }}
       />
       <View
@@ -35,7 +37,9 @@ function ConfirmSheet(props: SheetProps) {
       <Button
         title="Yes"
         onPress={() => {
-          SheetManager.hide(props.sheetId, true);
+          SheetManager.hide(props.sheetId, {
+            payload: true,
+          });
         }}
       />
     </ActionSheet>

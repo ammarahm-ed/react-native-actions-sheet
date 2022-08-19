@@ -16,7 +16,7 @@ class SM {
    */
   async show<BeforeShowPayload extends any, ReturnPayload extends any>(
     id: string,
-    options: {
+    options?: {
       /**
        * Any data to pass to the ActionSheet. Will be available from the component `props` or in `onBeforeShow` prop on the action sheet.
        */
@@ -50,11 +50,11 @@ class SM {
           }
         }
       }
-
+      console.log("called", isRegisteredWithSheetProvider, sheetsRegistry);
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
-        options.payload,
-        options.context
+        options?.payload,
+        options?.context
       );
     });
   }
@@ -67,7 +67,7 @@ class SM {
    */
   async hide<ReturnPayload extends any>(
     id: string,
-    options: {
+    options?: {
       /**
        * Return some data to the caller on closing the Sheet.
        */
@@ -98,8 +98,8 @@ class SM {
 
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `hide_wrap_${id}` : `hide_${id}`,
-        options.payload,
-        options.context
+        options?.payload,
+        options?.context
       );
     });
   }

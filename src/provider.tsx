@@ -20,9 +20,8 @@ export function registerSheet(
   ...contexts: string[]
 ) {
   if (!id || !Sheet) return;
-  if (!contexts) contexts = ["global"];
+  if (!contexts || contexts.length === 0) contexts = ["global"];
   for (let context of contexts) {
-    context = context || "global";
     const registry = !sheetsRegistry[context]
       ? (sheetsRegistry[context] = {})
       : sheetsRegistry[context];

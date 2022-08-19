@@ -7,7 +7,7 @@ declare class SM {
      * @param id id of the ActionSheet to show
      * @param options
      */
-    show<BeforeShowPayload extends any, ReturnPayload extends any>(id: string, options: {
+    show<BeforeShowPayload extends any, ReturnPayload extends any>(id: string, options?: {
         /**
          * Any data to pass to the ActionSheet. Will be available from the component `props` or in `onBeforeShow` prop on the action sheet.
          */
@@ -27,7 +27,7 @@ declare class SM {
      * @param id id of the ActionSheet to show
      * @param data
      */
-    hide<ReturnPayload extends any>(id: string, options: {
+    hide<ReturnPayload extends any>(id: string, options?: {
         /**
          * Return some data to the caller on closing the Sheet.
          */
