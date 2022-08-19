@@ -4,6 +4,7 @@ import {
   LayoutRectangle,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
 } from "react-native";
 import { actionSheetEventManager } from "../eventmanager";
 import { ActionSheetRef } from "../index";
@@ -33,11 +34,17 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     const subscription = actionSheetEventManager.subscribe(
       "onoffsetchange",
       (offset: number) => {
-        if (offset < 3 || !ref.current?.isGestureEnabled()) {
+        if (offset < 3) {
           //@ts-ignore
           scrollRef.current?.setNativeProps?.({
             scrollEnabled: true,
           });
+          if (Platform.OS === "web") {
+            //@ts-ignore
+            scrollRef.current.style.overflowY = "scroll";
+            //@ts-ignore
+            scrollRef.current.style.touchAction = "auto";
+          }
           ref.current?.modifyGesturesForLayout(
             id,
             scrollLayout.current,
@@ -48,6 +55,12 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
           scrollRef.current?.setNativeProps?.({
             scrollEnabled: false,
           });
+          if (Platform.OS === "web") {
+            //@ts-ignore
+            scrollRef.current.style.touchAction = "none";
+            //@ts-ignore
+            scrollRef.current.style.overflowY = "none";
+          }
           ref.current?.modifyGesturesForLayout(id, undefined, 0);
         }
       }

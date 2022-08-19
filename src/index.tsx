@@ -20,14 +20,15 @@ import {
   Platform,
   SafeAreaView,
   StatusBar,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { actionSheetEventManager } from "./eventmanager";
+import useSheetManager from "./hooks/use-sheet-manager";
 import { SheetManager } from "./sheetmanager";
 import { styles } from "./styles";
 import type { ActionSheetProps } from "./types";
 import { getDeviceHeight, getElevation, SUPPORTED_ORIENTATIONS } from "./utils";
-import useSheetManager from "./hooks/use-sheet-manager";
 export type ActionSheetRef = {
   /**
    * Show the ActionSheet.
@@ -163,12 +164,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         return;
       }
       const config = props.closeAnimationConfig;
+      opacityAnimation(0);
       Animated.spring(animations.translateY, {
         velocity: vy,
         toValue: dimensions.height * 1.3,
         useNativeDriver: true,
         ...config,
-      }).start(callback);
+      }).start(Platform.OS !== "web" ? callback : undefined);
+      if (Platform.OS === "web") {
+        setTimeout(() => {
+          callback?.({ finished: true });
+        }, 300);
+      }
     };
 
     const getCurrentPosition = () => {
@@ -337,8 +344,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     }, []);
 
     const hideSheet = (vy?: number, data?: any) => {
+      if (!closable) {
+        returnAnimation(vy);
+        return;
+      }
       hideAnimation(vy, ({ finished }) => {
-        if (closable) opacityAnimation(0);
         if (finished) {
           if (closable) {
             setVisible(false);
@@ -354,6 +364,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
       });
     };
+
     const handlers = React.useMemo(
       () =>
         !gestureEnabled
@@ -363,15 +374,17 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 let gestures = true;
                 for (let id in gestureBoundaries.current) {
                   const gestureBoundary = gestureBoundaries.current[id];
+                  console.log(gestureBoundaries.current);
                   if (getCurrentPosition() > 3 || !gestureBoundary)
                     gestures = true;
 
                   const scrollOffset = gestureBoundary?.scrollOffset || 0;
-
                   if (
-                    event.nativeEvent.pageY > gestureBoundary?.y &&
-                    gesture.vy > 0 &&
-                    scrollOffset <= 0
+                    gestureBoundary.y === undefined ||
+                    event.nativeEvent.pageY < gestureBoundary?.y ||
+                    (event.nativeEvent.pageY > gestureBoundary?.y &&
+                      gesture.vy > 0 &&
+                      scrollOffset <= 0)
                   ) {
                     gestures = true;
                   } else {
@@ -380,7 +393,31 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 }
                 return gestures;
               },
-              onStartShouldSetPanResponder: () => true,
+              onStartShouldSetPanResponder: (event, gesture) => {
+                if (Platform.OS === "web") {
+                  let gestures = true;
+                  for (let id in gestureBoundaries.current) {
+                    const gestureBoundary = gestureBoundaries.current[id];
+                    if (getCurrentPosition() > 3 || !gestureBoundary)
+                      gestures = true;
+
+                    const scrollOffset = gestureBoundary?.scrollOffset || 0;
+                    if (
+                      gestureBoundary.y === undefined ||
+                      event.nativeEvent.pageY < gestureBoundary?.y ||
+                      (event.nativeEvent.pageY > gestureBoundary?.y &&
+                        gesture.vy > 0 &&
+                        scrollOffset <= 0)
+                    ) {
+                      gestures = true;
+                    } else {
+                      gestures = false;
+                    }
+                  }
+                  return gestures;
+                }
+                return true;
+              },
               onPanResponderMove: (_event, gesture) => {
                 if (
                   //@ts-ignore
@@ -547,16 +584,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 ]}
               >
                 {!props?.backgroundInteractionEnabled ? (
-                  <View
-                    onTouchEnd={onTouch}
-                    onTouchMove={onTouch}
-                    onTouchStart={onTouch}
+                  <TouchableOpacity
+                    onPress={onTouch}
+                    activeOpacity={defaultOverlayOpacity}
                     testID={props.testIDs?.backdrop}
                     style={{
                       height: "100%",
                       width: "100%",
                       position: "absolute",
-                      zIndex: 1,
+                      zIndex: 2,
                       backgroundColor: overlayColor,
                       opacity: defaultOverlayOpacity,
                     }}

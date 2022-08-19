@@ -30,12 +30,12 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState, } from "react";
-import { Animated, BackHandler, Dimensions, Easing, KeyboardAvoidingView, Modal, PanResponder, Platform, SafeAreaView, StatusBar, View, } from "react-native";
+import { Animated, BackHandler, Dimensions, Easing, KeyboardAvoidingView, Modal, PanResponder, Platform, SafeAreaView, StatusBar, TouchableOpacity, View, } from "react-native";
 import { actionSheetEventManager } from "./eventmanager";
+import useSheetManager from "./hooks/use-sheet-manager";
 import { SheetManager } from "./sheetmanager";
 import { styles } from "./styles";
 import { getDeviceHeight, getElevation, SUPPORTED_ORIENTATIONS } from "./utils";
-import useSheetManager from "./hooks/use-sheet-manager";
 var CALCULATED_DEVICE_HEIGHT = 0;
 export default forwardRef(function ActionSheet(_a, ref) {
     var _b, _c, _d, _e, _f, _g, _h;
@@ -89,7 +89,13 @@ export default forwardRef(function ActionSheet(_a, ref) {
             return;
         }
         var config = props.closeAnimationConfig;
-        Animated.spring(animations.translateY, __assign({ velocity: vy, toValue: dimensions.height * 1.3, useNativeDriver: true }, config)).start(callback);
+        opacityAnimation(0);
+        Animated.spring(animations.translateY, __assign({ velocity: vy, toValue: dimensions.height * 1.3, useNativeDriver: true }, config)).start(Platform.OS !== "web" ? callback : undefined);
+        if (Platform.OS === "web") {
+            setTimeout(function () {
+                callback === null || callback === void 0 ? void 0 : callback({ finished: true });
+            }, 300);
+        }
     };
     var getCurrentPosition = function () {
         //@ts-ignore
@@ -228,10 +234,12 @@ export default forwardRef(function ActionSheet(_a, ref) {
         });
     }, []);
     var hideSheet = function (vy, data) {
+        if (!closable) {
+            returnAnimation(vy);
+            return;
+        }
         hideAnimation(vy, function (_a) {
             var finished = _a.finished;
-            if (closable)
-                opacityAnimation(0);
             if (finished) {
                 if (closable) {
                     setVisible(false);
@@ -253,12 +261,15 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     var gestures = true;
                     for (var id in gestureBoundaries.current) {
                         var gestureBoundary = gestureBoundaries.current[id];
+                        console.log(gestureBoundaries.current);
                         if (getCurrentPosition() > 3 || !gestureBoundary)
                             gestures = true;
                         var scrollOffset = (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.scrollOffset) || 0;
-                        if (event.nativeEvent.pageY > (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.y) &&
-                            gesture.vy > 0 &&
-                            scrollOffset <= 0) {
+                        if (gestureBoundary.y === undefined ||
+                            event.nativeEvent.pageY < (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.y) ||
+                            (event.nativeEvent.pageY > (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.y) &&
+                                gesture.vy > 0 &&
+                                scrollOffset <= 0)) {
                             gestures = true;
                         }
                         else {
@@ -267,7 +278,29 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     }
                     return gestures;
                 },
-                onStartShouldSetPanResponder: function () { return true; },
+                onStartShouldSetPanResponder: function (event, gesture) {
+                    if (Platform.OS === "web") {
+                        var gestures = true;
+                        for (var id in gestureBoundaries.current) {
+                            var gestureBoundary = gestureBoundaries.current[id];
+                            if (getCurrentPosition() > 3 || !gestureBoundary)
+                                gestures = true;
+                            var scrollOffset = (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.scrollOffset) || 0;
+                            if (gestureBoundary.y === undefined ||
+                                event.nativeEvent.pageY < (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.y) ||
+                                (event.nativeEvent.pageY > (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.y) &&
+                                    gesture.vy > 0 &&
+                                    scrollOffset <= 0)) {
+                                gestures = true;
+                            }
+                            else {
+                                gestures = false;
+                            }
+                        }
+                        return gestures;
+                    }
+                    return true;
+                },
                 onPanResponderMove: function (_event, gesture) {
                     if (
                     //@ts-ignore
@@ -405,11 +438,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     justifyContent: "flex-end"
                 },
             ]}>
-                {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<View onTouchEnd={onTouch} onTouchMove={onTouch} onTouchStart={onTouch} testID={(_d = props.testIDs) === null || _d === void 0 ? void 0 : _d.backdrop} style={{
+                {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<TouchableOpacity onPress={onTouch} activeOpacity={defaultOverlayOpacity} testID={(_d = props.testIDs) === null || _d === void 0 ? void 0 : _d.backdrop} style={{
                     height: "100%",
                     width: "100%",
                     position: "absolute",
-                    zIndex: 1,
+                    zIndex: 2,
                     backgroundColor: overlayColor,
                     opacity: defaultOverlayOpacity
                 }}/>) : null}
