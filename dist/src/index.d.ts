@@ -34,6 +34,8 @@ export declare type ActionSheetRef = {
      * Used internally for scrollable views.
      */
     modifyGesturesForLayout: (id: string, layout: LayoutRectangle | undefined, scrollOffset: number) => void;
+    isGestureEnabled: () => boolean;
+    isOpen: () => boolean;
 };
 declare const _default: React.ForwardRefExoticComponent<ActionSheetProps & React.RefAttributes<ActionSheetRef>>;
 export default _default;

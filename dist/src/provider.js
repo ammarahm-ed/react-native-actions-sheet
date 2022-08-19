@@ -1,20 +1,28 @@
 import React, { useEffect, useReducer, useState } from "react";
 import { actionSheetEventManager } from "./eventmanager";
-import { SheetManager } from "./sheetmanager";
 /**
  * An object that holds all the sheet components against their ids.
  */
-var sheetsRegistry = {};
+export var sheetsRegistry = {};
 // Registers your Sheet with the SheetProvider.
-export function registerSheet(id, Sheet, context) {
+export function registerSheet(id, Sheet) {
+    var contexts = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        contexts[_i - 2] = arguments[_i];
+    }
     if (!id || !Sheet)
         return;
-    context = context || "global";
-    var registry = !sheetsRegistry[context]
-        ? (sheetsRegistry[context] = {})
-        : sheetsRegistry[context];
-    registry[id] = Sheet;
-    actionSheetEventManager.publish("".concat(context, "-on-register"));
+    if (!contexts)
+        contexts = ["global"];
+    for (var _a = 0, contexts_1 = contexts; _a < contexts_1.length; _a++) {
+        var context = contexts_1[_a];
+        context = context || "global";
+        var registry = !sheetsRegistry[context]
+            ? (sheetsRegistry[context] = {})
+            : sheetsRegistry[context];
+        registry[id] = Sheet;
+        actionSheetEventManager.publish("".concat(context, "-on-register"));
+    }
 }
 /**
  * The SheetProvider makes available the sheets in a given context. The default context is
@@ -62,7 +70,10 @@ var RenderSheet = function (_a) {
     var Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
     if (!Sheet)
         return null;
-    var onShow = function (data) {
+    var onShow = function (data, ctx) {
+        if (ctx === void 0) { ctx = "global"; }
+        if (ctx !== context)
+            return;
         setPayload(data);
         setVisible(true);
     };
@@ -70,16 +81,22 @@ var RenderSheet = function (_a) {
         setVisible(false);
         setPayload(undefined);
     };
+    var onHide = function (data, ctx) {
+        if (ctx === void 0) { ctx = "global"; }
+        if (ctx !== context)
+            return;
+        actionSheetEventManager.publish("hide_".concat(id), data);
+    };
     useEffect(function () {
-        var _a, _b;
         if (visible) {
-            (_b = (_a = SheetManager.get(id)) === null || _a === void 0 ? void 0 : _a.current) === null || _b === void 0 ? void 0 : _b.show();
+            actionSheetEventManager.publish("show_".concat(id), payload, context);
         }
     }, [visible]);
     useEffect(function () {
         var subs = [
-            actionSheetEventManager.subscribe("show_".concat(id), onShow),
+            actionSheetEventManager.subscribe("show_wrap_".concat(id), onShow),
             actionSheetEventManager.subscribe("onclose_".concat(id), onClose),
+            actionSheetEventManager.subscribe("hide_wrap_".concat(id), onHide),
         ];
         return function () {
             subs.forEach(function (s) { return s.unsubscribe(); });

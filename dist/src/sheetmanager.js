@@ -35,55 +35,62 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 import { actionSheetEventManager } from "./eventmanager";
+import { sheetsRegistry } from "./provider";
 // Array of all the ids of ActionSheets currently rendered in the app.
 var ids = [];
 var refs = {};
-/**
- * SheetManager can be used to imperitively show/hide any ActionSheet with a
- * unique id prop.
- */
 var SM = /** @class */ (function () {
     function SM() {
-        this.registerRef = function (id, instance) {
-            refs[id] = instance;
+        this.registerRef = function (id, context, instance) {
+            refs["".concat(id, ":").concat(context)] = instance;
         };
         /**
          *
          * Get internal ref of a sheet by the given id.
          * @returns
          */
-        this.get = function (id) {
-            return refs[id];
+        this.get = function (id, context) {
+            if (context === void 0) { context = "global"; }
+            return refs["".concat(id, ":").concat(context)];
         };
-        this.add = function (id) {
+        this.add = function (id, context) {
             if (ids.indexOf(id) < 0) {
-                ids[ids.length] = id;
+                ids[ids.length] = "".concat(id, ":").concat(context);
             }
         };
-        this.remove = function (id) {
-            if (ids.indexOf(id) > 0) {
-                ids.splice(ids.indexOf(id));
+        this.remove = function (id, context) {
+            if (ids.indexOf("".concat(id, ":").concat(context)) > 0) {
+                ids.splice(ids.indexOf("".concat(id, ":").concat(context)));
             }
         };
     }
     /**
-     * Show an ActionSheet with a given id.
+     * Show the ActionSheet with a given id.
      *
      * @param id id of the ActionSheet to show
-     * @param data Any data to pass to the ActionSheet. Will be available from `onBeforeShow` prop.
-     * @param onClose Recieve payload from the Sheet when it closes
+     * @param options
      */
-    SM.prototype.show = function (id, data, onClose) {
+    SM.prototype.show = function (id, options) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
                         var handler = function (data) {
-                            onClose && onClose(data);
+                            var _a;
+                            (_a = options === null || options === void 0 ? void 0 : options.onClose) === null || _a === void 0 ? void 0 : _a.call(options, data);
                             sub === null || sub === void 0 ? void 0 : sub.unsubscribe();
                             resolve(data);
                         };
                         var sub = actionSheetEventManager.subscribe("onclose_".concat(id), handler);
-                        actionSheetEventManager.publish("show_".concat(id), data);
+                        // Check if the sheet is registered with any `SheetProviders`.
+                        var isRegisteredWithSheetProvider = false;
+                        for (var ctx in sheetsRegistry) {
+                            for (var _id in sheetsRegistry[ctx]) {
+                                if (_id === id) {
+                                    isRegisteredWithSheetProvider = true;
+                                }
+                            }
+                        }
+                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "show_wrap_".concat(id) : "show_".concat(id), options.payload, options.context);
                     })];
             });
         });
@@ -92,9 +99,9 @@ var SM = /** @class */ (function () {
      * An async hide function. This is useful when you want to show one ActionSheet after closing another.
      *
      * @param id id of the ActionSheet to show
-     * @param data Return some data to the caller on closing the Sheet.
+     * @param data
      */
-    SM.prototype.hide = function (id, data) {
+    SM.prototype.hide = function (id, options) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
@@ -103,7 +110,16 @@ var SM = /** @class */ (function () {
                             resolve(data);
                         };
                         var sub = actionSheetEventManager.subscribe("onclose_".concat(id), hideHandler);
-                        actionSheetEventManager.publish("hide_".concat(id), data);
+                        var isRegisteredWithSheetProvider = false;
+                        // Check if the sheet is registered with any `SheetProviders`.
+                        for (var ctx in sheetsRegistry) {
+                            for (var _id in sheetsRegistry[ctx]) {
+                                if (_id === id) {
+                                    isRegisteredWithSheetProvider = true;
+                                }
+                            }
+                        }
+                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "hide_wrap_".concat(id) : "hide_".concat(id), options.payload, options.context);
                     })];
             });
         });
@@ -116,4 +132,8 @@ var SM = /** @class */ (function () {
     };
     return SM;
 }());
+/**
+ * SheetManager is used to imperitively show/hide any ActionSheet with a
+ * unique id prop.
+ */
 export var SheetManager = new SM();

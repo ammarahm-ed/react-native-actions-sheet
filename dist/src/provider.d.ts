@@ -1,9 +1,17 @@
 import React, { ReactNode } from "react";
+/**
+ * An object that holds all the sheet components against their ids.
+ */
+export declare const sheetsRegistry: {
+    [context: string]: {
+        [id: string]: React.ElementType;
+    };
+};
 export interface SheetProps<BeforeShowPayload = any> {
     sheetId: string;
     payload?: BeforeShowPayload;
 }
-export declare function registerSheet(id: string, Sheet: React.ElementType, context?: string): void;
+export declare function registerSheet(id: string, Sheet: React.ElementType, ...contexts: string[]): void;
 /**
  * The SheetProvider makes available the sheets in a given context. The default context is
  * `global`. However if you want to render a Sheet within another sheet or if you want to render

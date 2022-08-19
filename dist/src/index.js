@@ -38,28 +38,38 @@ import { getDeviceHeight, getElevation, SUPPORTED_ORIENTATIONS } from "./utils";
 import useSheetManager from "./hooks/use-sheet-manager";
 var CALCULATED_DEVICE_HEIGHT = 0;
 export default forwardRef(function ActionSheet(_a, ref) {
-    var _b, _c, _d, _e;
-    var _f = _a.animated, animated = _f === void 0 ? true : _f, _g = _a.closeOnPressBack, closeOnPressBack = _g === void 0 ? true : _g, _h = _a.springOffset, springOffset = _h === void 0 ? 50 : _h, _j = _a.elevation, elevation = _j === void 0 ? 5 : _j, _k = _a.defaultOverlayOpacity, defaultOverlayOpacity = _k === void 0 ? 0.3 : _k, _l = _a.overlayColor, overlayColor = _l === void 0 ? "black" : _l, _m = _a.closable, closable = _m === void 0 ? true : _m, _o = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _o === void 0 ? true : _o, _p = _a.drawUnderStatusBar, drawUnderStatusBar = _p === void 0 ? false : _p, _q = _a.statusBarTranslucent, statusBarTranslucent = _q === void 0 ? true : _q, _r = _a.gestureEnabled, gestureEnabled = _r === void 0 ? false : _r, _s = _a.isModal, isModal = _s === void 0 ? true : _s, _t = _a.snapPoints, snapPoints = _t === void 0 ? [100] : _t, _u = _a.initialSnapIndex, initialSnapIndex = _u === void 0 ? 0 : _u, _v = _a.overdrawEnabled, overdrawEnabled = _v === void 0 ? true : _v, _w = _a.overdrawFactor, overdrawFactor = _w === void 0 ? 15 : _w, _x = _a.overdrawSize, overdrawSize = _x === void 0 ? 100 : _x, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "statusBarTranslucent", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize"]);
+    var _b, _c, _d, _e, _f, _g, _h;
+    var _j = _a.animated, animated = _j === void 0 ? true : _j, _k = _a.closeOnPressBack, closeOnPressBack = _k === void 0 ? true : _k, _l = _a.springOffset, springOffset = _l === void 0 ? 50 : _l, _m = _a.elevation, elevation = _m === void 0 ? 5 : _m, _o = _a.defaultOverlayOpacity, defaultOverlayOpacity = _o === void 0 ? 0.3 : _o, _p = _a.overlayColor, overlayColor = _p === void 0 ? "black" : _p, _q = _a.closable, closable = _q === void 0 ? true : _q, _r = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _r === void 0 ? true : _r, _s = _a.drawUnderStatusBar, drawUnderStatusBar = _s === void 0 ? false : _s, _t = _a.statusBarTranslucent, statusBarTranslucent = _t === void 0 ? true : _t, _u = _a.gestureEnabled, gestureEnabled = _u === void 0 ? false : _u, _v = _a.isModal, isModal = _v === void 0 ? true : _v, _w = _a.snapPoints, snapPoints = _w === void 0 ? [100] : _w, _x = _a.initialSnapIndex, initialSnapIndex = _x === void 0 ? 0 : _x, _y = _a.overdrawEnabled, overdrawEnabled = _y === void 0 ? true : _y, _z = _a.overdrawFactor, overdrawFactor = _z === void 0 ? 15 : _z, _0 = _a.overdrawSize, overdrawSize = _0 === void 0 ? 100 : _0, _1 = _a.zIndex, zIndex = _1 === void 0 ? 9999 : _1, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "statusBarTranslucent", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex"]);
     snapPoints =
         snapPoints[snapPoints.length - 1] !== 100
             ? __spreadArray(__spreadArray([], snapPoints, true), [100], false) : snapPoints;
     var initialValue = useRef(0);
     var actionSheetHeight = useRef(0);
     var safeAreaPaddingTop = useRef(0);
+    var contextRef = useRef("global");
     var currentSnapIndex = useRef(initialSnapIndex);
     var gestureBoundaries = useRef({});
-    var _y = useState({
+    var _2 = useState({
         width: Dimensions.get("window").width,
         height: CALCULATED_DEVICE_HEIGHT || getDeviceHeight(statusBarTranslucent),
         portrait: true
-    }), dimensions = _y[0], setDimensions = _y[1];
-    var _z = useSheetManager({
+    }), dimensions = _2[0], setDimensions = _2[1];
+    var _3 = useSheetManager({
         id: props.id,
         onHide: function (data) {
             hideSheet(data);
         },
-        onBeforeShow: props.onBeforeShow
-    }), visible = _z.visible, setVisible = _z.setVisible;
+        onBeforeShow: props.onBeforeShow,
+        onContextUpdate: function (context) {
+            if (props.id) {
+                contextRef.current = context || "global";
+                SheetManager.add(props.id, contextRef.current);
+                SheetManager.registerRef(props.id, contextRef.current, {
+                    current: getRef()
+                });
+            }
+        }
+    }), visible = _3.visible, setVisible = _3.setVisible;
     var animations = useState({
         opacity: new Animated.Value(0),
         translateY: new Animated.Value(0),
@@ -73,13 +83,13 @@ export default forwardRef(function ActionSheet(_a, ref) {
         var config = props.openAnimationConfig;
         Animated.spring(animations.translateY, __assign(__assign({ toValue: initialValue.current, useNativeDriver: true }, config), { velocity: velocity })).start();
     };
-    var hideAnimation = function (callback) {
+    var hideAnimation = function (vy, callback) {
         if (!animated) {
             callback === null || callback === void 0 ? void 0 : callback({ finished: true });
             return;
         }
         var config = props.closeAnimationConfig;
-        Animated.timing(animations.translateY, __assign({ duration: 150, easing: Easing["in"](Easing.ease), toValue: dimensions.height * 1.3, useNativeDriver: true }, config)).start(callback);
+        Animated.spring(animations.translateY, __assign({ velocity: vy, toValue: dimensions.height * 1.3, useNativeDriver: true }, config)).start(callback);
     };
     var getCurrentPosition = function () {
         //@ts-ignore
@@ -140,16 +150,12 @@ export default forwardRef(function ActionSheet(_a, ref) {
         modifyGesturesForLayout: function (id, layout, scrollOffset) {
             //@ts-ignore
             gestureBoundaries.current[id] = __assign(__assign({}, layout), { scrollOffset: scrollOffset });
-        }
+        },
+        isGestureEnabled: function () { return gestureEnabled; },
+        isOpen: function () { return visible; }
     }); };
     useImperativeHandle(ref, getRef, []);
     useEffect(function () {
-        if (props.id) {
-            SheetManager.add(props.id);
-            SheetManager.registerRef(props.id, {
-                current: getRef()
-            });
-        }
         var listener = animations.translateY.addListener(function (value) {
             var _a;
             (_a = props === null || props === void 0 ? void 0 : props.onChange) === null || _a === void 0 ? void 0 : _a.call(props, value.value);
@@ -166,7 +172,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         return function () {
             var _a;
             listener && animations.translateY.removeListener(listener);
-            props.id && SheetManager.remove(props.id);
+            props.id && SheetManager.remove(props.id, contextRef.current);
             (_a = hardwareBackPressEvent.current) === null || _a === void 0 ? void 0 : _a.remove();
         };
     }, [props === null || props === void 0 ? void 0 : props.id, dimensions.height]);
@@ -182,7 +188,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         ? {
             visible: true,
             animationType: "none",
-            testID: props.testID,
+            testID: ((_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.modal) || props.testID,
             supportedOrientations: SUPPORTED_ORIENTATIONS,
             onShow: props.onOpen,
             onRequestClose: onRequestClose,
@@ -190,7 +196,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             statusBarTranslucent: statusBarTranslucent
         }
         : {
-            testID: props.testID,
+            testID: ((_c = props.testIDs) === null || _c === void 0 ? void 0 : _c.root) || props.testID,
             onLayout: function () {
                 var _a;
                 hardwareBackPressEvent.current = BackHandler.addEventListener("hardwareBackPress", onHardwareBackPress);
@@ -198,7 +204,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             },
             style: {
                 position: "absolute",
-                zIndex: 9999,
+                zIndex: zIndex,
                 width: "100%",
                 height: "100%"
             },
@@ -221,8 +227,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
             portrait: height > width
         });
     }, []);
-    var hideSheet = function (data) {
-        hideAnimation(function (_a) {
+    var hideSheet = function (vy, data) {
+        hideAnimation(vy, function (_a) {
             var finished = _a.finished;
             if (closable)
                 opacityAnimation(0);
@@ -331,7 +337,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         if (currentSnapIndex.current === 0) {
             if (closable) {
                 initialValue.current = dimensions.height * 1.3;
-                hideSheet();
+                hideSheet(vy);
             }
             else {
                 returnAnimation(vy);
@@ -399,7 +405,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     justifyContent: "flex-end"
                 },
             ]}>
-                {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<View onTouchEnd={onTouch} onTouchMove={onTouch} onTouchStart={onTouch} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
+                {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<View onTouchEnd={onTouch} onTouchMove={onTouch} onTouchStart={onTouch} testID={(_d = props.testIDs) === null || _d === void 0 ? void 0 : _d.backdrop} style={{
                     height: "100%",
                     width: "100%",
                     position: "absolute",
@@ -408,7 +414,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     opacity: defaultOverlayOpacity
                 }}/>) : null}
 
-                <Animated.View {...handlers.panHandlers} onLayout={onSheetLayout} style={[
+                <Animated.View {...handlers.panHandlers} onLayout={onSheetLayout} testID={(_e = props.testIDs) === null || _e === void 0 ? void 0 : _e.sheet} style={[
                 styles.container,
                 __assign({ borderTopRightRadius: 10, borderTopLeftRadius: 10 }, getElevation(typeof elevation === "number" ? elevation : 5)),
                 props.containerStyle,
@@ -426,9 +432,9 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     height: 100,
                     position: "absolute",
                     top: -50,
-                    backgroundColor: ((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.backgroundColor) || "white",
+                    backgroundColor: ((_f = props.containerStyle) === null || _f === void 0 ? void 0 : _f.backgroundColor) || "white",
                     width: "100%",
-                    borderRadius: ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.borderRadius) || 10,
+                    borderRadius: ((_g = props.containerStyle) === null || _g === void 0 ? void 0 : _g.borderRadius) || 10,
                     transform: [
                         {
                             translateY: animations.underlayTranslateY
@@ -443,7 +449,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     height: overdrawSize,
                     position: "absolute",
                     bottom: -overdrawSize,
-                    backgroundColor: ((_e = props.containerStyle) === null || _e === void 0 ? void 0 : _e.backgroundColor) || "white",
+                    backgroundColor: ((_h = props.containerStyle) === null || _h === void 0 ? void 0 : _h.backgroundColor) || "white",
                     width: dimensions.width
                 }}/>) : null}
                 </Animated.View>
