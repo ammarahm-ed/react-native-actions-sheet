@@ -142,5 +142,3 @@ const styles = StyleSheet.create({
 });
 
 export default ExampleSheet;
-
-registerSheet('example-sheet', ExampleSheet);
