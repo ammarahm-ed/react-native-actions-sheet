@@ -72,6 +72,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
 
   const onLayout = (event: LayoutChangeEvent) => {
     scrollLayout.current = event.nativeEvent.layout;
+    ref.current?.modifyGesturesForLayout(id, undefined, 0);
   };
 
   return {
@@ -79,7 +80,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     onScroll,
     ref: scrollRef,
     onLayout: onLayout,
-    scrollEventThrottle: 30,
+    scrollEventThrottle: 200,
   };
 }
 

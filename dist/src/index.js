@@ -90,12 +90,10 @@ export default forwardRef(function ActionSheet(_a, ref) {
         }
         var config = props.closeAnimationConfig;
         opacityAnimation(0);
-        Animated.spring(animations.translateY, __assign({ velocity: vy, toValue: dimensions.height * 1.3, useNativeDriver: true }, config)).start(Platform.OS !== "web" ? callback : undefined);
-        if (Platform.OS === "web") {
-            setTimeout(function () {
-                callback === null || callback === void 0 ? void 0 : callback({ finished: true });
-            }, 300);
-        }
+        Animated.spring(animations.translateY, __assign({ velocity: vy, toValue: dimensions.height * 1.3, useNativeDriver: true }, config)).start();
+        setTimeout(function () {
+            callback === null || callback === void 0 ? void 0 : callback({ finished: true });
+        }, 300);
     };
     var getCurrentPosition = function () {
         //@ts-ignore
@@ -167,7 +165,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             (_a = props === null || props === void 0 ? void 0 : props.onChange) === null || _a === void 0 ? void 0 : _a.call(props, value.value);
             actionSheetEventManager.publish("onoffsetchange", value.value);
             if (drawUnderStatusBar) {
-                if (actionSheetHeight.current === dimensions.height) {
+                if (actionSheetHeight.current > dimensions.height - 1) {
                     var offsetTop = value.value;
                     if (offsetTop < 100) {
                         animations.underlayTranslateY.setValue(offsetTop);

@@ -170,12 +170,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         toValue: dimensions.height * 1.3,
         useNativeDriver: true,
         ...config,
-      }).start(Platform.OS !== "web" ? callback : undefined);
-      if (Platform.OS === "web") {
-        setTimeout(() => {
-          callback?.({ finished: true });
-        }, 300);
-      }
+      }).start();
+      setTimeout(() => {
+        callback?.({ finished: true });
+      }, 300);
     };
 
     const getCurrentPosition = () => {
@@ -267,7 +265,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         props?.onChange?.(value.value);
         actionSheetEventManager.publish("onoffsetchange", value.value);
         if (drawUnderStatusBar) {
-          if (actionSheetHeight.current === dimensions.height) {
+          if (actionSheetHeight.current > dimensions.height - 1) {
             const offsetTop = value.value;
             if (offsetTop < 100) {
               animations.underlayTranslateY.setValue(offsetTop);

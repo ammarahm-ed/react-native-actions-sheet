@@ -53,14 +53,16 @@ function useScrollHandlers(id, ref) {
         };
     }, []);
     var onLayout = function (event) {
+        var _a;
         scrollLayout.current = event.nativeEvent.layout;
+        (_a = ref.current) === null || _a === void 0 ? void 0 : _a.modifyGesturesForLayout(id, undefined, 0);
     };
     return {
         scrollEnabled: false,
         onScroll: onScroll,
         ref: scrollRef,
         onLayout: onLayout,
-        scrollEventThrottle: 30
+        scrollEventThrottle: 200
     };
 }
 export default useScrollHandlers;
