@@ -1,0 +1,130 @@
+# Migrating to v0.8.0
+
+v0.8.0 introduces some breaking changes. I tried to minimize them as much as possible but since this is a complete rewrite some of the features of this library have changed.
+
+## Some props have been removed
+
+`keyboardShouldPersistTaps` & `keyboardDismissMode`: Since we don't use `ScrollView` internally anymore, these props have been removed.
+
+`testIDs.scrollview`: Same reason as above.
+
+`onPositionChanged`: This props has been replaced by [`onChange`](/guides/position) which gives more control on action sheet position.
+
+`openAnimationDuration` & `closeAnimationDuration`: These have been replaced by `openAnimationConfig` & `closeAnimationConfig` which give granular control over the spring animations for open & close.
+
+`bounciness` & `bounceOnOpen`: Timing animation is not used anymore so this has been removed.
+
+`extraScroll`: We did not need this prop, containerStyle can handle the same behaviour already.
+
+`indicatorColor` has been replaced by `indicatorStyle`.
+
+`bottomOffset` & `initialOffsetFromBottom`: You can use `snapPoints` & `initialSnapIndex` which is much simpler way to control action sheet.
+
+## `ActionSheetRef`
+
+We now have a `ActionSheetRef` type that should be used in `useRef` hooks:
+
+Before:
+
+```tsx
+const actionSheetRef = useRef<ActionSheet>(null);
+```
+
+After:
+
+```tsx
+import { ActionSheetRef } from 'react-native-actions-sheet';
+const ExampleSheet = () => {
+const actionSheetRef = useRef<ActionSheetRef>(null);
+...
+```
+
+## `SheetManager` changes
+
+`SheetManager.show` & `SheetManager.hide` functions have changed:
+
+From:
+
+```ts
+SheetManager.show('sheet-id', {data: 'hello world'});
+```
+
+to
+
+```ts
+SheetManager.show('sheet-id', {
+  payload: {data: 'hello world'},
+});
+```
+
+And `hide` has changed similarly:
+
+```ts
+SheetManager.hide('sheet-id', {data: 'hello world'});
+```
+
+to
+
+```ts
+SheetManager.hide('sheet-id', {
+  payload: {data: 'hello world'},
+});
+```
+
+## `registerSheet` changes
+
+The `registerSheet` function now takes multiple contexts so a sheet with same id can be opened in multiple contexts.
+
+```ts
+registerSheet('sheet-id', ExampleSheet, 'context-a', 'context-b');
+```
+
+```ts
+SheetManager.show('sheet-id', {
+  context: 'context-b',
+});
+```
+
+## `ScrollView` behaviour changes
+
+`ScrollView` previously required `handleChildScrollEnd` to be attached to it. Now you have to use `useScrollHandlers` hook.
+
+From:
+
+```tsx
+const actionSheetRef = useRef<ActionSheet>(null);
+
+return (
+  <ActionSheet>
+    <ScrollView
+      nestedScrollingEnabled={true}
+      onMomentumScrollEnd={() => {
+        actionSheetRef.current?.handleChildScrollEnd();
+      }}
+    />
+  </ActionSheet>
+);
+```
+
+To:
+
+```tsx
+const actionSheetRef = useRef<ActionSheet>(null);
+const scrollHandlers = useScrollHandlers('scroll-1', actionSheetRef);
+
+return (
+  <ActionSheet>
+    <ScrollView {...scrollHandlers} />;
+  </ActionSheet>
+);
+```
+
+You can now use normal react native `ScrollView` & `FlatList` components instead of the ones from `react-native-gesture-handler`.
+
+`ScrollView` behaviour has also been changed. You should try it out and see the difference in various states:
+
+1.  ActionSheet not fully opened: When the action sheet is not fully opened, scrolling is disabled.
+2.  ActionSheet fully opened: Scrolling is enabled in downward direction where the content offset would increase. So if you swipe down, action sheet will start to close and if you swipe up, scrollview will scroll.
+3.  Scroll Offset > 0: When user has scrolled away from 0, then swiping up and down both will result in scrolling inside the ScrollView area.
+4.  User swipes outside ScrollView area: action sheet will move always.
+5.  User scrolls to top & keeps swiping down: Nothing happens or `RefreshControl` will work. The action sheet will **not** move. User will have to lift their finger and swipe down again to close the action sheet or move it to different snap point.
