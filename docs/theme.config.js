@@ -1,9 +1,9 @@
 /* eslint-disable import/no-anonymous-default-export */
 
 export default {
-  projectLink: "https://github.com/ammarahm-ed/react-native-actions-sheet", // GitHub link in the navbar
+  projectLink: 'https://github.com/ammarahm-ed/react-native-actions-sheet', // GitHub link in the navbar
   docsRepositoryBase:
-    "https://github.com/ammarahm-ed/react-native-actions-sheet", // base URL for the docs repository
+    'https://github.com/ammarahm-ed/react-native-actions-sheet', // base URL for the docs repository
   nextLinks: true,
   prevLinks: true,
   search: true,
@@ -18,7 +18,7 @@ export default {
         src="/logo.svg"
         width="20"
         alt="ActionSheet for React Native"
-        style={{ marginRight: "10px" }}
+        style={{marginRight: '10px'}}
       />
       <span>ActionSheet for React Native</span>
     </>
