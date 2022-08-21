@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
-import { actionSheetEventManager } from "../eventmanager";
+import { useEffect, useRef } from 'react';
+import { Platform, } from 'react-native';
+import { actionSheetEventManager } from '../eventmanager';
 /**
  * If you are using a `ScrollView` or `FlatList` in ActionSheet. You must attach `scrollHandlers`
  * with it to enable scrolling.
@@ -18,13 +19,19 @@ function useScrollHandlers(id, ref) {
         (_a = ref.current) === null || _a === void 0 ? void 0 : _a.modifyGesturesForLayout(id, scrollLayout.current, scrollOffset.current);
     };
     useEffect(function () {
-        var subscription = actionSheetEventManager.subscribe("onoffsetchange", function (offset) {
+        var subscription = actionSheetEventManager.subscribe('onoffsetchange', function (offset) {
             var _a, _b, _c, _d, _e, _f;
             if (offset < 3) {
                 //@ts-ignore
                 (_b = (_a = scrollRef.current) === null || _a === void 0 ? void 0 : _a.setNativeProps) === null || _b === void 0 ? void 0 : _b.call(_a, {
                     scrollEnabled: true
                 });
+                if (Platform.OS === 'web') {
+                    //@ts-ignore
+                    scrollRef.current.style.overflowY = 'scroll';
+                    //@ts-ignore
+                    scrollRef.current.style.touchAction = 'auto';
+                }
                 (_c = ref.current) === null || _c === void 0 ? void 0 : _c.modifyGesturesForLayout(id, scrollLayout.current, scrollOffset.current);
             }
             else {
@@ -32,22 +39,30 @@ function useScrollHandlers(id, ref) {
                 (_e = (_d = scrollRef.current) === null || _d === void 0 ? void 0 : _d.setNativeProps) === null || _e === void 0 ? void 0 : _e.call(_d, {
                     scrollEnabled: false
                 });
+                if (Platform.OS === 'web') {
+                    //@ts-ignore
+                    scrollRef.current.style.touchAction = 'none';
+                    //@ts-ignore
+                    scrollRef.current.style.overflowY = 'hidden';
+                }
                 (_f = ref.current) === null || _f === void 0 ? void 0 : _f.modifyGesturesForLayout(id, undefined, 0);
             }
         });
         return function () {
             subscription === null || subscription === void 0 ? void 0 : subscription.unsubscribe();
         };
-    });
+    }, [id, ref]);
     var onLayout = function (event) {
+        var _a;
         scrollLayout.current = event.nativeEvent.layout;
+        (_a = ref.current) === null || _a === void 0 ? void 0 : _a.modifyGesturesForLayout(id, undefined, 0);
     };
     return {
         scrollEnabled: false,
         onScroll: onScroll,
         ref: scrollRef,
         onLayout: onLayout,
-        scrollEventThrottle: 30
+        scrollEventThrottle: 200
     };
 }
 export default useScrollHandlers;

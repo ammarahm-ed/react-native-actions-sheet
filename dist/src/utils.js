@@ -1,9 +1,9 @@
-import { Dimensions, Platform, StatusBar } from "react-native";
+import { Dimensions, Platform, StatusBar } from 'react-native';
 export function getDeviceHeight(statusBarTranslucent) {
-    if (Platform.OS === "ios")
-        return Dimensions.get("screen").height;
+    if (Platform.OS === 'ios')
+        return Dimensions.get('screen').height;
     var currentStatusbarHeight = StatusBar.currentHeight || 0;
-    var height = Dimensions.get("window").height + currentStatusbarHeight - 3;
+    var height = Dimensions.get('window').height + currentStatusbarHeight - 3;
     if (!statusBarTranslucent) {
         return height - currentStatusbarHeight;
     }
@@ -12,18 +12,18 @@ export function getDeviceHeight(statusBarTranslucent) {
 export var getElevation = function (elevation) {
     return {
         elevation: elevation,
-        shadowColor: "black",
+        shadowColor: 'black',
         shadowOffset: { width: 0.3 * elevation, height: 0.5 * elevation },
         shadowOpacity: 0.2,
         shadowRadius: 0.7 * elevation
     };
 };
 export var SUPPORTED_ORIENTATIONS = [
-    "portrait",
-    "portrait-upside-down",
-    "landscape",
-    "landscape-left",
-    "landscape-right",
+    'portrait',
+    'portrait-upside-down',
+    'landscape',
+    'landscape-left',
+    'landscape-right',
 ];
 export var waitAsync = function (ms) {
     return new Promise(function (resolve) {

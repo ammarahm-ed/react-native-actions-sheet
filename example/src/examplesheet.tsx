@@ -6,12 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import ActionSheet, {
-  registerSheet,
-  SheetManager,
-  SheetProps,
-  ActionSheetRef,
-} from '../..';
+import ActionSheet, {ActionSheetRef, SheetManager, SheetProps} from '../..';
 import useScrollHandlers from '../../src/hooks/use-scroll-handlers';
 
 const colors = ['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'];
@@ -22,7 +17,6 @@ const items = [
 function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
   const actionSheetRef = useRef<ActionSheetRef>(null);
   const scrollHandlers = useScrollHandlers<ScrollView>('1', actionSheetRef);
-
   return (
     <ActionSheet
       id={sheetId}
@@ -30,7 +24,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
       onBeforeShow={() => {
         console.log('sheet payload', payload?.data);
       }}
-      snapPoints={[30, 60]}
+      snapPoints={[35, 60]}
       initialSnapIndex={0}
       statusBarTranslucent
       drawUnderStatusBar={true}
@@ -45,7 +39,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
           {colors.map(color => (
             <TouchableOpacity
               onPress={() => {
-                actionSheetRef.current?.snapToOffset(500);
+                actionSheetRef.current?.snapToOffset(20);
               }}
               key={color}
               style={[
@@ -63,6 +57,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
             style={styles.input}
             multiline={true}
             placeholder="Write your text here"
+            defaultValue="Write your text here"
           />
 
           <View>
@@ -70,7 +65,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
               <TouchableOpacity
                 key={item}
                 onPress={() => {
-                  SheetManager.hide(sheetId, null);
+                  SheetManager.hide(sheetId);
                 }}
                 style={styles.listItem}>
                 <View
@@ -143,5 +138,3 @@ const styles = StyleSheet.create({
 });
 
 export default ExampleSheet;
-
-registerSheet('example-sheet', ExampleSheet);

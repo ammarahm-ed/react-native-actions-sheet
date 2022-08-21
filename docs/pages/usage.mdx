@@ -1,0 +1,43 @@
+import { Callout } from "nextra-theme-docs";
+
+# Basic usage
+
+Import `ActionSheet`.
+
+```tsx
+import ActionSheet from "react-native-actions-sheet";
+```
+
+Then create your ActionSheet inside any component and attach a `ref` to it.
+
+```tsx
+function App() {
+  const actionSheetRef = useRef<ActionSheetRef>(null);
+
+  return (
+    <ActionSheet ref={actionSheetRef}>
+      <Text>Hi, I am here.</Text>
+    </ActionSheet>
+  );
+}
+```
+
+Present the ActionSheet by calling `show` method on the ref.
+
+```ts
+actionSheetRef.current?.show();
+```
+
+And hide it by calling `hide` method on the ref.
+
+```ts
+actionSheetRef.current?.hide();
+```
+
+<Callout
+  type="warning"
+>
+  While the above is fully functional it's not scalable when you have many
+  ActionSheets in the app, it is recommended that you implement ActionSheets in
+  your app using [Sheet Manager](/guides/sheetmanager) for more scalability.
+</Callout>

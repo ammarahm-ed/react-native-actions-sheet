@@ -1,20 +1,28 @@
-import React, { useEffect, useReducer, useState } from "react";
-import { actionSheetEventManager } from "./eventmanager";
-import { SheetManager } from "./sheetmanager";
+/* eslint-disable curly */
+import React, { useEffect, useReducer, useState } from 'react';
+import { actionSheetEventManager } from './eventmanager';
 /**
  * An object that holds all the sheet components against their ids.
  */
-var sheetsRegistry = {};
+export var sheetsRegistry = {};
 // Registers your Sheet with the SheetProvider.
-export function registerSheet(id, Sheet, context) {
+export function registerSheet(id, Sheet) {
+    var contexts = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        contexts[_i - 2] = arguments[_i];
+    }
     if (!id || !Sheet)
         return;
-    context = context || "global";
-    var registry = !sheetsRegistry[context]
-        ? (sheetsRegistry[context] = {})
-        : sheetsRegistry[context];
-    registry[id] = Sheet;
-    actionSheetEventManager.publish("".concat(context, "-on-register"));
+    if (!contexts || contexts.length === 0)
+        contexts = ['global'];
+    for (var _a = 0, contexts_1 = contexts; _a < contexts_1.length; _a++) {
+        var context = contexts_1[_a];
+        var registry = !sheetsRegistry[context]
+            ? (sheetsRegistry[context] = {})
+            : sheetsRegistry[context];
+        registry[id] = Sheet;
+        actionSheetEventManager.publish("".concat(context, "-on-register"));
+    }
 }
 /**
  * The SheetProvider makes available the sheets in a given context. The default context is
@@ -36,7 +44,7 @@ registerSheet('local-sheet', LocalSheet,'local-context');
  * @returns
  */
 function SheetProvider(_a) {
-    var _b = _a.context, context = _b === void 0 ? "global" : _b, children = _a.children;
+    var _b = _a.context, context = _b === void 0 ? 'global' : _b, children = _a.children;
     var _c = useReducer(function (x) { return x + 1; }, 0), forceUpdate = _c[1];
     var sheetIds = Object.keys(sheetsRegistry[context] || {});
     var onRegister = React.useCallback(function () {
@@ -48,7 +56,7 @@ function SheetProvider(_a) {
         return function () {
             unsub === null || unsub === void 0 ? void 0 : unsub.unsubscribe();
         };
-    }, [onRegister]);
+    }, [context, onRegister]);
     var renderSheet = function (sheetId) { return (<RenderSheet key={sheetId} id={sheetId} context={context}/>); };
     return (<>
       {children}
@@ -60,31 +68,40 @@ var RenderSheet = function (_a) {
     var _b = useState(), payload = _b[0], setPayload = _b[1];
     var _c = useState(false), visible = _c[0], setVisible = _c[1];
     var Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
-    if (!Sheet)
-        return null;
-    var onShow = function (data) {
+    var onShow = React.useCallback(function (data, ctx) {
+        if (ctx === void 0) { ctx = 'global'; }
+        if (ctx !== context)
+            return;
         setPayload(data);
         setVisible(true);
-    };
-    var onClose = function () {
+    }, [context]);
+    var onClose = React.useCallback(function () {
         setVisible(false);
         setPayload(undefined);
-    };
+    }, []);
+    var onHide = React.useCallback(function (data, ctx) {
+        if (ctx === void 0) { ctx = 'global'; }
+        if (ctx !== context)
+            return;
+        actionSheetEventManager.publish("hide_".concat(id), data);
+    }, [context, id]);
     useEffect(function () {
-        var _a, _b;
         if (visible) {
-            (_b = (_a = SheetManager.get(id)) === null || _a === void 0 ? void 0 : _a.current) === null || _b === void 0 ? void 0 : _b.show();
+            actionSheetEventManager.publish("show_".concat(id), payload, context);
         }
-    }, [visible]);
+    }, [context, id, payload, visible]);
     useEffect(function () {
         var subs = [
-            actionSheetEventManager.subscribe("show_".concat(id), onShow),
+            actionSheetEventManager.subscribe("show_wrap_".concat(id), onShow),
             actionSheetEventManager.subscribe("onclose_".concat(id), onClose),
+            actionSheetEventManager.subscribe("hide_wrap_".concat(id), onHide),
         ];
         return function () {
             subs.forEach(function (s) { return s.unsubscribe(); });
         };
-    }, [id, context]);
+    }, [id, context, onShow, onHide, onClose]);
+    if (!Sheet)
+        return null;
     return !visible ? null : <Sheet sheetId={id} payload={payload}/>;
 };
 export default SheetProvider;

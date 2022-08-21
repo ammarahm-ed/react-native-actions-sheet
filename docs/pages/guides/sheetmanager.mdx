@@ -1,0 +1,63 @@
+# Usage with SheetManager
+
+`SheetManager` is great because it helps you save lots of development time. One great feature is that you can reuse the same ActionSheet in the app and don't have to create or define it in multiple places. Another is that you don't have to write boilerplate for every ActionSheet component. Everything just works.
+
+Import `ActionSheet`.
+
+```tsx
+import ActionSheet, { SheetProps } from "react-native-actions-sheet";
+```
+
+Create your ActionSheet component and export it.
+
+```tsx
+function ExampleSheet(props: SheetProps) {
+  return (
+    <ActionSheet id={props.sheetId}>
+      <View>
+        <Text>Hello World</Text>
+      </View>
+    </ActionSheet>
+  );
+}
+
+export default ExampleSheet;
+```
+
+Create a `sheets.tsx` file and import your sheet then register it.
+
+```ts
+import ExampleSheet from "example-sheet.tsx";
+registerSheet("example-sheet", ExampleSheet);
+
+export {};
+```
+
+In `App.js` import `sheets.ts` and wrap your app in `SheetProvider`.
+
+```tsx
+import { SheetProvider } from "react-native-actions-sheet";
+import "sheets.tsx";
+
+function App() {
+  return (
+    <SheetProvider>
+      {
+        // your app components
+      }
+    </SheetProvider>
+  );
+}
+```
+
+Open the ActionSheet from anywhere in the app.
+
+```jsx
+SheetManager.show("example-sheet");
+```
+
+Hide the ActionSheet
+
+```jsx
+SheetManager.hide("example-sheet");
+```

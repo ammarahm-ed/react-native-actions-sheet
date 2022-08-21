@@ -1,0 +1,41 @@
+import { Callout } from "nextra-theme-docs";
+
+# registerSheet
+
+A function used to register an `ActionSheet` with `SheetProvider`.
+
+Parameters:
+
+`id`
+
+Id for the sheet. It should be something unique and human readable. For example, `confirm-sheet`.
+
+| Type   | Required |
+| ------ | -------- |
+| string | true     |
+
+`Sheet`
+
+The component that contains the action sheet.
+
+| Type                | Required |
+| ------------------- | -------- |
+| `React.ElementType` | true     |
+
+`contexts`
+
+If you have multiple `SheetProviders` in the app, you can provide a list of contexts where the action sheet can render.
+
+| Type          | Required |
+| ------------- | -------- |
+| `...string[]` | false    |
+
+```tsx
+registerSheet("example-sheet", ExampleSheet, "global", "local-context");
+```
+
+<Callout>
+  A `SheetProvider` without a `context` prop has "global" context by default.
+  When you register a action sheet without any context, it's automatically
+  registered with the "global" SheetProvider.
+</Callout>

@@ -1,0 +1,35 @@
+# Using `ScrollView`
+
+Using `ScrollView` or `FlatList` inside a action sheet can become tricky because you have to handle gestures along with scrolling at the same time. I have finally been able to work out a simple solution that should work with any ScrollView based components.
+
+The [`useScrollHandlers`](/reference/usescrollhandler) hook let's us control the `ScrollView` properly inside ActionSheets.
+
+```tsx
+import ActionSheet, {
+  useScrollHandlers,
+  ActionSheetRef,
+  SheetProps,
+} from 'react-native-actions-sheet';
+
+const ExampleSheet = (props: SheetProps) => {
+  const actionSheetRef = useRef<ActionSheetRef>(null);
+  const scrollHandlers = useScrollHandlers<ScrollView>(
+    'scrollview-1',
+    actionSheetRef,
+  );
+
+  return (
+    <ActionSheet ref={actionSheetRef}>
+      <ScrollView {...scrollHandlers}></ScrollView>
+    </ActionSheet>
+  );
+};
+```
+
+## `ScrollView` behaviour in various states:
+
+1.  ActionSheet not fully opened: When the action sheet is not fully opened, scrolling is disabled.
+2.  ActionSheet fully opened: Scrolling is enabled in downward direction where the content offset would increase. So if you swipe down, action sheet will start to close and if you swipe up, scrollview will scroll.
+3.  Scroll Offset > 0: When user has scrolled away from 0, then swiping up and down both will result in scrolling inside the ScrollView area.
+4.  User swipes outside ScrollView area: action sheet will move always.
+5.  User scrolls to top & keeps swiping down: Nothing happens or `RefreshControl` will work. The action sheet will **not** move. User will have to lift their finger and swipe down again to close the action sheet or move it to different snap point.

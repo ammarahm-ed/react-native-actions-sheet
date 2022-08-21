@@ -1,0 +1,35 @@
+import { Callout } from "nextra-theme-docs";
+
+# SheetProvider props
+
+`SheetProvider` wraps your app and is responsible for rendering all the action sheets.
+
+Props:
+
+## `context`
+
+When you want to show action sheet from a modal, you must create a new `SheetProvider` inside the modal with a unique context id. Than you have to register the action sheet you want to show with that context id.
+
+```ts
+// Normal action sheet that is used with the global sheet provider.
+registerSheet("example-sheet", ExampleSheet);
+// You can also register the action sheet with multiple sheet providers.
+registerSheet(
+  "example-sheet-nested",
+  ExampleSheet,
+  "global",
+  "local",
+  "local-local"
+);
+```
+
+<Callout>
+  Registering an action sheet multiple times with a differnet context is
+  completely normal. At idle no action sheets are kept in the render tree hence
+  registering multiple times has no overhead in terms of performance or memory.
+</Callout>
+
+<Callout>
+  Using the `SheetProvider` is optional. However it is the recommended way to
+  handle action sheets in your app.
+</Callout>

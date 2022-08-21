@@ -1,6 +1,6 @@
-import { RefObject } from "react";
-import { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from "react-native";
-import { ActionSheetRef } from "../index";
+import { RefObject } from 'react';
+import { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { ActionSheetRef } from '../index';
 /**
  * If you are using a `ScrollView` or `FlatList` in ActionSheet. You must attach `scrollHandlers`
  * with it to enable scrolling.

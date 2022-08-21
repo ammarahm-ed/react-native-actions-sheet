@@ -1,3 +1,4 @@
+/* eslint-disable curly */
 export type EventHandler = (...args: any[]) => void;
 export type EventHandlerSubscription = {
   unsubscribe: () => void;
@@ -20,9 +21,9 @@ class EventManager {
   }
 
   subscribe(name: string, handler: EventHandler, once = false) {
-    if (!name || !handler) throw new Error("name and handler are required.");
-    this._registry.set(handler, { name, once });
-    return { unsubscribe: () => this.unsubscribe(name, handler) };
+    if (!name || !handler) throw new Error('name and handler are required.');
+    this._registry.set(handler, {name, once});
+    return {unsubscribe: () => this.unsubscribe(name, handler)};
   }
 
   unsubscribe(_name: string, handler: EventHandler) {

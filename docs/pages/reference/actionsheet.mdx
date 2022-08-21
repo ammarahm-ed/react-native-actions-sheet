@@ -1,0 +1,329 @@
+# ActionSheet props
+
+## `id`
+
+A unique id for the action sheet that is required to present it from anywhere in the app using the [`SheetManager`](/reference/sheetmanager).
+
+| Type | Required |
+| ---- | -------- |
+| id   | false    |
+
+## `ref`
+
+Set this ref if you need to use [`ActionSheetRef`](/reference/actionsheetref) methods.
+
+| Type | Required |
+| ---- | -------- |
+| ref  | false    |
+
+## `testIDs`
+
+An object containing test ids for various views in the actionSheet.
+
+`modal`: 'Test id for the modal'
+
+`root`: Test id for the root container when `isModal` is set to `false`.
+
+`backdrop`: Test id for the backdrop. Can be used to close the action sheet in e2e tests.
+
+`sheet`: Test id for the container that wraps all your components inside the sheet.
+
+| Type   | Required |
+| ------ | -------- |
+| object | no       |
+
+## `animated`
+
+Disable all animations
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `true`
+
+## `gestureEnabled`
+
+Controls whether the gestures should be enabled on the action sheet.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `true`
+
+## `isModal`
+
+Setting this to `false` will make the action sheet use an absolute positioned `View` as a container. This is automatically enabled when background interaction is enabled.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+default:`true`
+
+## `zIndex`
+
+The default zIndex of wrapper `View` when `isModal` is set to `false` or background interaction is enabled is `9999`. You can change it here.
+
+| Type   | Required |
+| ------ | -------- |
+| number | no       |
+
+default:`9999`
+
+## `payload`
+
+Since `SheetManager.show` is now an async function that resolves when the action sheet closed, you can return some data to the caller by setting this prop. When the Sheet closes the promise will resolve with the data.
+
+| Type  | Required |
+| ----- | -------- |
+| `any` | no       |
+
+## `backgroundInteractionEnabled`
+
+Enable background interation. This way the user will be able to interact with the UI elements in background of the action sheet when it is opened.
+
+| Type      | Required |
+| --------- | -------- |
+| `boolean` | no       |
+
+Default: `false`
+
+## `snapPoints`
+
+Provide snap points ranging from 0 to 100. ActionSheet will snap between these points. If no snap points are provided, the default is a single snap point set to `100` which means that the sheet will be opened 100% on becoming visible.
+
+| Type       | Required |
+| ---------- | -------- |
+| `number[]` | no       |
+
+Default: `[100]`
+
+## `initialSnapIndex`
+
+When you have set the `snapPoints` prop. You can use this prop to set the inital snap point for the sheet. For example if i have snap points set to `[30,60,100]` then setting this prop to `1` would mean the action sheet will snap to 60% on becoming visible.
+
+| Type       | Required |
+| ---------- | -------- |
+| `number[]` | no       |
+
+Default: `0`
+
+## `indicatorStyle`
+
+The top indicator bar on the action sheet is a regular `View` component and can be styles as such.
+
+| Type        | Required |
+| ----------- | -------- |
+| `ViewStyle` | no       |
+
+## `containerStyle`
+
+Style the main container in the action sheet that wraps your content.
+
+| Type   | Required |
+| ------ | -------- |
+| Object | no       |
+
+## `openAnimationConfig`
+
+Modify the animation when the sheet opens.
+
+| Type                             | Required |
+| -------------------------------- | -------- |
+| `Animated.SpringAnimationConfig` | no       |
+
+## `closeAnimationConfig`
+
+Modify the animation when the sheet closes.
+
+| Type                             | Required |
+| -------------------------------- | -------- |
+| `Animated.SpringAnimationConfig` | no       |
+
+## `CustomHeaderComponent`
+
+A custom header component if any that replaces the default indicator bar on top.
+
+| Type             | Required |
+| ---------------- | -------- |
+| React. ReactNode | no       |
+
+## `ExtraOverlayComponent`
+
+Render a component that is absolutely positioned over the action sheet. This is useful for rendering toasts & in-app notifications.
+
+| Type             | Required |
+| ---------------- | -------- |
+| React. ReactNode | no       |
+
+## `keyboardHandlerEnabled`
+
+The action sheet uses it's own keyboard handling. Set this prop to false to disable it if needed.
+
+| Type      | Required |
+| --------- | -------- |
+| `boolean` | no       |
+
+## `headerAlwaysVisible`
+
+By default when the `gesturesEnabled` prop is set to false, the top indicator bar or any custom header component is hidden. Set this to true to keep the header always visible.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `false`
+
+## `closeOnTouchBackdrop`
+
+Should the action sheet close when touching the backdrop area above the action sheet.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `true`
+
+## `springOffset`
+
+Choose how far off the user needs to drag the action sheet to make it snap to next point. The default is `50` which means that user needs to drag the sheet up or down at least 50 display pixels for it to close or move to next snap point. Otherwise it will just return to the initial position.
+
+| Type   | Required |
+| ------ | -------- |
+| number | no       |
+
+Default: `50`
+
+## `elevation`
+
+Set elevation to the ActionSheet container.
+
+| Type   | Required |
+| ------ | -------- |
+| number | no       |
+
+Default: `5`
+
+## `overlayColor`
+
+Color of the overlay/backdrop.
+
+| Type   | Required |
+| ------ | -------- |
+| string | no       |
+
+Default: `"black"`
+
+## `defaultOverlayOpacity`
+
+Default opacity of the overlay/backdrop.
+
+| Type         | Required |
+| ------------ | -------- |
+| number 0 - 1 | no       |
+
+Default: `0.3`
+
+## `closable`
+
+This will make sure that the action sheet remains open always after opened first time.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `true`
+
+## `statusBarTranslucent`
+
+Determine whether the modal should go under the system statusbar.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `true`
+
+## `closeOnPressBack`
+
+Will the ActionSheet close on `hardwareBackPress` event.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `true`
+
+## `drawUnderStatusBar`
+
+Draw action sheet container under the status bar.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+Default: `true`
+
+## `overdrawEnabled`
+
+When the action sheet is pulled beyond top position, it overdraws and bounces back. Set this to false if you need to disable this behaviour.
+
+| Type      | Required |
+| --------- | -------- |
+| `boolean` | no       |
+
+Default: `true`
+
+## `overdrawFactor`
+
+Set how quickly the sheet will overdraw on pulling beyond top position. A lower value means faster overdraw.
+
+| Type     | Required |
+| -------- | -------- |
+| `number` | no       |
+
+Default: `15`
+
+## `overdrawSize`
+
+Set the height of the overdraw View. If you set the `overdrawFactor` to a lower value, you should increase the size of the overdraw to prevent the action sheet from showing background views etc.
+
+| Type     | Required |
+| -------- | -------- |
+| `number` | no       |
+
+Default: `100`
+
+## `onChange(positon:number, height:number)`
+
+A function that is called whenever the action sheet moves with the current position. When the `position` value is `0` it means the action sheet has reached top.
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |
+
+## `onClose`
+
+A function called when the action sheet closes
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |
+
+## `onOpen`
+
+A function called when the action sheet opens.
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |
+
+## `onBeforeShow(data:any)`
+
+A function called just before the action sheet is ready to be shown.
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |

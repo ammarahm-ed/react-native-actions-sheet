@@ -1,0 +1,31 @@
+# ShowOptions
+
+## `payload`
+
+Any data that you want the action sheet to recieve before it opens. This data will be available in `props` of action sheet component or in `onBeforeShow` prop on the `ActionSHeet before the action sheet is presented to the user.
+
+| Type  | Required |
+| ----- | -------- |
+| `any` | false    |
+
+## `context`
+
+Provide the context of the `SheetProvider` where you want to present the action sheet.
+
+| Type     | Required |
+| -------- | -------- |
+| `string` | false    |
+
+## `onClose`
+
+A callback function that is called when the action sheet closes.
+
+Parameters:
+
+`data`
+
+Any data that is sent from the `hide` function of `SheetManager` can be recieved here.
+
+| Type       | Required |
+| ---------- | -------- |
+| `function` | false    |

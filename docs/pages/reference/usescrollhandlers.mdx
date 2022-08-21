@@ -1,0 +1,51 @@
+import { Callout } from "nextra-theme-docs";
+
+# useScrollHandlers
+
+A hook that helps the action sheet behave correctly when a scrollable view is rendered inside it. It takes two parameters, an id for the `ScrollView` or `FlatList` and the action sheet ref.
+
+Parameters:
+
+`id`
+
+A unique id for the `ScrollView` or `FlatList`. This id has to be unique per action sheet component.
+
+| Type   | Required |
+| ------ | -------- |
+| string | true     |
+
+`ref`
+
+A ref of the action sheet that wraps the `ScrollView` component.
+
+| Type                                                     | Required |
+| -------------------------------------------------------- | -------- |
+| [`RefObject<ActionSheetRef>`](/reference/actionsheetref) | true     |
+
+```tsx
+import ActionSheet, {
+  useScrollHandlers,
+  ActionSheetRef,
+  SheetProps,
+} from "react-native-actions-sheet";
+
+const ExampleSheet = (props: SheetProps) => {
+  const actionSheetRef = useRef<ActionSheetRef>(null);
+  const scrollHandlers = useScrollHandlers<ScrollView>(
+    "scrollview-1",
+    actionSheetRef
+  );
+
+  return (
+    <ActionSheet ref={actionSheetRef}>
+      <ScrollView {...scrollHandlers}></ScrollView>
+    </ActionSheet>
+  );
+};
+```
+
+<Callout>
+  Internally the hook simply provides information about the ScrollView layout &
+  it's current position based on which the action sheet decides whether
+  scrolling should be enabled or not.
+</Callout>

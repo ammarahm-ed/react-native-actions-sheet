@@ -1,5 +1,5 @@
-import React from "react";
-import { Animated, KeyboardAvoidingView, ViewStyle } from "react-native";
+import React from 'react';
+import {Animated, ViewStyle} from 'react-native';
 
 export type ActionSheetProps = {
   children: React.ReactNode;
@@ -47,15 +47,15 @@ export type ActionSheetProps = {
    * The open animation is a spring animation. You can modify it using the config below.
    */
   openAnimationConfig?: Omit<
-    Omit<Animated.SpringAnimationConfig, "toValue">,
-    "useNativeDriver"
+    Omit<Animated.SpringAnimationConfig, 'toValue'>,
+    'useNativeDriver'
   >;
   /**
-   * The open animation is a timing animation. You can modify it by providing a custom config.
+   * The open animation is a spring animation. You can modify it by providing a custom config.
    */
   closeAnimationConfig?: Omit<
-    Omit<Animated.TimingAnimationConfig, "toValue">,
-    "useNativeDriver"
+    Omit<Animated.SpringAnimationConfig, 'toValue'>,
+    'useNativeDriver'
   >;
   /**
    * Provide snap points ranging from 0 to 100. ActionSheet will snap between these points. If no snap points
@@ -77,12 +77,10 @@ export type ActionSheetProps = {
   backgroundInteractionEnabled?: boolean;
 
   /**
-   * Props for the internal `KeyboardAvoidingView`.
+   * The action sheet uses it's own keyboard handling. Set this prop to `false` to disable it if needed.
    */
-  keyboardAvoidingViewProps?: Omit<
-    Omit<KeyboardAvoidingView["props"], "style">,
-    "children"
-  >;
+  keyboardHandlerEnabled?: boolean;
+
   /**
    * Add elevation to the ActionSheet container.
    *
@@ -190,9 +188,18 @@ export type ActionSheetProps = {
   isModal?: boolean;
 
   /**
+   * The default zIndex of wrapper `View` when `isModal` is set to false or background interaction is enabled is 9999. You can change it here.
+   */
+
+  zIndex?: number;
+
+  /**
    * Test ID for sheet modal.
+   *
+   * @deprecated Use `testIDs.modal` instead.
    */
   testID?: string;
+
   /**
    * Test id for various sheet components for testing
    */
@@ -201,6 +208,19 @@ export type ActionSheetProps = {
      * Test id for backdrop. Can be used to close sheet in e2e tests.
      */
     backdrop?: string;
+    /**
+     * Test id for the modal
+     */
+    modal?: string;
+
+    /**
+     * Test id for the container that wraps all your components inside the sheet.
+     */
+    sheet?: string;
+    /**
+     * Test id for the root container when `isModal` is set to `false`.
+     */
+    root?: string;
   };
 
   /**
@@ -221,5 +241,8 @@ export type ActionSheetProps = {
    * */
   onOpen?: () => void;
 
-  onChange?: (position: number) => void;
+  /**
+   * Event called when the position of the ActionSheet changes. When the `position` value is 0, it means that the ActionSheet has reached top.
+   */
+  onChange?: (position: number, height: number) => void;
 };

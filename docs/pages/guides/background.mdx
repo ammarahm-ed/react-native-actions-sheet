@@ -1,0 +1,15 @@
+# Background interaction
+
+One of the main reasons why the library has gone under a complete rewrite is Background interaction. When background interaction is enabled, the ActionSheet uses a regular `View` instead of a `Modal` to make it work. The remaining interaction is exactly the same.
+
+```tsx
+<ActionSheet backgroundInteractionEnabled={true} />
+```
+
+And that's it. Now you can interact the the background. This can be helpful is building Uber, Google Maps like UI where a ActionSheet is always open at the bottom. If you do not want the ActionSheet to close ever, you can use the `closable` prop.
+
+```tsx
+<ActionSheet closable={false} backgroundInteractionEnabled={true} />
+```
+
+Now the ActionSheet can't be closed even with gestures.
