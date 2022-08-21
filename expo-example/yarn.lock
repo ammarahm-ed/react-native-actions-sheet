@@ -8284,9 +8284,10 @@ react-is@^17.0.1:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-17.0.2.tgz#e691d4a8e9c789365655539ab372762b0efb54f0"
   integrity sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==
 
-"react-native-actions-sheet@https://github.com/ammarahm-ed/react-native-actions-sheet#vnext":
+react-native-actions-sheet@^0.8.0:
   version "0.8.0"
-  resolved "https://github.com/ammarahm-ed/react-native-actions-sheet#b54031cdce1917906538f07001be3e50ac0e479e"
+  resolved "https://registry.yarnpkg.com/react-native-actions-sheet/-/react-native-actions-sheet-0.8.0.tgz#9944c38a29704390671ef610eb95cb350a310b24"
+  integrity sha512-mYFeIOGA0bfUzvX3p1T0136z68wg7MHeoZuil/EIp4diOFoKG0AnffxStSwApEFGbz+RinxO/wTCO7szDYgkIg==
 
 react-native-codegen@^0.69.1:
   version "0.69.1"
