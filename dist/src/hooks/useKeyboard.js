@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Keyboard } from "react-native";
+import { useEffect, useState } from 'react';
+import { Keyboard } from 'react-native';
 var emptyCoordinates = Object.freeze({
     screenX: 0,
     screenY: 0,
@@ -37,10 +37,10 @@ export function useKeyboard() {
     };
     useEffect(function () {
         var subscriptions = [
-            Keyboard.addListener("keyboardWillShow", handleKeyboardWillShow),
-            Keyboard.addListener("keyboardDidShow", handleKeyboardDidShow),
-            Keyboard.addListener("keyboardWillHide", handleKeyboardWillHide),
-            Keyboard.addListener("keyboardDidHide", handleKeyboardDidHide),
+            Keyboard.addListener('keyboardWillShow', handleKeyboardWillShow),
+            Keyboard.addListener('keyboardDidShow', handleKeyboardDidShow),
+            Keyboard.addListener('keyboardWillHide', handleKeyboardWillHide),
+            Keyboard.addListener('keyboardDidHide', handleKeyboardDidHide),
         ];
         return function () {
             subscriptions.forEach(function (subscription) { return subscription.remove(); });

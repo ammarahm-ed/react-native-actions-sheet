@@ -1,4 +1,4 @@
-import { ScreenRect } from "react-native";
+import { ScreenRect } from 'react-native';
 export declare function useKeyboard(): {
     keyboardShown: boolean;
     coordinates: {
