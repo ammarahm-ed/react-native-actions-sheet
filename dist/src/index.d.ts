@@ -1,6 +1,6 @@
-import React from "react";
-import { LayoutRectangle } from "react-native";
-import type { ActionSheetProps } from "./types";
+import React from 'react';
+import { LayoutRectangle } from 'react-native';
+import type { ActionSheetProps } from './types';
 export declare type ActionSheetRef = {
     /**
      * Show the ActionSheet.
