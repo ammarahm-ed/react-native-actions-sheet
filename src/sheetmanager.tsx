@@ -1,11 +1,11 @@
-import { RefObject } from "react";
-import { ActionSheetRef } from ".";
-import { actionSheetEventManager } from "./eventmanager";
-import { sheetsRegistry } from "./provider";
+import {RefObject} from 'react';
+import {ActionSheetRef} from '.';
+import {actionSheetEventManager} from './eventmanager';
+import {sheetsRegistry} from './provider';
 
 // Array of all the ids of ActionSheets currently rendered in the app.
 const ids: string[] = [];
-const refs: { [name: string]: RefObject<ActionSheetRef> } = {};
+const refs: {[name: string]: RefObject<ActionSheetRef>} = {};
 
 class SM {
   /**
@@ -31,9 +31,9 @@ class SM {
        * Provide `context` of the `SheetProvider` where you want to show the action sheet.
        */
       context?: string;
-    }
+    },
   ): Promise<ReturnPayload> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const handler = (data: ReturnPayload) => {
         options?.onClose?.(data);
         sub?.unsubscribe();
@@ -53,7 +53,7 @@ class SM {
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
         options?.payload,
-        options?.context
+        options?.context,
       );
     });
   }
@@ -75,9 +75,9 @@ class SM {
        * Provide `context` of the `SheetProvider` to hide the action sheet.
        */
       context?: string;
-    }
+    },
   ): Promise<ReturnPayload> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const hideHandler = (data: ReturnPayload) => {
         sub?.unsubscribe();
         resolve(data);
@@ -98,7 +98,7 @@ class SM {
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `hide_wrap_${id}` : `hide_${id}`,
         options?.payload,
-        options?.context
+        options?.context,
       );
     });
   }
@@ -107,13 +107,13 @@ class SM {
    * Hide all the opened ActionSheets.
    */
   hideAll() {
-    ids.forEach((id) => actionSheetEventManager.publish(`hide_${id}`));
+    ids.forEach(id => actionSheetEventManager.publish(`hide_${id}`));
   }
 
   registerRef = (
     id: string,
     context: string,
-    instance: RefObject<ActionSheetRef>
+    instance: RefObject<ActionSheetRef>,
   ) => {
     refs[`${id}:${context}`] = instance;
   };
@@ -123,7 +123,7 @@ class SM {
    * Get internal ref of a sheet by the given id.
    * @returns
    */
-  get = (id: string, context = "global") => {
+  get = (id: string, context = 'global') => {
     return refs[`${id}:${context}`];
   };
 

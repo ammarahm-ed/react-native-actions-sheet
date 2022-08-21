@@ -1,3 +1,4 @@
+/* eslint-disable curly */
 import {useEffect, useState} from 'react';
 import {actionSheetEventManager} from '../eventmanager';
 

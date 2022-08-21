@@ -34,8 +34,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import { actionSheetEventManager } from "./eventmanager";
-import { sheetsRegistry } from "./provider";
+import { actionSheetEventManager } from './eventmanager';
+import { sheetsRegistry } from './provider';
 // Array of all the ids of ActionSheets currently rendered in the app.
 var ids = [];
 var refs = {};
@@ -50,7 +50,7 @@ var SM = /** @class */ (function () {
          * @returns
          */
         this.get = function (id, context) {
-            if (context === void 0) { context = "global"; }
+            if (context === void 0) { context = 'global'; }
             return refs["".concat(id, ":").concat(context)];
         };
         this.add = function (id, context) {

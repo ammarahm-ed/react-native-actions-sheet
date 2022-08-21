@@ -1,11 +1,12 @@
-import React, { ReactNode, useEffect, useReducer, useState } from "react";
-import { actionSheetEventManager } from "./eventmanager";
+/* eslint-disable curly */
+import React, {ReactNode, useEffect, useReducer, useState} from 'react';
+import {actionSheetEventManager} from './eventmanager';
 
 /**
  * An object that holds all the sheet components against their ids.
  */
 export const sheetsRegistry: {
-  [context: string]: { [id: string]: React.ElementType };
+  [context: string]: {[id: string]: React.ElementType};
 } = {};
 
 export interface SheetProps<BeforeShowPayload = any> {
@@ -20,7 +21,7 @@ export function registerSheet(
   ...contexts: string[]
 ) {
   if (!id || !Sheet) return;
-  if (!contexts || contexts.length === 0) contexts = ["global"];
+  if (!contexts || contexts.length === 0) contexts = ['global'];
   for (let context of contexts) {
     const registry = !sheetsRegistry[context]
       ? (sheetsRegistry[context] = {})
@@ -50,13 +51,13 @@ registerSheet('local-sheet', LocalSheet,'local-context');
  * @returns 
  */
 function SheetProvider({
-  context = "global",
+  context = 'global',
   children,
 }: {
   context?: string;
   children: ReactNode;
 }) {
-  const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
   const sheetIds = Object.keys(sheetsRegistry[context] || {});
   const onRegister = React.useCallback(() => {
     // Rerender when a new sheet is added.
@@ -66,12 +67,12 @@ function SheetProvider({
   useEffect(() => {
     const unsub = actionSheetEventManager.subscribe(
       `${context}-on-register`,
-      onRegister
+      onRegister,
     );
     return () => {
       unsub?.unsubscribe();
     };
-  }, [onRegister]);
+  }, [context, onRegister]);
 
   const renderSheet = (sheetId: string) => (
     <RenderSheet key={sheetId} id={sheetId} context={context} />
@@ -85,33 +86,38 @@ function SheetProvider({
   );
 }
 
-const RenderSheet = ({ id, context }: { id: string; context: string }) => {
+const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [payload, setPayload] = useState();
   const [visible, setVisible] = useState(false);
   const Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
-  if (!Sheet) return null;
 
-  const onShow = (data: any, ctx = "global") => {
-    if (ctx !== context) return;
-    setPayload(data);
-    setVisible(true);
-  };
+  const onShow = React.useCallback(
+    (data: any, ctx = 'global') => {
+      if (ctx !== context) return;
+      setPayload(data);
+      setVisible(true);
+    },
+    [context],
+  );
 
-  const onClose = () => {
+  const onClose = React.useCallback(() => {
     setVisible(false);
     setPayload(undefined);
-  };
+  }, []);
 
-  const onHide = (data: any, ctx = "global") => {
-    if (ctx !== context) return;
-    actionSheetEventManager.publish(`hide_${id}`, data);
-  };
+  const onHide = React.useCallback(
+    (data: any, ctx = 'global') => {
+      if (ctx !== context) return;
+      actionSheetEventManager.publish(`hide_${id}`, data);
+    },
+    [context, id],
+  );
 
   useEffect(() => {
     if (visible) {
       actionSheetEventManager.publish(`show_${id}`, payload, context);
     }
-  }, [visible]);
+  }, [context, id, payload, visible]);
 
   useEffect(() => {
     let subs = [
@@ -120,9 +126,11 @@ const RenderSheet = ({ id, context }: { id: string; context: string }) => {
       actionSheetEventManager.subscribe(`hide_wrap_${id}`, onHide),
     ];
     return () => {
-      subs.forEach((s) => s.unsubscribe());
+      subs.forEach(s => s.unsubscribe());
     };
-  }, [id, context]);
+  }, [id, context, onShow, onHide, onClose]);
+
+  if (!Sheet) return null;
 
   return !visible ? null : <Sheet sheetId={id} payload={payload} />;
 };

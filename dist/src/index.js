@@ -60,7 +60,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var _2 = useSheetManager({
         id: props.id,
         onHide: function (data) {
-            hideSheet(data);
+            hideSheet(undefined, data);
         },
         onBeforeShow: props.onBeforeShow,
         onContextUpdate: function (context) {

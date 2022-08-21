@@ -127,7 +127,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const {visible, setVisible} = useSheetManager({
       id: props.id,
       onHide: data => {
-        hideSheet(data);
+        hideSheet(undefined, data);
       },
       onBeforeShow: props.onBeforeShow,
       onContextUpdate: context => {

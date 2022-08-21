@@ -1,5 +1,5 @@
-import { RefObject } from "react";
-import { ActionSheetRef } from ".";
+import { RefObject } from 'react';
+import { ActionSheetRef } from '.';
 declare class SM {
     /**
      * Show the ActionSheet with a given id.
