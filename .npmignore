@@ -4,8 +4,14 @@
 # Node Module
 node_modules/
 
+# assets/
+assets/
+
+
 # Example
 example/
+docs/
+expo-example/
 #gifs
 gifs/
 index.tsx
@@ -13,4 +19,6 @@ src/
 README.md
 tsconfig.json
 .github/
+.prettierrc.js
+.eslintrc.js
 
