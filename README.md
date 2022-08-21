@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/ammarahm-ed/react-native-actions-sheet/master/assets/screenshot.png"/>
+<img src="https://raw.githubusercontent.com/ammarahm-ed/react-native-actions-sheet/master/assets/graphic.png"/>
 
 <div
 style="width:100%;margin-top:30px;">
