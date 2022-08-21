@@ -8,7 +8,6 @@ export default function Snack() {
   const {theme, systemTheme} = useTheme();
   const currentTheme = theme === 'system' ? systemTheme : theme;
   useLayoutEffect(() => {
-    console.log(theme);
     setReady(true);
   }, []);
 

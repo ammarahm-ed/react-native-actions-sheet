@@ -29,7 +29,7 @@ The new version of ActionSheet introduces some **breaking changes**. Please read
 
 ## Examples
 
-The source code for the example (showcase) app is under the example/ directory. If you want to play with the ActionSheet but don't feel like trying it on a real app, you can run the example project.
+The source code for the example (showcase) app is under the example/ directory. If you want to play with the ActionSheet but don't feel like trying it on a real app, you can run the [example snack](https://snack.expo.dev/@ammarahmed/github.com-ammarahm-ed-react-native-actions-sheet:expo-example).
 
 ## Documentation for v0.7.0 & older
 
