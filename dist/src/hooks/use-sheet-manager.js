@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { actionSheetEventManager } from "../eventmanager";
+import { useEffect, useState } from 'react';
+import { actionSheetEventManager } from '../eventmanager';
 var useSheetManager = function (_a) {
     var id = _a.id, onHide = _a.onHide, onBeforeShow = _a.onBeforeShow, onContextUpdate = _a.onContextUpdate;
     var _b = useState(false), visible = _b[0], setVisible = _b[1];

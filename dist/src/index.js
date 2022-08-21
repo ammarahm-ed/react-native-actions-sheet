@@ -189,6 +189,10 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 }
             }
         });
+        if (Platform.OS === 'web') {
+            document.body.style.overflowY = 'auto';
+            document.documentElement.style.overflowY = 'auto';
+        }
     }, [
         closable,
         hideAnimation,
@@ -382,6 +386,10 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     100;
         opacityAnimation(1);
         returnAnimation();
+        if (Platform.OS === 'web') {
+            document.body.style.overflowY = 'hidden';
+            document.documentElement.style.overflowY = 'hidden';
+        }
     }, [animations.translateY, opacityAnimation, returnAnimation, snapPoints]);
     var getRef = function () { return ({
         show: function () {

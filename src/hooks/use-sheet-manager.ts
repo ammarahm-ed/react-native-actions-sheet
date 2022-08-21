@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { actionSheetEventManager } from "../eventmanager";
+import {useEffect, useState} from 'react';
+import {actionSheetEventManager} from '../eventmanager';
 
 const useSheetManager = ({
   id,
@@ -25,14 +25,14 @@ const useSheetManager = ({
           setTimeout(() => {
             setVisible(true);
           }, 1);
-        }
+        },
       ),
       actionSheetEventManager.subscribe(`hide_${id}`, (data: any) => {
         onHide?.(data);
       }),
     ];
     return () => {
-      subscriptions.forEach((s) => s?.unsubscribe?.());
+      subscriptions.forEach(s => s?.unsubscribe?.());
     };
   }, [id, onHide, onBeforeShow]);
 

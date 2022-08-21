@@ -294,6 +294,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             }
           }
         });
+        if (Platform.OS === 'web') {
+          document.body.style.overflowY = 'auto';
+          document.documentElement.style.overflowY = 'auto';
+        }
       },
       [
         closable,
@@ -514,6 +518,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             100;
         opacityAnimation(1);
         returnAnimation();
+        if (Platform.OS === 'web') {
+          document.body.style.overflowY = 'hidden';
+          document.documentElement.style.overflowY = 'hidden';
+        }
       },
       [animations.translateY, opacityAnimation, returnAnimation, snapPoints],
     );

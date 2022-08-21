@@ -1,13 +1,13 @@
-import { RefObject, useEffect, useRef } from "react";
+import {RefObject, useEffect, useRef} from 'react';
 import {
   LayoutChangeEvent,
   LayoutRectangle,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
-} from "react-native";
-import { actionSheetEventManager } from "../eventmanager";
-import { ActionSheetRef } from "../index";
+} from 'react-native';
+import {actionSheetEventManager} from '../eventmanager';
+import {ActionSheetRef} from '../index';
 
 /**
  * If you are using a `ScrollView` or `FlatList` in ActionSheet. You must attach `scrollHandlers`
@@ -26,44 +26,44 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     ref.current?.modifyGesturesForLayout(
       id,
       scrollLayout.current,
-      scrollOffset.current
+      scrollOffset.current,
     );
   };
 
   useEffect(() => {
     const subscription = actionSheetEventManager.subscribe(
-      "onoffsetchange",
+      'onoffsetchange',
       (offset: number) => {
         if (offset < 3) {
           //@ts-ignore
           scrollRef.current?.setNativeProps?.({
             scrollEnabled: true,
           });
-          if (Platform.OS === "web") {
+          if (Platform.OS === 'web') {
             //@ts-ignore
-            scrollRef.current.style.overflowY = "scroll";
+            scrollRef.current.style.overflowY = 'scroll';
             //@ts-ignore
-            scrollRef.current.style.touchAction = "auto";
+            scrollRef.current.style.touchAction = 'auto';
           }
           ref.current?.modifyGesturesForLayout(
             id,
             scrollLayout.current,
-            scrollOffset.current
+            scrollOffset.current,
           );
         } else {
           //@ts-ignore
           scrollRef.current?.setNativeProps?.({
             scrollEnabled: false,
           });
-          if (Platform.OS === "web") {
+          if (Platform.OS === 'web') {
             //@ts-ignore
-            scrollRef.current.style.touchAction = "none";
+            scrollRef.current.style.touchAction = 'none';
             //@ts-ignore
-            scrollRef.current.style.overflowY = "none";
+            scrollRef.current.style.overflowY = 'hidden';
           }
           ref.current?.modifyGesturesForLayout(id, undefined, 0);
         }
-      }
+      },
     );
     return () => {
       subscription?.unsubscribe();
