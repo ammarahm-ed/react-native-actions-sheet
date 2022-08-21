@@ -99,6 +99,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       overdrawFactor = 15,
       overdrawSize = 100,
       zIndex = 9999,
+      keyboardHandlerEnabled = true,
       ...props
     },
     ref,
@@ -109,7 +110,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         : snapPoints;
     const initialValue = useRef(0);
     const actionSheetHeight = useRef(0);
-    const keyboard = useKeyboard();
+    const keyboard = useKeyboard(keyboardHandlerEnabled);
     const safeAreaPaddingTop = useRef(0);
     const contextRef = useRef('global');
     const currentSnapIndex = useRef(initialSnapIndex);
@@ -227,7 +228,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     useEffect(() => {
       const listener = animations.translateY.addListener(value => {
-        props?.onChange?.(value.value);
+        props?.onChange?.(value.value, actionSheetHeight.current);
         actionSheetEventManager.publish('onoffsetchange', value.value);
         if (drawUnderStatusBar) {
           if (actionSheetHeight.current > dimensions.height - 1) {

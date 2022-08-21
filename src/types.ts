@@ -1,5 +1,5 @@
-import React from "react";
-import { Animated, ViewStyle } from "react-native";
+import React from 'react';
+import {Animated, ViewStyle} from 'react-native';
 
 export type ActionSheetProps = {
   children: React.ReactNode;
@@ -47,15 +47,15 @@ export type ActionSheetProps = {
    * The open animation is a spring animation. You can modify it using the config below.
    */
   openAnimationConfig?: Omit<
-    Omit<Animated.SpringAnimationConfig, "toValue">,
-    "useNativeDriver"
+    Omit<Animated.SpringAnimationConfig, 'toValue'>,
+    'useNativeDriver'
   >;
   /**
    * The open animation is a spring animation. You can modify it by providing a custom config.
    */
   closeAnimationConfig?: Omit<
-    Omit<Animated.SpringAnimationConfig, "toValue">,
-    "useNativeDriver"
+    Omit<Animated.SpringAnimationConfig, 'toValue'>,
+    'useNativeDriver'
   >;
   /**
    * Provide snap points ranging from 0 to 100. ActionSheet will snap between these points. If no snap points
@@ -75,6 +75,11 @@ export type ActionSheetProps = {
    * when it is opened.
    */
   backgroundInteractionEnabled?: boolean;
+
+  /**
+   * The action sheet uses it's own keyboard handling. Set this prop to `false` to disable it if needed.
+   */
+  keyboardHandlerEnabled?: boolean;
 
   /**
    * Add elevation to the ActionSheet container.
@@ -236,5 +241,8 @@ export type ActionSheetProps = {
    * */
   onOpen?: () => void;
 
-  onChange?: (position: number) => void;
+  /**
+   * Event called when the position of the ActionSheet changes. When the `position` value is 0, it means that the ActionSheet has reached top.
+   */
+  onChange?: (position: number, height: number) => void;
 };

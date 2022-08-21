@@ -41,23 +41,23 @@ import { getDeviceHeight, getElevation, SUPPORTED_ORIENTATIONS } from './utils';
 var CALCULATED_DEVICE_HEIGHT = 0;
 export default forwardRef(function ActionSheet(_a, ref) {
     var _b, _c, _d, _e, _f;
-    var _g = _a.animated, animated = _g === void 0 ? true : _g, _h = _a.closeOnPressBack, closeOnPressBack = _h === void 0 ? true : _h, _j = _a.springOffset, springOffset = _j === void 0 ? 50 : _j, _k = _a.elevation, elevation = _k === void 0 ? 5 : _k, _l = _a.defaultOverlayOpacity, defaultOverlayOpacity = _l === void 0 ? 0.3 : _l, _m = _a.overlayColor, overlayColor = _m === void 0 ? 'black' : _m, _o = _a.closable, closable = _o === void 0 ? true : _o, _p = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _p === void 0 ? true : _p, _q = _a.drawUnderStatusBar, drawUnderStatusBar = _q === void 0 ? false : _q, _r = _a.statusBarTranslucent, statusBarTranslucent = _r === void 0 ? true : _r, _s = _a.gestureEnabled, gestureEnabled = _s === void 0 ? false : _s, _t = _a.isModal, isModal = _t === void 0 ? true : _t, _u = _a.snapPoints, snapPoints = _u === void 0 ? [100] : _u, _v = _a.initialSnapIndex, initialSnapIndex = _v === void 0 ? 0 : _v, _w = _a.overdrawEnabled, overdrawEnabled = _w === void 0 ? true : _w, _x = _a.overdrawFactor, overdrawFactor = _x === void 0 ? 15 : _x, _y = _a.overdrawSize, overdrawSize = _y === void 0 ? 100 : _y, _z = _a.zIndex, zIndex = _z === void 0 ? 9999 : _z, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "statusBarTranslucent", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex"]);
+    var _g = _a.animated, animated = _g === void 0 ? true : _g, _h = _a.closeOnPressBack, closeOnPressBack = _h === void 0 ? true : _h, _j = _a.springOffset, springOffset = _j === void 0 ? 50 : _j, _k = _a.elevation, elevation = _k === void 0 ? 5 : _k, _l = _a.defaultOverlayOpacity, defaultOverlayOpacity = _l === void 0 ? 0.3 : _l, _m = _a.overlayColor, overlayColor = _m === void 0 ? 'black' : _m, _o = _a.closable, closable = _o === void 0 ? true : _o, _p = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _p === void 0 ? true : _p, _q = _a.drawUnderStatusBar, drawUnderStatusBar = _q === void 0 ? false : _q, _r = _a.statusBarTranslucent, statusBarTranslucent = _r === void 0 ? true : _r, _s = _a.gestureEnabled, gestureEnabled = _s === void 0 ? false : _s, _t = _a.isModal, isModal = _t === void 0 ? true : _t, _u = _a.snapPoints, snapPoints = _u === void 0 ? [100] : _u, _v = _a.initialSnapIndex, initialSnapIndex = _v === void 0 ? 0 : _v, _w = _a.overdrawEnabled, overdrawEnabled = _w === void 0 ? true : _w, _x = _a.overdrawFactor, overdrawFactor = _x === void 0 ? 15 : _x, _y = _a.overdrawSize, overdrawSize = _y === void 0 ? 100 : _y, _z = _a.zIndex, zIndex = _z === void 0 ? 9999 : _z, _0 = _a.keyboardHandlerEnabled, keyboardHandlerEnabled = _0 === void 0 ? true : _0, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "statusBarTranslucent", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex", "keyboardHandlerEnabled"]);
     snapPoints =
         snapPoints[snapPoints.length - 1] !== 100
             ? __spreadArray(__spreadArray([], snapPoints, true), [100], false) : snapPoints;
     var initialValue = useRef(0);
     var actionSheetHeight = useRef(0);
-    var keyboard = useKeyboard();
+    var keyboard = useKeyboard(keyboardHandlerEnabled);
     var safeAreaPaddingTop = useRef(0);
     var contextRef = useRef('global');
     var currentSnapIndex = useRef(initialSnapIndex);
     var gestureBoundaries = useRef({});
-    var _0 = useState({
+    var _1 = useState({
         width: Dimensions.get('window').width,
         height: CALCULATED_DEVICE_HEIGHT || getDeviceHeight(statusBarTranslucent),
         portrait: true
-    }), dimensions = _0[0], setDimensions = _0[1];
-    var _1 = useSheetManager({
+    }), dimensions = _1[0], setDimensions = _1[1];
+    var _2 = useSheetManager({
         id: props.id,
         onHide: function (data) {
             hideSheet(data);
@@ -72,7 +72,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 });
             }
         }
-    }), visible = _1.visible, setVisible = _1.setVisible;
+    }), visible = _2.visible, setVisible = _2.setVisible;
     var animations = useState({
         opacity: new Animated.Value(0),
         translateY: new Animated.Value(0),
@@ -134,7 +134,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     useEffect(function () {
         var listener = animations.translateY.addListener(function (value) {
             var _a;
-            (_a = props === null || props === void 0 ? void 0 : props.onChange) === null || _a === void 0 ? void 0 : _a.call(props, value.value);
+            (_a = props === null || props === void 0 ? void 0 : props.onChange) === null || _a === void 0 ? void 0 : _a.call(props, value.value, actionSheetHeight.current);
             actionSheetEventManager.publish('onoffsetchange', value.value);
             if (drawUnderStatusBar) {
                 if (actionSheetHeight.current > dimensions.height - 1) {

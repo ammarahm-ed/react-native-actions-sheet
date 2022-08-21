@@ -1,5 +1,10 @@
 import {useEffect, useState} from 'react';
-import {Keyboard, KeyboardEventListener, ScreenRect} from 'react-native';
+import {
+  EmitterSubscription,
+  Keyboard,
+  KeyboardEventListener,
+  ScreenRect,
+} from 'react-native';
 
 const emptyCoordinates = Object.freeze({
   screenX: 0,
@@ -12,7 +17,7 @@ const initialValue = {
   end: emptyCoordinates,
 };
 
-export function useKeyboard() {
+export function useKeyboard(enabled: boolean) {
   const [shown, setShown] = useState(false);
   const [coordinates, setCoordinates] = useState<{
     start: undefined | ScreenRect;
@@ -42,20 +47,23 @@ export function useKeyboard() {
   };
 
   useEffect(() => {
-    const subscriptions = [
-      Keyboard.addListener('keyboardWillShow', handleKeyboardWillShow),
-      Keyboard.addListener('keyboardDidShow', handleKeyboardDidShow),
-      Keyboard.addListener('keyboardWillHide', handleKeyboardWillHide),
-      Keyboard.addListener('keyboardDidHide', handleKeyboardDidHide),
-    ];
+    let subscriptions: EmitterSubscription[] = [];
+    if (enabled) {
+      subscriptions = [
+        Keyboard.addListener('keyboardWillShow', handleKeyboardWillShow),
+        Keyboard.addListener('keyboardDidShow', handleKeyboardDidShow),
+        Keyboard.addListener('keyboardWillHide', handleKeyboardWillHide),
+        Keyboard.addListener('keyboardDidHide', handleKeyboardDidHide),
+      ];
+    }
 
     return () => {
       subscriptions.forEach(subscription => subscription.remove());
     };
-  }, []);
+  }, [enabled]);
   return {
-    keyboardShown: shown,
-    coordinates,
-    keyboardHeight,
+    keyboardShown: !enabled ? false : shown,
+    coordinates: !enabled ? emptyCoordinates : coordinates,
+    keyboardHeight: !enabled ? 0 : keyboardHeight,
   };
 }
