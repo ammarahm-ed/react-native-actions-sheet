@@ -188,7 +188,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         return false;
     };
     var onRequestClose = function () { };
-    var rootProps = isModal
+    var rootProps = isModal && !props.backgroundInteractionEnabled
         ? {
             visible: true,
             animationType: "none",
@@ -423,7 +423,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             <View />
           </SafeAreaView>) : null}
         {visible ? (<Root {...rootProps}>
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} pointerEvents={(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? "box-none" : "auto"} style={{
                 height: "100%",
                 width: "100%"
             }} {...props.keyboardAvoidingViewProps}>

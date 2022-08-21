@@ -34,6 +34,8 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
       statusBarTranslucent
       drawUnderStatusBar={true}
       gestureEnabled={true}
+      zIndex={9999}
+      backgroundInteractionEnabled={true}
       defaultOverlayOpacity={0.3}>
       <View
         style={{

@@ -290,36 +290,37 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const onRequestClose = () => {};
 
-    const rootProps = isModal
-      ? {
-          visible: true,
-          animationType: "none",
-          testID: props.testIDs?.modal || props.testID,
-          supportedOrientations: SUPPORTED_ORIENTATIONS,
-          onShow: props.onOpen,
-          onRequestClose: onRequestClose,
-          transparent: true,
-          statusBarTranslucent: statusBarTranslucent,
-        }
-      : {
-          testID: props.testIDs?.root || props.testID,
-          onLayout: () => {
-            hardwareBackPressEvent.current = BackHandler.addEventListener(
-              "hardwareBackPress",
-              onHardwareBackPress
-            );
-            props?.onOpen?.();
-          },
-          style: {
-            position: "absolute",
-            zIndex: zIndex,
-            width: "100%",
-            height: "100%",
-          },
-          pointerEvents: props?.backgroundInteractionEnabled
-            ? "box-none"
-            : "auto",
-        };
+    const rootProps =
+      isModal && !props.backgroundInteractionEnabled
+        ? {
+            visible: true,
+            animationType: "none",
+            testID: props.testIDs?.modal || props.testID,
+            supportedOrientations: SUPPORTED_ORIENTATIONS,
+            onShow: props.onOpen,
+            onRequestClose: onRequestClose,
+            transparent: true,
+            statusBarTranslucent: statusBarTranslucent,
+          }
+        : {
+            testID: props.testIDs?.root || props.testID,
+            onLayout: () => {
+              hardwareBackPressEvent.current = BackHandler.addEventListener(
+                "hardwareBackPress",
+                onHardwareBackPress
+              );
+              props?.onOpen?.();
+            },
+            style: {
+              position: "absolute",
+              zIndex: zIndex,
+              width: "100%",
+              height: "100%",
+            },
+            pointerEvents: props?.backgroundInteractionEnabled
+              ? "box-none"
+              : "auto",
+          };
 
     const onDeviceLayout = React.useCallback((event: LayoutChangeEvent) => {
       const safeMarginFromTop =
@@ -560,6 +561,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           <Root {...rootProps}>
             <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : "height"}
+              pointerEvents={
+                props?.backgroundInteractionEnabled ? "box-none" : "auto"
+              }
               style={{
                 height: "100%",
                 width: "100%",
