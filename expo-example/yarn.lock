@@ -8286,7 +8286,7 @@ react-is@^17.0.1:
 
 "react-native-actions-sheet@https://github.com/ammarahm-ed/react-native-actions-sheet#vnext":
   version "0.8.0"
-  resolved "https://github.com/ammarahm-ed/react-native-actions-sheet#be076d394058c6eeefd2f675c53d769d53635e48"
+  resolved "https://github.com/ammarahm-ed/react-native-actions-sheet#b54031cdce1917906538f07001be3e50ac0e479e"
 
 react-native-codegen@^0.69.1:
   version "0.69.1"

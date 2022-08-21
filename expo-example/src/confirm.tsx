@@ -1,12 +1,12 @@
-import React from "react";
-import { Button, Text, View } from "react-native";
+import React from 'react';
+import {Button, Text, View} from 'react-native';
 import ActionSheet, {
   SheetManager,
   SheetProps,
-} from "react-native-actions-sheet";
+} from 'react-native-actions-sheet';
 
 function ConfirmSheet(props: SheetProps) {
-  console.log("opening sheet");
+  console.log('opening sheet');
   return (
     <ActionSheet
       id={props.sheetId}
@@ -17,20 +17,20 @@ function ConfirmSheet(props: SheetProps) {
         paddingHorizontal: 12,
       }}
       springOffset={50}
-      defaultOverlayOpacity={0.3}
-    >
+      defaultOverlayOpacity={0.3}>
       <Text
         style={{
           marginBottom: 10,
-          color: "black",
-        }}
-      >
+          color: 'black',
+        }}>
         Pressing yes or no will return the result back to the caller.
       </Text>
       <Button
         title="No"
         onPress={() => {
-          SheetManager.hide(props.sheetId, false);
+          SheetManager.hide(props.sheetId, {
+            payload: false,
+          });
         }}
       />
       <View
@@ -41,7 +41,9 @@ function ConfirmSheet(props: SheetProps) {
       <Button
         title="Yes"
         onPress={() => {
-          SheetManager.hide(props.sheetId, true);
+          SheetManager.hide(props.sheetId, {
+            payload: true,
+          });
         }}
       />
     </ActionSheet>

@@ -1,49 +1,45 @@
-import React, { useRef } from "react";
+import React, {useRef} from 'react';
 import {
   ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
 import ActionSheet, {
-  registerSheet,
-  SheetManager,
-  SheetProps,
   ActionSheetRef,
+  SheetProps,
   useScrollHandlers,
-} from "react-native-actions-sheet";
+} from 'react-native-actions-sheet';
 
-const colors = ["#4a4e4d", "#0e9aa7", "#3da4ab", "#f6cd61", "#fe8a71"];
+const colors = ['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'];
 const items = [
   100, 60, 150, 200, 170, 80, 41, 101, 61, 151, 202, 172, 82, 43, 103, 64, 155,
   205, 176, 86, 46, 106, 66, 152, 203, 173, 81, 42,
 ];
-function ExampleSheet({ sheetId, payload }: SheetProps<{ data: string }>) {
+function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
   const actionSheetRef = useRef<ActionSheetRef>(null);
-  const scrollHandlers = useScrollHandlers<ScrollView>("1", actionSheetRef);
+  const scrollHandlers = useScrollHandlers<ScrollView>('1', actionSheetRef);
   return (
     <ActionSheet
       id={sheetId}
       ref={actionSheetRef}
       onBeforeShow={() => {
-        console.log("sheet payload", payload?.data);
+        console.log('sheet payload', payload?.data);
       }}
       snapPoints={[30, 60, 100]}
       initialSnapIndex={0}
       statusBarTranslucent
       drawUnderStatusBar={true}
       gestureEnabled={true}
-      defaultOverlayOpacity={0.3}
-    >
+      defaultOverlayOpacity={0.3}>
       <View
         style={{
           paddingHorizontal: 12,
-          maxHeight: "100%",
-        }}
-      >
+          maxHeight: '100%',
+        }}>
         <View style={styles.container}>
-          {colors.map((color) => (
+          {colors.map(color => (
             <TouchableOpacity
               onPress={() => {
                 actionSheetRef.current?.snapToOffset(20);
@@ -67,14 +63,13 @@ function ExampleSheet({ sheetId, payload }: SheetProps<{ data: string }>) {
           />
 
           <View>
-            {items.map((item) => (
+            {items.map(item => (
               <View
                 key={item}
                 // onPress={() => {
                 //   SheetManager.hide(sheetId);
                 // }}
-                style={styles.listItem}
-              >
+                style={styles.listItem}>
                 <View
                   style={[
                     styles.placeholder,
@@ -102,13 +97,13 @@ const styles = StyleSheet.create({
     height: 100,
   },
   listItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   placeholder: {
     height: 15,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
     marginVertical: 15,
     borderRadius: 5,
   },
@@ -120,30 +115,28 @@ const styles = StyleSheet.create({
   btnLeft: {
     width: 30,
     height: 30,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
     borderRadius: 100,
   },
   input: {
-    width: "100%",
+    width: '100%',
     minHeight: 50,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: '#f0f0f0',
     marginBottom: 15,
     paddingHorizontal: 10,
   },
   container: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 15,
   },
   scrollview: {
-    width: "100%",
+    width: '100%',
     padding: 12,
   },
 });
 
 export default ExampleSheet;
-
-registerSheet("example-sheet", ExampleSheet);
