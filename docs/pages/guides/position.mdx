@@ -1,0 +1,14 @@
+# Position tracking
+
+Sometimes you need to track the position of the action sheet on the Screen & show/hide some UI in the background or inside the action sheet.This can be done using the `onChange` prop.
+
+```tsx
+<ActionSheet
+  onChange={(position, height) => {
+    // Position is 0 if action sheet has reached top.
+    const hasReachedTop = position === 0;
+    // Get the offset from bottom
+    const offsetFromBottom = height - position;
+  }}
+/>
+```

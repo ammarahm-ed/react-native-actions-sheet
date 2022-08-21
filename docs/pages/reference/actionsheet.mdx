@@ -158,6 +158,14 @@ Render a component that is absolutely positioned over the action sheet. This is 
 | ---------------- | -------- |
 | React. ReactNode | no       |
 
+## `keyboardHandlerEnabled`
+
+The action sheet uses it's own keyboard handling. Set this prop to false to disable it if needed.
+
+| Type      | Required |
+| --------- | -------- |
+| `boolean` | no       |
+
 ## `headerAlwaysVisible`
 
 By default when the `gesturesEnabled` prop is set to false, the top indicator bar or any custom header component is hidden. Set this to true to keep the header always visible.
@@ -288,9 +296,9 @@ Set the height of the overdraw View. If you set the `overdrawFactor` to a lower 
 
 Default: `100`
 
-## `onChange(positon:number)`
+## `onChange(positon:number, height:number)`
 
-A function that is called whenever the action sheet moves with the current position.
+A function that is called whenever the action sheet moves with the current position. When the `position` value is `0` it means the action sheet has reached top.
 
 | Type     | Required |
 | -------- | -------- |
