@@ -21,7 +21,7 @@ var useSheetManager = function (_a) {
         return function () {
             subscriptions.forEach(function (s) { var _a; return (_a = s === null || s === void 0 ? void 0 : s.unsubscribe) === null || _a === void 0 ? void 0 : _a.call(s); });
         };
-    }, [id, onHide, onBeforeShow]);
+    }, [id, onHide, onBeforeShow, onContextUpdate]);
     return {
         visible: visible,
         setVisible: setVisible

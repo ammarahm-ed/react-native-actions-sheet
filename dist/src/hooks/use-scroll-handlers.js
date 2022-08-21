@@ -51,7 +51,7 @@ function useScrollHandlers(id, ref) {
         return function () {
             subscription === null || subscription === void 0 ? void 0 : subscription.unsubscribe();
         };
-    }, []);
+    }, [id, ref]);
     var onLayout = function (event) {
         var _a;
         scrollLayout.current = event.nativeEvent.layout;

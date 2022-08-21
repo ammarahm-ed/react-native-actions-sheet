@@ -68,7 +68,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [id, ref]);
 
   const onLayout = (event: LayoutChangeEvent) => {
     scrollLayout.current = event.nativeEvent.layout;

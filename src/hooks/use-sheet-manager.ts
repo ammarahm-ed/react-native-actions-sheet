@@ -34,7 +34,7 @@ const useSheetManager = ({
     return () => {
       subscriptions.forEach(s => s?.unsubscribe?.());
     };
-  }, [id, onHide, onBeforeShow]);
+  }, [id, onHide, onBeforeShow, onContextUpdate]);
 
   return {
     visible,
