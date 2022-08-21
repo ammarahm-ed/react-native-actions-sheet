@@ -9,7 +9,7 @@ var EventManager = /** @class */ (function () {
         var _this = this;
         if (once === void 0) { once = false; }
         if (!name || !handler)
-            throw new Error("name and handler are required.");
+            throw new Error('name and handler are required.');
         this._registry.set(handler, { name: name, once: once });
         return { unsubscribe: function () { return _this.unsubscribe(name, handler); } };
     };
