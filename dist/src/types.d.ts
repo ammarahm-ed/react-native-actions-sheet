@@ -1,5 +1,5 @@
 import React from "react";
-import { Animated, KeyboardAvoidingView, ViewStyle } from "react-native";
+import { Animated, ViewStyle } from "react-native";
 export declare type ActionSheetProps = {
     children: React.ReactNode;
     /**
@@ -63,10 +63,6 @@ export declare type ActionSheetProps = {
      * when it is opened.
      */
     backgroundInteractionEnabled?: boolean;
-    /**
-     * Props for the internal `KeyboardAvoidingView`.
-     */
-    keyboardAvoidingViewProps?: Omit<Omit<KeyboardAvoidingView["props"], "style">, "children">;
     /**
      * Add elevation to the ActionSheet container.
      *
