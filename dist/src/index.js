@@ -501,7 +501,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 },
             ]}>
               {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<TouchableOpacity onPress={onTouch} activeOpacity={defaultOverlayOpacity} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
-                    height: dimensions.height,
+                    height: Dimensions.get('window').height + 100 ||
+                        dimensions.height + safeAreaPaddingTop.current + 100,
                     width: '100%',
                     position: 'absolute',
                     zIndex: 2,

@@ -670,7 +670,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   activeOpacity={defaultOverlayOpacity}
                   testID={props.testIDs?.backdrop}
                   style={{
-                    height: dimensions.height,
+                    height:
+                      Dimensions.get('window').height + 100 ||
+                      dimensions.height + safeAreaPaddingTop.current + 100,
                     width: '100%',
                     position: 'absolute',
                     zIndex: 2,
