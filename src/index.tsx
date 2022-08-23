@@ -627,13 +627,19 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const getPaddingBottom = () => {
+      const topPadding =
+        Platform.OS === 'android'
+          ? StatusBar.currentHeight && StatusBar.currentHeight > 35
+            ? 35
+            : StatusBar.currentHeight
+          : safeAreaPaddingTop.current;
       if (!props.useBottomSafeAreaPadding && props.containerStyle) {
         return (
           props.containerStyle?.paddingBottom || props.containerStyle.padding
         );
       }
       if (!props.containerStyle && props?.useBottomSafeAreaPadding) {
-        return safeAreaPaddingTop.current;
+        return topPadding;
       }
 
       if (props.containerStyle?.paddingBottom === 'string')
@@ -643,12 +649,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
       if (props.containerStyle?.paddingBottom) {
         //@ts-ignore
-        return safeAreaPaddingTop.current + props.containerStyle.paddingBottom;
+        return topPadding + props.containerStyle.paddingBottom;
       }
 
       if (props.containerStyle?.padding) {
         //@ts-ignore
-        return safeAreaPaddingTop.current + props.containerStyle.padding;
+        return topPadding + props.containerStyle.padding;
       }
 
       return 0;

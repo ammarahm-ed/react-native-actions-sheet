@@ -476,11 +476,16 @@ export default forwardRef(function ActionSheet(_a, ref) {
     }, [isModal, onHardwareBackPress, props, statusBarTranslucent, zIndex]);
     var getPaddingBottom = function () {
         var _a, _b, _c, _d, _e;
+        var topPadding = Platform.OS === 'android'
+            ? StatusBar.currentHeight && StatusBar.currentHeight > 35
+                ? 35
+                : StatusBar.currentHeight
+            : safeAreaPaddingTop.current;
         if (!props.useBottomSafeAreaPadding && props.containerStyle) {
             return (((_a = props.containerStyle) === null || _a === void 0 ? void 0 : _a.paddingBottom) || props.containerStyle.padding);
         }
         if (!props.containerStyle && (props === null || props === void 0 ? void 0 : props.useBottomSafeAreaPadding)) {
-            return safeAreaPaddingTop.current;
+            return topPadding;
         }
         if (((_b = props.containerStyle) === null || _b === void 0 ? void 0 : _b.paddingBottom) === 'string')
             return props.containerStyle.paddingBottom;
@@ -488,11 +493,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
             return props.containerStyle.padding;
         if ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.paddingBottom) {
             //@ts-ignore
-            return safeAreaPaddingTop.current + props.containerStyle.paddingBottom;
+            return topPadding + props.containerStyle.paddingBottom;
         }
         if ((_e = props.containerStyle) === null || _e === void 0 ? void 0 : _e.padding) {
             //@ts-ignore
-            return safeAreaPaddingTop.current + props.containerStyle.padding;
+            return topPadding + props.containerStyle.padding;
         }
         return 0;
     };
