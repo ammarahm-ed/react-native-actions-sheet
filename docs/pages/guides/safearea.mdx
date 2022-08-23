@@ -1,0 +1,28 @@
+# Handling SafeArea
+
+There are two main props that will come in handy when dealing with `SafeArea` in the action sheet.
+
+The first one is `useBottomSafeAreaPadding`. This prop uses the top padding as a reference to calculate the bottom padding on mobile to Views do not hide under the Navigation Bar.
+
+```tsx
+<ActionSheet useBottomSafeAreaPadding />
+```
+
+The second one is `drawUnderStatusBar`. This is useful for action sheets that cover full screen. In that case, the sheet will grow under the StatusBar by default. However you can set this to `false` if you don't want that default behavior.
+
+```tsx
+<ActionSheet drawUnderStatusBar={false} />
+```
+
+If you are using `react-native-safe-area-context` library in your project you can also do the following:
+
+```tsx
+const insets = useSafeAreaInsets();
+
+return (
+  <ActionSheet
+    containerStyle={{
+      paddingBottom: insets.bottom,
+    }}></ActionSheet>
+);
+```

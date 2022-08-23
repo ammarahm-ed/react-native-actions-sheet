@@ -6,5 +6,6 @@
   "scrollview": "Using ScrollView",
   "background": "Background Interaction",
   "position": "Position tracking",
+  "safearea": "Handling SafeArea",
   "migrate": "Migrating to v0.8.0"
 }
