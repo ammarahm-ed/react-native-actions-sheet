@@ -189,6 +189,10 @@ export declare type ActionSheetProps = {
         root?: string;
     };
     /**
+     * Apply padding to bottom based on device safe area insets.
+     */
+    useBottomSafeAreaPadding?: boolean;
+    /**
      * Event called when the ActionSheet closes.
      *
      * */

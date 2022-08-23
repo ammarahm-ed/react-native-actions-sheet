@@ -626,6 +626,34 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [isModal, onHardwareBackPress, props, statusBarTranslucent, zIndex],
     );
 
+    const getPaddingBottom = () => {
+      if (!props.useBottomSafeAreaPadding && props.containerStyle) {
+        return (
+          props.containerStyle?.paddingBottom || props.containerStyle.padding
+        );
+      }
+      if (!props.containerStyle && props?.useBottomSafeAreaPadding) {
+        return safeAreaPaddingTop.current;
+      }
+
+      if (props.containerStyle?.paddingBottom === 'string')
+        return props.containerStyle.paddingBottom;
+      if (props.containerStyle?.padding === 'string')
+        return props.containerStyle.padding;
+
+      if (props.containerStyle?.paddingBottom) {
+        //@ts-ignore
+        return safeAreaPaddingTop.current + props.containerStyle.paddingBottom;
+      }
+
+      if (props.containerStyle?.padding) {
+        //@ts-ignore
+        return safeAreaPaddingTop.current + props.containerStyle.padding;
+      }
+
+      return 0;
+    };
+
     return (
       <>
         {Platform.OS === 'ios' ? (
@@ -704,6 +732,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         translateY: animations.translateY,
                       },
                     ],
+                    paddingBottom: getPaddingBottom(),
                   },
                 ]}>
                 {drawUnderStatusBar ? (

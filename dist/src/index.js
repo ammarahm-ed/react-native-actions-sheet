@@ -474,6 +474,28 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     : 'auto'
             };
     }, [isModal, onHardwareBackPress, props, statusBarTranslucent, zIndex]);
+    var getPaddingBottom = function () {
+        var _a, _b, _c, _d, _e;
+        if (!props.useBottomSafeAreaPadding && props.containerStyle) {
+            return (((_a = props.containerStyle) === null || _a === void 0 ? void 0 : _a.paddingBottom) || props.containerStyle.padding);
+        }
+        if (!props.containerStyle && (props === null || props === void 0 ? void 0 : props.useBottomSafeAreaPadding)) {
+            return safeAreaPaddingTop.current;
+        }
+        if (((_b = props.containerStyle) === null || _b === void 0 ? void 0 : _b.paddingBottom) === 'string')
+            return props.containerStyle.paddingBottom;
+        if (((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.padding) === 'string')
+            return props.containerStyle.padding;
+        if ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.paddingBottom) {
+            //@ts-ignore
+            return safeAreaPaddingTop.current + props.containerStyle.paddingBottom;
+        }
+        if ((_e = props.containerStyle) === null || _e === void 0 ? void 0 : _e.padding) {
+            //@ts-ignore
+            return safeAreaPaddingTop.current + props.containerStyle.padding;
+        }
+        return 0;
+    };
     return (<>
         {Platform.OS === 'ios' ? (<SafeAreaView pointerEvents="none" onLayout={function (event) {
                 var height = event.nativeEvent.layout.height;
@@ -521,7 +543,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
                         {
                             translateY: animations.translateY
                         },
-                    ]
+                    ],
+                    paddingBottom: getPaddingBottom()
                 },
             ]}>
                 {drawUnderStatusBar ? (<Animated.View style={{

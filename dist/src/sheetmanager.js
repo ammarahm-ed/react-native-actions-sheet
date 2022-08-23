@@ -128,7 +128,10 @@ var SM = /** @class */ (function () {
      * Hide all the opened ActionSheets.
      */
     SM.prototype.hideAll = function () {
-        ids.forEach(function (id) { return actionSheetEventManager.publish("hide_".concat(id)); });
+        ids.forEach(function (id) {
+            var _a;
+            actionSheetEventManager.publish("hide_".concat((_a = id.split(':')) === null || _a === void 0 ? void 0 : _a[0]));
+        });
     };
     return SM;
 }());

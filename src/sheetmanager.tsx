@@ -107,7 +107,9 @@ class SM {
    * Hide all the opened ActionSheets.
    */
   hideAll() {
-    ids.forEach(id => actionSheetEventManager.publish(`hide_${id}`));
+    ids.forEach(id => {
+      actionSheetEventManager.publish(`hide_${id.split(':')?.[0]}`);
+    });
   }
 
   registerRef = (
