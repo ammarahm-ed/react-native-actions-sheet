@@ -399,7 +399,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         !gestureEnabled
           ? {panHandlers: {}}
           : PanResponder.create({
-              onMoveShouldSetPanResponderCapture: (event, gesture) => {
+              onMoveShouldSetPanResponder: (event, gesture) => {
+                if (gesture.dy < 3 && gesture.dy > -3) return false;
+
                 let gestures = true;
                 for (let id in gestureBoundaries.current) {
                   const gestureBoundary = gestureBoundaries.current[id];
