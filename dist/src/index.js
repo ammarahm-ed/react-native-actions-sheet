@@ -146,13 +146,17 @@ export default forwardRef(function ActionSheet(_a, ref) {
             }
         });
         return function () {
-            var _a;
             listener && animations.translateY.removeListener(listener);
             props.id && SheetManager.remove(props.id, contextRef.current);
-            (_a = hardwareBackPressEvent.current) === null || _a === void 0 ? void 0 : _a.remove();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props === null || props === void 0 ? void 0 : props.id, dimensions.height]);
+    useEffect(function () {
+        return function () {
+            var _a;
+            (_a = hardwareBackPressEvent.current) === null || _a === void 0 ? void 0 : _a.remove();
+        };
+    }, []);
     var onRequestClose = function () { };
     var onDeviceLayout = React.useCallback(function (event) {
         var safeMarginFromTop = Platform.OS === 'ios'
