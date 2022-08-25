@@ -242,10 +242,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       return () => {
         listener && animations.translateY.removeListener(listener);
         props.id && SheetManager.remove(props.id, contextRef.current);
-        hardwareBackPressEvent.current?.remove();
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props?.id, dimensions.height]);
+
+    useEffect(() => {
+      return () => {
+        hardwareBackPressEvent.current?.remove();
+      };
+    }, []);
 
     const onRequestClose = () => {};
 
