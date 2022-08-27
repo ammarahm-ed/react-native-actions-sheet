@@ -33,7 +33,7 @@ registerSheet('local-sheet', LocalSheet,'local-context');
  */
 declare function SheetProvider({ context, children, }: {
     context?: string;
-    children: ReactNode;
+    children?: ReactNode;
 }): JSX.Element;
 export default SheetProvider;
 //# sourceMappingURL=provider.d.ts.map

@@ -1,11 +1,61 @@
+/* eslint-disable curly */
 import {RefObject} from 'react';
 import {ActionSheetRef} from '.';
 import {actionSheetEventManager} from './eventmanager';
 import {sheetsRegistry} from './provider';
-
+let baseZindex = 999;
 // Array of all the ids of ActionSheets currently rendered in the app.
 const ids: string[] = [];
 const refs: {[name: string]: RefObject<ActionSheetRef>} = {};
+
+/**
+ * Get rendered action sheets stack
+ * @returns
+ */
+export function getSheetStack() {
+  return ids.map(id => {
+    return {
+      id: id.split(':')[0],
+      context: id.split(':')?.[1] || 'global',
+    };
+  });
+}
+
+/**
+ * A function that checks whether the action sheet is rendered on top or not.
+ * @param id
+ * @param context
+ * @returns
+ */
+export function isRenderedOnTop(id: string, context: string) {
+  return ids[ids.length - 1] === `${id}:${context}`;
+}
+
+/**
+ * Set the base zIndex upon which action sheets will be stacked. Should be called once in the global space.
+ *
+ * Default `baseZIndex` is `999`.
+ *
+ * @param zIndex
+ */
+export function setBaseZIndexForActionSheets(zIndex: number) {
+  baseZindex = zIndex;
+}
+
+/**
+ * Since non modal based sheets are stacked one above the other, they need to have
+ * different zIndex for gestures to work correctly.
+ * @param id
+ * @param context
+ * @returns
+ */
+export function getZIndexFromStack(id: string, context: string) {
+  const index = ids.indexOf(`${id}:${context}`);
+  if (index > -1) {
+    return baseZindex + index + 1;
+  }
+  return baseZindex;
+}
 
 class SM {
   /**
@@ -34,7 +84,14 @@ class SM {
     },
   ): Promise<ReturnPayload> {
     return new Promise(resolve => {
-      const handler = (data: ReturnPayload) => {
+      const handler = (data: ReturnPayload, context = 'global') => {
+        if (
+          context !== 'global' &&
+          options?.context &&
+          options.context !== context
+        )
+          return;
+
         options?.onClose?.(data);
         sub?.unsubscribe();
         resolve(data);
@@ -78,7 +135,13 @@ class SM {
     },
   ): Promise<ReturnPayload> {
     return new Promise(resolve => {
-      const hideHandler = (data: ReturnPayload) => {
+      const hideHandler = (data: ReturnPayload, context = 'global') => {
+        if (
+          context !== 'global' &&
+          options?.context &&
+          options.context !== context
+        )
+          return;
         sub?.unsubscribe();
         resolve(data);
       };
@@ -136,7 +199,7 @@ class SM {
   };
 
   remove = (id: string, context: string) => {
-    if (ids.indexOf(`${id}:${context}`) > 0) {
+    if (ids.indexOf(`${id}:${context}`) > -1) {
       ids.splice(ids.indexOf(`${id}:${context}`));
     }
   };

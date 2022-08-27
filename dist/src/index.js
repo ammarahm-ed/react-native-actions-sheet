@@ -35,7 +35,7 @@ import { Animated, BackHandler, Dimensions, Easing, Modal, PanResponder, Platfor
 import { actionSheetEventManager } from './eventmanager';
 import useSheetManager from './hooks/use-sheet-manager';
 import { useKeyboard } from './hooks/useKeyboard';
-import { SheetManager } from './sheetmanager';
+import { getZIndexFromStack, isRenderedOnTop, SheetManager, } from './sheetmanager';
 import { styles } from './styles';
 import { getDeviceHeight, getElevation, SUPPORTED_ORIENTATIONS } from './utils';
 var CALCULATED_DEVICE_HEIGHT = 0;
@@ -160,7 +160,6 @@ export default forwardRef(function ActionSheet(_a, ref) {
         });
         return function () {
             listener && animations.translateY.removeListener(listener);
-            props.id && SheetManager.remove(props.id, contextRef.current);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props === null || props === void 0 ? void 0 : props.id, dimensions.height]);
@@ -197,7 +196,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     (_b = props.onClose) === null || _b === void 0 ? void 0 : _b.call(props, data || props.payload || data);
                     (_c = hardwareBackPressEvent.current) === null || _c === void 0 ? void 0 : _c.remove();
                     if (props.id) {
-                        actionSheetEventManager.publish("onclose_".concat(props.id), data || props.payload || data);
+                        SheetManager.remove(props.id, contextRef.current);
+                        actionSheetEventManager.publish("onclose_".concat(props.id), data || props.payload || data, contextRef.current);
                     }
                 }
                 else {
@@ -224,6 +224,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
      */
     var snapForward = React.useCallback(function (vy) {
         if (currentSnapIndex.current === snapPoints.length - 1) {
+            initialValue.current = getNextPosition(currentSnapIndex.current);
             returnAnimation(vy);
             return;
         }
@@ -259,6 +260,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 hideSheet(vy);
             }
             else {
+                initialValue.current = getNextPosition(currentSnapIndex.current);
                 returnAnimation(vy);
             }
             return;
@@ -293,6 +295,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
             ? { panHandlers: {} }
             : PanResponder.create({
                 onMoveShouldSetPanResponder: function (event, gesture) {
+                    if (props.id && !isRenderedOnTop(props.id, contextRef.current))
+                        return false;
                     var vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
                     var vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
                     if (vy < 0.01 || vx > 0.05) {
@@ -319,6 +323,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     return gestures;
                 },
                 onStartShouldSetPanResponder: function (event, _gesture) {
+                    if (props.id && !isRenderedOnTop(props.id, contextRef.current))
+                        return false;
                     if (Platform.OS === 'web') {
                         var gestures = true;
                         for (var id in gestureBoundaries.current) {
@@ -382,11 +388,12 @@ export default forwardRef(function ActionSheet(_a, ref) {
             });
     }, [
         gestureEnabled,
+        props.id,
         getCurrentPosition,
-        animations.translateY,
-        overdrawSize,
-        overdrawEnabled,
         overdrawFactor,
+        overdrawSize,
+        animations.translateY,
+        overdrawEnabled,
         springOffset,
         returnAnimation,
         snapBackward,
@@ -454,7 +461,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
         },
         snapToOffset: function (offset) {
             initialValue.current =
-                actionSheetHeight.current -
+                actionSheetHeight.current +
+                    minTranslateValue.current -
                     (actionSheetHeight.current * offset) / 100;
             Animated.spring(animations.translateY, __assign({ toValue: initialValue.current, useNativeDriver: true }, props.openAnimationConfig)).start();
         },
@@ -510,7 +518,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 },
                 style: {
                     position: 'absolute',
-                    zIndex: zIndex,
+                    zIndex: zIndex
+                        ? zIndex
+                        : props.id
+                            ? getZIndexFromStack(props.id, contextRef.current)
+                            : 999,
                     width: '100%',
                     height: '100%'
                 },

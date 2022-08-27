@@ -1,6 +1,7 @@
 /* eslint-disable curly */
 import {useEffect, useState} from 'react';
 import {actionSheetEventManager} from '../eventmanager';
+import {useRef} from 'react';
 
 const useSheetManager = ({
   id,
@@ -14,6 +15,7 @@ const useSheetManager = ({
   onContextUpdate: (context?: string) => void;
 }) => {
   const [visible, setVisible] = useState(false);
+  const contextRef = useRef<string>();
 
   useEffect(() => {
     if (!id) return;
@@ -21,6 +23,8 @@ const useSheetManager = ({
       actionSheetEventManager.subscribe(
         `show_${id}`,
         (data: any, context?: string) => {
+          if (visible) return;
+          contextRef.current = context || 'global';
           onContextUpdate?.(context);
           onBeforeShow?.(data);
           setTimeout(() => {
@@ -28,14 +32,18 @@ const useSheetManager = ({
           }, 1);
         },
       ),
-      actionSheetEventManager.subscribe(`hide_${id}`, (data: any) => {
-        onHide?.(data);
-      }),
+      actionSheetEventManager.subscribe(
+        `hide_${id}`,
+        (data: any, context = 'global') => {
+          if (context !== contextRef.current) return;
+          onHide?.(data);
+        },
+      ),
     ];
     return () => {
       subscriptions.forEach(s => s?.unsubscribe?.());
     };
-  }, [id, onHide, onBeforeShow, onContextUpdate]);
+  }, [id, onHide, onBeforeShow, onContextUpdate, visible]);
 
   return {
     visible,

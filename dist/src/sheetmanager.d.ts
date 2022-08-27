@@ -1,5 +1,36 @@
 import { RefObject } from 'react';
 import { ActionSheetRef } from '.';
+/**
+ * Get rendered action sheets stack
+ * @returns
+ */
+export declare function getSheetStack(): {
+    id: string;
+    context: string;
+}[];
+/**
+ * A function that checks whether the action sheet is rendered on top or not.
+ * @param id
+ * @param context
+ * @returns
+ */
+export declare function isRenderedOnTop(id: string, context: string): boolean;
+/**
+ * Set the base zIndex upon which action sheets will be stacked. Should be called once in the global space.
+ *
+ * Default `baseZIndex` is `999`.
+ *
+ * @param zIndex
+ */
+export declare function setBaseZIndexForActionSheets(zIndex: number): void;
+/**
+ * Since non modal based sheets are stacked one above the other, they need to have
+ * different zIndex for gestures to work correctly.
+ * @param id
+ * @param context
+ * @returns
+ */
+export declare function getZIndexFromStack(id: string, context: string): number;
 declare class SM {
     /**
      * Show the ActionSheet with a given id.

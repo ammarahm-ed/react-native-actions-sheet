@@ -75,16 +75,17 @@ var RenderSheet = function (_a) {
         setPayload(data);
         setVisible(true);
     }, [context]);
-    var onClose = React.useCallback(function () {
+    var onClose = React.useCallback(function (_data, ctx) {
+        if (ctx === void 0) { ctx = 'global'; }
+        if (context !== ctx)
+            return;
         setVisible(false);
         setPayload(undefined);
-    }, []);
+    }, [context]);
     var onHide = React.useCallback(function (data, ctx) {
         if (ctx === void 0) { ctx = 'global'; }
-        if (ctx !== context)
-            return;
-        actionSheetEventManager.publish("hide_".concat(id), data);
-    }, [context, id]);
+        actionSheetEventManager.publish("hide_".concat(id), data, ctx);
+    }, [id]);
     useEffect(function () {
         if (visible) {
             actionSheetEventManager.publish("show_".concat(id), payload, context);

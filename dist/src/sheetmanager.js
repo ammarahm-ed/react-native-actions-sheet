@@ -36,9 +36,56 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import { actionSheetEventManager } from './eventmanager';
 import { sheetsRegistry } from './provider';
+var baseZindex = 999;
 // Array of all the ids of ActionSheets currently rendered in the app.
 var ids = [];
 var refs = {};
+/**
+ * Get rendered action sheets stack
+ * @returns
+ */
+export function getSheetStack() {
+    return ids.map(function (id) {
+        var _a;
+        return {
+            id: id.split(':')[0],
+            context: ((_a = id.split(':')) === null || _a === void 0 ? void 0 : _a[1]) || 'global'
+        };
+    });
+}
+/**
+ * A function that checks whether the action sheet is rendered on top or not.
+ * @param id
+ * @param context
+ * @returns
+ */
+export function isRenderedOnTop(id, context) {
+    return ids[ids.length - 1] === "".concat(id, ":").concat(context);
+}
+/**
+ * Set the base zIndex upon which action sheets will be stacked. Should be called once in the global space.
+ *
+ * Default `baseZIndex` is `999`.
+ *
+ * @param zIndex
+ */
+export function setBaseZIndexForActionSheets(zIndex) {
+    baseZindex = zIndex;
+}
+/**
+ * Since non modal based sheets are stacked one above the other, they need to have
+ * different zIndex for gestures to work correctly.
+ * @param id
+ * @param context
+ * @returns
+ */
+export function getZIndexFromStack(id, context) {
+    var index = ids.indexOf("".concat(id, ":").concat(context));
+    if (index > -1) {
+        return baseZindex + index + 1;
+    }
+    return baseZindex;
+}
 var SM = /** @class */ (function () {
     function SM() {
         this.registerRef = function (id, context, instance) {
@@ -59,7 +106,7 @@ var SM = /** @class */ (function () {
             }
         };
         this.remove = function (id, context) {
-            if (ids.indexOf("".concat(id, ":").concat(context)) > 0) {
+            if (ids.indexOf("".concat(id, ":").concat(context)) > -1) {
                 ids.splice(ids.indexOf("".concat(id, ":").concat(context)));
             }
         };
@@ -74,8 +121,13 @@ var SM = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
-                        var handler = function (data) {
+                        var handler = function (data, context) {
                             var _a;
+                            if (context === void 0) { context = 'global'; }
+                            if (context !== 'global' &&
+                                (options === null || options === void 0 ? void 0 : options.context) &&
+                                options.context !== context)
+                                return;
                             (_a = options === null || options === void 0 ? void 0 : options.onClose) === null || _a === void 0 ? void 0 : _a.call(options, data);
                             sub === null || sub === void 0 ? void 0 : sub.unsubscribe();
                             resolve(data);
@@ -105,7 +157,12 @@ var SM = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
-                        var hideHandler = function (data) {
+                        var hideHandler = function (data, context) {
+                            if (context === void 0) { context = 'global'; }
+                            if (context !== 'global' &&
+                                (options === null || options === void 0 ? void 0 : options.context) &&
+                                options.context !== context)
+                                return;
                             sub === null || sub === void 0 ? void 0 : sub.unsubscribe();
                             resolve(data);
                         };

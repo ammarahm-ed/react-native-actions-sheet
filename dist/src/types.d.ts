@@ -116,6 +116,12 @@ export declare type ActionSheetProps = {
      * */
     ExtraOverlayComponent?: React.ReactNode;
     /**
+     * If any of the action sheets in a nested SheetProvider is not a modal, i.e uses `isModal={false}` then you must define
+     * the provider with this prop. This allows the action sheet to be rendered correctly in fullscreen.
+     *
+     * */
+    withNestedSheetProvider?: React.ReactNode;
+    /**
      * Will the ActionSheet close on `hardwareBackPress` event.
      *
      * Default: `true`

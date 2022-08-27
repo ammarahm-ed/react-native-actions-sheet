@@ -306,6 +306,14 @@ Apply padding to bottom based on device safe area insets.
 
 Default: `false`
 
+## `withNestedSheetProvider`
+
+If any of the action sheets in a nested SheetProvider is not a modal, i.e uses `isModal={false}` then you must define the provider with this prop. This allows the action sheet to be rendered correctly in fullscreen.
+
+| Type              | Required |
+| ----------------- | -------- |
+| `React.ReactNode` | no       |
+
 ## `onChange(positon:number, height:number)`
 
 A function that is called whenever the action sheet moves with the current position. When the `position` value is `0` it means the action sheet has reached top.

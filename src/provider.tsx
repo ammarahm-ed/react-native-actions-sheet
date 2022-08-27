@@ -55,7 +55,7 @@ function SheetProvider({
   children,
 }: {
   context?: string;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   const [, forceUpdate] = useReducer(x => x + 1, 0);
   const sheetIds = Object.keys(sheetsRegistry[context] || {});
@@ -100,17 +100,20 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
     [context],
   );
 
-  const onClose = React.useCallback(() => {
-    setVisible(false);
-    setPayload(undefined);
-  }, []);
+  const onClose = React.useCallback(
+    (_data: any, ctx = 'global') => {
+      if (context !== ctx) return;
+      setVisible(false);
+      setPayload(undefined);
+    },
+    [context],
+  );
 
   const onHide = React.useCallback(
     (data: any, ctx = 'global') => {
-      if (ctx !== context) return;
-      actionSheetEventManager.publish(`hide_${id}`, data);
+      actionSheetEventManager.publish(`hide_${id}`, data, ctx);
     },
-    [context, id],
+    [id],
   );
 
   useEffect(() => {
