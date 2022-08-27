@@ -133,7 +133,7 @@ export type ActionSheetProps = {
 
   /**
    * Render a component over the ActionSheet. Useful for rendering
-   * Toast components with which user can interact.
+   * Toast components with which user can interact. Should be `absolutely` positioned.
    *
    * */
 

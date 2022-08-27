@@ -1,4 +1,5 @@
-import {RefObject, useEffect, useRef} from 'react';
+/* eslint-disable curly */
+import React, {RefObject, useEffect, useRef} from 'react';
 import {
   LayoutChangeEvent,
   LayoutRectangle,
@@ -11,7 +12,7 @@ import {ActionSheetRef} from '../index';
 
 /**
  * If you are using a `ScrollView` or `FlatList` in ActionSheet. You must attach `scrollHandlers`
- * with it to enable scrolling.
+ * with it to enable vertical scrolling. For horizontal ScrollViews, you should not use this hook.
  * @param id Id for the handler. Could be any string value.
  * @param ref ref of the ActionSheet in which the ScrollView is present.
  * @returns
@@ -21,6 +22,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
   const scrollRef = useRef<T>(null);
   const scrollLayout = useRef<LayoutRectangle>();
   const scrollOffset = useRef(0);
+  const prevState = useRef(false);
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollOffset.current = event.nativeEvent.contentOffset.y;
     ref.current?.modifyGesturesForLayout(
@@ -30,49 +32,64 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     );
   };
 
+  const disableScrolling = React.useCallback(() => {
+    //@ts-ignore
+    scrollRef.current?.setNativeProps?.({
+      scrollEnabled: false,
+    });
+    if (Platform.OS === 'web') {
+      //@ts-ignore
+      scrollRef.current.style.touchAction = 'none';
+      //@ts-ignore
+      scrollRef.current.style.overflowY = 'hidden';
+    }
+  }, []);
+
+  const enableScrolling = React.useCallback(() => {
+    //@ts-ignore
+    scrollRef.current?.setNativeProps?.({
+      scrollEnabled: true,
+    });
+    if (Platform.OS === 'web') {
+      //@ts-ignore
+      scrollRef.current.style.overflowY = 'scroll';
+      //@ts-ignore
+      scrollRef.current.style.touchAction = 'auto';
+    }
+  }, []);
+
   useEffect(() => {
     const subscription = actionSheetEventManager.subscribe(
       'onoffsetchange',
       (offset: number) => {
+        ref.current?.modifyGesturesForLayout(
+          id,
+          scrollLayout.current,
+          scrollOffset.current,
+        );
         if (offset < 3) {
-          //@ts-ignore
-          scrollRef.current?.setNativeProps?.({
-            scrollEnabled: true,
-          });
-          if (Platform.OS === 'web') {
-            //@ts-ignore
-            scrollRef.current.style.overflowY = 'scroll';
-            //@ts-ignore
-            scrollRef.current.style.touchAction = 'auto';
-          }
-          ref.current?.modifyGesturesForLayout(
-            id,
-            scrollLayout.current,
-            scrollOffset.current,
-          );
+          if (prevState.current) return;
+          prevState.current = true;
+          enableScrolling();
         } else {
-          //@ts-ignore
-          scrollRef.current?.setNativeProps?.({
-            scrollEnabled: false,
-          });
-          if (Platform.OS === 'web') {
-            //@ts-ignore
-            scrollRef.current.style.touchAction = 'none';
-            //@ts-ignore
-            scrollRef.current.style.overflowY = 'hidden';
-          }
-          ref.current?.modifyGesturesForLayout(id, undefined, 0);
+          if (!prevState.current) return;
+          prevState.current = false;
+          disableScrolling();
         }
       },
     );
     return () => {
       subscription?.unsubscribe();
     };
-  }, [id, ref]);
+  }, [id, ref, disableScrolling, enableScrolling]);
 
   const onLayout = (event: LayoutChangeEvent) => {
     scrollLayout.current = event.nativeEvent.layout;
-    ref.current?.modifyGesturesForLayout(id, undefined, 0);
+    ref.current?.modifyGesturesForLayout(
+      id,
+      scrollLayout.current,
+      scrollOffset.current,
+    );
   };
 
   return {
@@ -80,7 +97,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     onScroll,
     ref: scrollRef,
     onLayout: onLayout,
-    scrollEventThrottle: 200,
+    scrollEventThrottle: 50,
   };
 }
 
