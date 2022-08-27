@@ -168,7 +168,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           return;
         }
         const config = props.openAnimationConfig;
-        //notifyOffsetChange(initialValue.current);
+
+        const correctedValue =
+          initialValue.current > minTranslateValue.current
+            ? initialValue.current
+            : 0;
+        notifyOffsetChange(correctedValue as number);
         Animated.spring(animations.translateY, {
           toValue: initialValue.current,
           useNativeDriver: true,
@@ -222,7 +227,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const getCurrentPosition = React.useCallback(() => {
       //@ts-ignore
-      return animations.translateY._value < 0
+      return animations.translateY._value <= minTranslateValue.current
         ? 0
         : //@ts-ignore
           (animations.translateY._value as number);
@@ -246,8 +251,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     useEffect(() => {
       const listener = animations.translateY.addListener(value => {
-        props?.onChange?.(value.value, actionSheetHeight.current);
-        notifyOffsetChange(value.value as number);
+        const correctedValue =
+          value.value > minTranslateValue.current ? value.value : 0;
+        props?.onChange?.(correctedValue, actionSheetHeight.current);
         if (drawUnderStatusBar) {
           if (actionSheetHeight.current > dimensions.height - 1) {
             const offsetTop = value.value;
@@ -730,8 +736,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         //@ts-ignore
         return topPadding + props.containerStyle.padding;
       }
-
-      return 0;
+      return topPadding;
     };
     return (
       <>

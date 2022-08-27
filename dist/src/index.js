@@ -89,7 +89,10 @@ export default forwardRef(function ActionSheet(_a, ref) {
             return;
         }
         var config = props.openAnimationConfig;
-        //notifyOffsetChange(initialValue.current);
+        var correctedValue = initialValue.current > minTranslateValue.current
+            ? initialValue.current
+            : 0;
+        notifyOffsetChange(correctedValue);
         Animated.spring(animations.translateY, __assign(__assign({ toValue: initialValue.current, useNativeDriver: true }, config), { velocity: velocity })).start();
     }, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,7 +128,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     ]);
     var getCurrentPosition = React.useCallback(function () {
         //@ts-ignore
-        return animations.translateY._value < 0
+        return animations.translateY._value <= minTranslateValue.current
             ? 0
             : //@ts-ignore
                 animations.translateY._value;
@@ -141,8 +144,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
     useEffect(function () {
         var listener = animations.translateY.addListener(function (value) {
             var _a;
-            (_a = props === null || props === void 0 ? void 0 : props.onChange) === null || _a === void 0 ? void 0 : _a.call(props, value.value, actionSheetHeight.current);
-            notifyOffsetChange(value.value);
+            var correctedValue = value.value > minTranslateValue.current ? value.value : 0;
+            (_a = props === null || props === void 0 ? void 0 : props.onChange) === null || _a === void 0 ? void 0 : _a.call(props, correctedValue, actionSheetHeight.current);
             if (drawUnderStatusBar) {
                 if (actionSheetHeight.current > dimensions.height - 1) {
                     var offsetTop = value.value;
@@ -563,7 +566,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             //@ts-ignore
             return topPadding + props.containerStyle.padding;
         }
-        return 0;
+        return topPadding;
     };
     return (<>
         {Platform.OS === 'ios' ? (<SafeAreaView pointerEvents="none" onLayout={function (event) {
