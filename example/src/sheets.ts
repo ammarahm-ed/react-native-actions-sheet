@@ -1,13 +1,15 @@
 import ExampleSheet from './examplesheet';
 import ConfirmSheet from './confirm';
 import {registerSheet} from '../..';
-
+import Sheet from './bugsheet';
+const s = Sheet;
+// Register your Sheet component.
 /**
  * Registering the sheets here because otherwise sheet closes on
  * hot reload during development.
  */
-registerSheet('confirm-sheet', ConfirmSheet);
-registerSheet('example-sheet', ExampleSheet);
+registerSheet('confirm-sheet', ConfirmSheet, 'global', 'local');
+registerSheet('example-sheet', ExampleSheet, 'local');
 
 export {};
 

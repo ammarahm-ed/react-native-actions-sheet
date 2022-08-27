@@ -2,7 +2,7 @@
   "name": "react-native-actions-sheet",
   "version": "0.8.3",
   "description": "A Cross Platform(Android & iOS) ActionSheet with a robust and flexible api, native performance and zero dependency code for react native. Create anything you want inside ActionSheet.",
-  "main": "./dist/index.js",
+  "main": "index.tsx",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ammarahm-ed/react-native-actions-sheet.git"

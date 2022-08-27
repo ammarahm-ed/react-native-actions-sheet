@@ -18,6 +18,7 @@ const ExampleScreen = () => {
         </Text>
         <TouchableOpacity
           onPress={() => {
+            //SheetManager.show('chat-list-options');
             SheetManager.show('example-sheet', {
               payload: {data: 'hello world'},
             });
@@ -68,7 +69,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 12,
     alignItems: 'center',
-    marginHorizontal: 12,
   },
   btnTitle: {
     color: 'white',

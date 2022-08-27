@@ -1,11 +1,12 @@
 import React, {useRef} from 'react';
 import {
-  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
+  ScrollView,
 } from 'react-native';
+
 import ActionSheet, {ActionSheetRef, SheetManager, SheetProps} from '../..';
 import useScrollHandlers from '../../src/hooks/use-scroll-handlers';
 
@@ -24,16 +25,19 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
       onBeforeShow={() => {
         console.log('sheet payload', payload?.data);
       }}
-      snapPoints={[35, 60]}
+      isModal={false}
+      snapPoints={[100]}
       initialSnapIndex={0}
       statusBarTranslucent
       drawUnderStatusBar={true}
       gestureEnabled={true}
+      useBottomSafeAreaPadding
       defaultOverlayOpacity={0.3}>
       <View
         style={{
           paddingHorizontal: 12,
           maxHeight: '100%',
+          height: 500,
         }}>
         <View style={styles.container}>
           {colors.map(color => (
@@ -51,7 +55,6 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
             />
           ))}
         </View>
-
         <ScrollView {...scrollHandlers} style={styles.scrollview}>
           <TextInput
             style={styles.input}
@@ -59,10 +62,10 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
             placeholder="Write your text here"
             defaultValue="Write your text here"
           />
-
           <View>
             {items.map(item => (
               <TouchableOpacity
+                activeOpacity={0.8}
                 key={item}
                 onPress={() => {
                   SheetManager.hide(sheetId);
@@ -72,18 +75,16 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
                   style={[
                     styles.placeholder,
                     {
-                      width: item,
+                      width: '100%',
                     },
                   ]}
                 />
-
-                <View style={styles.btnLeft} />
               </TouchableOpacity>
             ))}
           </View>
 
           {/*  Add a Small Footer at Bottom */}
-          <View style={styles.footer} />
+          {/* <View style={styles.footer} /> */}
         </ScrollView>
       </View>
     </ActionSheet>
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placeholder: {
-    height: 15,
+    height: 100,
     backgroundColor: '#f0f0f0',
     marginVertical: 15,
     borderRadius: 5,
@@ -124,6 +125,7 @@ const styles = StyleSheet.create({
     borderColor: '#f0f0f0',
     marginBottom: 15,
     paddingHorizontal: 10,
+    color: 'black',
   },
   container: {
     flexDirection: 'row',
