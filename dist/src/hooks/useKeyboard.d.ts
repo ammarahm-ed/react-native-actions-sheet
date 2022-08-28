@@ -1,5 +1,5 @@
 import { ScreenRect } from 'react-native';
-export declare function useKeyboard(enabled: boolean): {
+export declare function useKeyboard(enabled: boolean, isModal: boolean, onKeyboardShow: (height: number) => void, onKeyboardHide: () => void): {
     keyboardShown: boolean;
     coordinates: Readonly<{
         screenX: 0;

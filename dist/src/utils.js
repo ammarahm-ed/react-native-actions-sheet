@@ -1,9 +1,9 @@
-import { Dimensions, Platform, StatusBar } from 'react-native';
-export function getDeviceHeight(statusBarTranslucent) {
+import { Platform, StatusBar } from 'react-native';
+export function getDeviceHeight(statusBarTranslucent, height) {
     if (Platform.OS === 'ios')
-        return Dimensions.get('screen').height;
+        return height;
     var currentStatusbarHeight = StatusBar.currentHeight || 0;
-    var height = Dimensions.get('window').height + currentStatusbarHeight - 3;
+    var height = height + currentStatusbarHeight - 3;
     if (!statusBarTranslucent) {
         return height - currentStatusbarHeight;
     }

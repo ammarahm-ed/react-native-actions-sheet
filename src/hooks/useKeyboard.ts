@@ -1,8 +1,9 @@
-import {useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   EmitterSubscription,
   Keyboard,
   KeyboardEventListener,
+  Platform,
   ScreenRect,
 } from 'react-native';
 
@@ -17,7 +18,12 @@ const initialValue = {
   end: emptyCoordinates,
 };
 
-export function useKeyboard(enabled: boolean) {
+export function useKeyboard(
+  enabled: boolean,
+  isModal: boolean,
+  onKeyboardShow: (height: number) => void,
+  onKeyboardHide: () => void,
+) {
   const [shown, setShown] = useState(false);
   const [coordinates, setCoordinates] = useState<{
     start: undefined | ScreenRect;
@@ -25,26 +31,46 @@ export function useKeyboard(enabled: boolean) {
   }>(initialValue);
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
 
+  const withTimeout = React.useCallback(
+    (callback: () => void) => {
+      if (isModal || Platform.OS === 'ios') return callback();
+      setTimeout(callback, 1);
+    },
+    [isModal],
+  );
+
   const handleKeyboardWillShow: KeyboardEventListener = e => {
     setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
   };
-  const handleKeyboardDidShow: KeyboardEventListener = e => {
-    setShown(true);
-    setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
-    setKeyboardHeight(e.endCoordinates.height);
-  };
+  const handleKeyboardDidShow: KeyboardEventListener = React.useCallback(
+    e => {
+      onKeyboardShow?.(e.endCoordinates.height);
+      withTimeout(() => {
+        setShown(true);
+        setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
+        setKeyboardHeight(e.endCoordinates.height);
+      });
+    },
+    [onKeyboardShow, withTimeout],
+  );
   const handleKeyboardWillHide: KeyboardEventListener = e => {
     setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
   };
-  const handleKeyboardDidHide: KeyboardEventListener = e => {
-    setShown(false);
-    if (e) {
-      setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
-    } else {
-      setCoordinates(initialValue);
-      setKeyboardHeight(0);
-    }
-  };
+  const handleKeyboardDidHide: KeyboardEventListener = React.useCallback(
+    e => {
+      onKeyboardHide?.();
+      withTimeout(() => {
+        setShown(false);
+        if (e) {
+          setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
+        } else {
+          setCoordinates(initialValue);
+          setKeyboardHeight(0);
+        }
+      });
+    },
+    [onKeyboardHide, withTimeout],
+  );
 
   useEffect(() => {
     let subscriptions: EmitterSubscription[] = [];
@@ -60,7 +86,7 @@ export function useKeyboard(enabled: boolean) {
     return () => {
       subscriptions.forEach(subscription => subscription.remove());
     };
-  }, [enabled]);
+  }, [enabled, handleKeyboardDidHide, handleKeyboardDidShow]);
   return {
     keyboardShown: !enabled ? false : shown,
     coordinates: !enabled ? emptyCoordinates : coordinates,

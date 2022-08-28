@@ -1,4 +1,4 @@
-export declare function getDeviceHeight(statusBarTranslucent: boolean | undefined): number;
+export declare function getDeviceHeight(statusBarTranslucent: boolean | undefined, height: number): number;
 export declare const getElevation: (elevation: number) => {
     elevation: number;
     shadowColor: string;
