@@ -54,6 +54,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var keyboardWasVisible = useRef(false);
     var prevKeyboardHeight = useRef(0);
     var lock = useRef(false);
+    var panViewRef = useRef();
     var gestureBoundaries = useRef({});
     var _8 = useState({
         width: Dimensions.get('window').width,
@@ -225,7 +226,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 portrait: height > width
             });
         });
-        if (safeAreaPaddingTop.current !== 0 || Platform.OS === 'android') {
+        if (safeAreaPaddingTop.current !== 0 || Platform.OS !== 'ios') {
             actionSheetEventManager.publish('safeAreaLayout');
         }
     }, [dimensions.width, isModal, keyboard.keyboardShown]);
@@ -365,6 +366,16 @@ export default forwardRef(function ActionSheet(_a, ref) {
                         else {
                             gestures = false;
                             break;
+                        }
+                    }
+                    if (Platform.OS === 'web') {
+                        if (!gestures) {
+                            //@ts-ignore
+                            panViewRef.current.style.touchAction = 'none';
+                        }
+                        else {
+                            //@ts-ignore
+                            panViewRef.current.style.touchAction = 'auto';
                         }
                     }
                     return gestures;
@@ -669,7 +680,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                         translateY: animations.translateY
                     },
                 ] })}>
-                {dimensions.height === 0 ? null : (<Animated.View {...handlers.panHandlers} onLayout={onSheetLayout} testID={(_k = props.testIDs) === null || _k === void 0 ? void 0 : _k.sheet} style={[
+                {dimensions.height === 0 ? null : (<Animated.View {...handlers.panHandlers} onLayout={onSheetLayout} ref={panViewRef} testID={(_k = props.testIDs) === null || _k === void 0 ? void 0 : _k.sheet} style={[
                     styles.container,
                     {
                         borderTopRightRadius: 10,

@@ -121,6 +121,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const keyboardWasVisible = useRef(false);
     const prevKeyboardHeight = useRef(0);
     const lock = useRef(false);
+    const panViewRef = useRef<View>();
     const gestureBoundaries = useRef<{
       [name: string]: LayoutRectangle & {
         scrollOffset?: number;
@@ -346,7 +347,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           },
         );
 
-        if (safeAreaPaddingTop.current !== 0 || Platform.OS === 'android') {
+        if (safeAreaPaddingTop.current !== 0 || Platform.OS !== 'ios') {
           actionSheetEventManager.publish('safeAreaLayout');
         }
       },
@@ -508,6 +509,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                     break;
                   }
                 }
+                if (Platform.OS === 'web') {
+                  if (!gestures) {
+                    //@ts-ignore
+                    panViewRef.current.style.touchAction = 'none';
+                  } else {
+                    //@ts-ignore
+                    panViewRef.current.style.touchAction = 'auto';
+                  }
+                }
                 return gestures;
               },
               onStartShouldSetPanResponder: (event, _gesture) => {
@@ -532,6 +542,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       gestures = false;
                     }
                   }
+
                   return gestures;
                 }
                 return true;
@@ -902,6 +913,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   <Animated.View
                     {...handlers.panHandlers}
                     onLayout={onSheetLayout}
+                    ref={panViewRef}
                     testID={props.testIDs?.sheet}
                     style={[
                       styles.container,
