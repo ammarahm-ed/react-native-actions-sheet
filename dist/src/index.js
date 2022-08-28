@@ -41,7 +41,7 @@ import { getElevation, SUPPORTED_ORIENTATIONS } from './utils';
 var CALCULATED_DEVICE_HEIGHT = 0;
 export default forwardRef(function ActionSheet(_a, ref) {
     var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
-    var _q = _a.animated, animated = _q === void 0 ? true : _q, _r = _a.closeOnPressBack, closeOnPressBack = _r === void 0 ? true : _r, _s = _a.springOffset, springOffset = _s === void 0 ? 50 : _s, _t = _a.elevation, elevation = _t === void 0 ? 5 : _t, _u = _a.defaultOverlayOpacity, defaultOverlayOpacity = _u === void 0 ? 0.3 : _u, _v = _a.overlayColor, overlayColor = _v === void 0 ? 'black' : _v, _w = _a.closable, closable = _w === void 0 ? true : _w, _x = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _x === void 0 ? true : _x, _y = _a.drawUnderStatusBar, drawUnderStatusBar = _y === void 0 ? false : _y, _z = _a.statusBarTranslucent, statusBarTranslucent = _z === void 0 ? true : _z, _0 = _a.gestureEnabled, gestureEnabled = _0 === void 0 ? false : _0, _1 = _a.isModal, isModal = _1 === void 0 ? true : _1, _2 = _a.snapPoints, snapPoints = _2 === void 0 ? [100] : _2, _3 = _a.initialSnapIndex, initialSnapIndex = _3 === void 0 ? 0 : _3, _4 = _a.overdrawEnabled, overdrawEnabled = _4 === void 0 ? true : _4, _5 = _a.overdrawFactor, overdrawFactor = _5 === void 0 ? 15 : _5, _6 = _a.overdrawSize, overdrawSize = _6 === void 0 ? 100 : _6, _7 = _a.zIndex, zIndex = _7 === void 0 ? 9999 : _7, _8 = _a.keyboardHandlerEnabled, keyboardHandlerEnabled = _8 === void 0 ? true : _8, ExtraOverlayComponent = _a.ExtraOverlayComponent, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "statusBarTranslucent", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex", "keyboardHandlerEnabled", "ExtraOverlayComponent"]);
+    var _q = _a.animated, animated = _q === void 0 ? true : _q, _r = _a.closeOnPressBack, closeOnPressBack = _r === void 0 ? true : _r, _s = _a.springOffset, springOffset = _s === void 0 ? 50 : _s, _t = _a.elevation, elevation = _t === void 0 ? 5 : _t, _u = _a.defaultOverlayOpacity, defaultOverlayOpacity = _u === void 0 ? 0.3 : _u, _v = _a.overlayColor, overlayColor = _v === void 0 ? 'black' : _v, _w = _a.closable, closable = _w === void 0 ? true : _w, _x = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _x === void 0 ? true : _x, _y = _a.drawUnderStatusBar, drawUnderStatusBar = _y === void 0 ? false : _y, _z = _a.gestureEnabled, gestureEnabled = _z === void 0 ? false : _z, _0 = _a.isModal, isModal = _0 === void 0 ? true : _0, _1 = _a.snapPoints, snapPoints = _1 === void 0 ? [100] : _1, _2 = _a.initialSnapIndex, initialSnapIndex = _2 === void 0 ? 0 : _2, _3 = _a.overdrawEnabled, overdrawEnabled = _3 === void 0 ? true : _3, _4 = _a.overdrawFactor, overdrawFactor = _4 === void 0 ? 15 : _4, _5 = _a.overdrawSize, overdrawSize = _5 === void 0 ? 100 : _5, _6 = _a.zIndex, zIndex = _6 === void 0 ? 9999 : _6, _7 = _a.keyboardHandlerEnabled, keyboardHandlerEnabled = _7 === void 0 ? true : _7, ExtraOverlayComponent = _a.ExtraOverlayComponent, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex", "keyboardHandlerEnabled", "ExtraOverlayComponent"]);
     snapPoints =
         snapPoints[snapPoints.length - 1] !== 100
             ? __spreadArray(__spreadArray([], snapPoints, true), [100], false) : snapPoints;
@@ -55,13 +55,13 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var prevKeyboardHeight = useRef(0);
     var lock = useRef(false);
     var gestureBoundaries = useRef({});
-    var _9 = useState({
+    var _8 = useState({
         width: Dimensions.get('window').width,
         height: 0,
         portrait: true,
         paddingBottom: (props === null || props === void 0 ? void 0 : props.useBottomSafeAreaPadding) ? 25 : 0
-    }), dimensions = _9[0], setDimensions = _9[1];
-    var _10 = useSheetManager({
+    }), dimensions = _8[0], setDimensions = _8[1];
+    var _9 = useSheetManager({
         id: props.id,
         onHide: function (data) {
             hideSheet(undefined, data);
@@ -76,7 +76,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 });
             }
         }
-    }), visible = _10.visible, setVisible = _10.setVisible;
+    }), visible = _9.visible, setVisible = _9.setVisible;
     var animations = useState({
         opacity: new Animated.Value(0),
         translateY: new Animated.Value(0),
@@ -562,7 +562,10 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 onShow: props.onOpen,
                 onRequestClose: onRequestClose,
                 transparent: true,
-                statusBarTranslucent: statusBarTranslucent
+                /**
+                 * Always true, it causes issue with keyboard handling.
+                 */
+                statusBarTranslucent: true
             }
             : {
                 testID: ((_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.root) || props.testID,
@@ -585,14 +588,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     ? 'box-none'
                     : 'auto'
             };
-    }, [
-        isModal,
-        onHardwareBackPress,
-        onRequestClose,
-        props,
-        statusBarTranslucent,
-        zIndex,
-    ]);
+    }, [isModal, onHardwareBackPress, onRequestClose, props, zIndex]);
     var getPaddingBottom = function () {
         var _a, _b, _c, _d, _e;
         var topPadding = Platform.OS === 'android'
@@ -646,7 +642,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     opacity: animations.opacity,
                     width: '100%',
                     justifyContent: 'flex-end',
-                    paddingBottom: (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
+                    paddingBottom: isModal && keyboard.keyboardShown
                         ? keyboard.keyboardHeight
                         : 0
                 },

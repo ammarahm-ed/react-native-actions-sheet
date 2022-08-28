@@ -94,7 +94,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       closable = true,
       closeOnTouchBackdrop = true,
       drawUnderStatusBar = false,
-      statusBarTranslucent = true,
       gestureEnabled = false,
       isModal = true,
       snapPoints = [100],
@@ -733,7 +732,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               onShow: props.onOpen,
               onRequestClose: onRequestClose,
               transparent: true,
-              statusBarTranslucent: statusBarTranslucent,
+              /**
+               * Always true, it causes issue with keyboard handling.
+               */
+              statusBarTranslucent: true,
             }
           : {
               testID: props.testIDs?.root || props.testID,
@@ -758,14 +760,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 ? 'box-none'
                 : 'auto',
             },
-      [
-        isModal,
-        onHardwareBackPress,
-        onRequestClose,
-        props,
-        statusBarTranslucent,
-        zIndex,
-      ],
+      [isModal, onHardwareBackPress, onRequestClose, props, zIndex],
     );
 
     const getPaddingBottom = () => {
@@ -842,7 +837,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   width: '100%',
                   justifyContent: 'flex-end',
                   paddingBottom:
-                    (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
+                    isModal && keyboard.keyboardShown
                       ? keyboard.keyboardHeight
                       : 0,
                 },
