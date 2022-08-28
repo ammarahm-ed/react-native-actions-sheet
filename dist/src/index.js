@@ -87,13 +87,14 @@ export default forwardRef(function ActionSheet(_a, ref) {
         // next state update to ensure there is no flickering.
         // Yeah, this is a hack but it works. Keyboard is painful in
         // action sheets.
-        if (initialValue.current === 0) {
+        if (initialValue.current === 0 || initialValue.current - height < 0) {
             initialValue.current = height;
             lock.current = true;
             animations.translateY.setValue(initialValue.current);
+            animations.underlayTranslateY.setValue(0);
             setTimeout(function () {
                 lock.current = false;
-            }, 300);
+            }, 500);
         }
     }, function () {
         if (initialValue.current < prevKeyboardHeight.current + 50) {
@@ -102,7 +103,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             animations.translateY.setValue(initialValue.current);
             setTimeout(function () {
                 lock.current = false;
-            }, 300);
+            }, 500);
         }
     });
     var notifyOffsetChange = function (value) {
@@ -642,7 +643,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     opacity: animations.opacity,
                     width: '100%',
                     justifyContent: 'flex-end',
-                    paddingBottom: isModal && keyboard.keyboardShown
+                    paddingBottom: (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
                         ? keyboard.keyboardHeight
                         : 0
                 },

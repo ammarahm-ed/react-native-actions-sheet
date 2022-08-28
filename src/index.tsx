@@ -167,13 +167,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         // next state update to ensure there is no flickering.
         // Yeah, this is a hack but it works. Keyboard is painful in
         // action sheets.
-        if (initialValue.current === 0) {
+        if (initialValue.current === 0 || initialValue.current - height < 0) {
           initialValue.current = height;
           lock.current = true;
           animations.translateY.setValue(initialValue.current);
+          animations.underlayTranslateY.setValue(0);
           setTimeout(() => {
             lock.current = false;
-          }, 300);
+          }, 500);
         }
       },
       () => {
@@ -183,7 +184,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           animations.translateY.setValue(initialValue.current);
           setTimeout(() => {
             lock.current = false;
-          }, 300);
+          }, 500);
         }
       },
     );
@@ -837,7 +838,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   width: '100%',
                   justifyContent: 'flex-end',
                   paddingBottom:
-                    isModal && keyboard.keyboardShown
+                    (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
                       ? keyboard.keyboardHeight
                       : 0,
                 },
