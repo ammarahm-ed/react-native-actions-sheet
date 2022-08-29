@@ -31,9 +31,8 @@ registerSheet('local-sheet', LocalSheet,'local-context');
 ```
  * @returns
  */
-declare function SheetProvider({ context, children, }: {
+export declare function SheetProvider({ context, children, }: {
     context?: string;
     children?: ReactNode;
 }): JSX.Element;
-export default SheetProvider;
 //# sourceMappingURL=provider.d.ts.map

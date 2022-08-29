@@ -9,7 +9,7 @@ import { actionSheetEventManager } from '../eventmanager';
  * @param ref ref of the ActionSheet in which the ScrollView is present.
  * @returns
  */
-function useScrollHandlers(id, ref) {
+export function useScrollHandlers(id, ref) {
     //const [enabled,setEnabled] = useState(false);
     var scrollRef = useRef(null);
     var scrollLayout = useRef();
@@ -80,4 +80,3 @@ function useScrollHandlers(id, ref) {
         scrollEventThrottle: 50
     };
 }
-export default useScrollHandlers;

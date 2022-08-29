@@ -43,7 +43,7 @@ registerSheet('local-sheet', LocalSheet,'local-context');
 ```
  * @returns
  */
-function SheetProvider(_a) {
+export function SheetProvider(_a) {
     var _b = _a.context, context = _b === void 0 ? 'global' : _b, children = _a.children;
     var _c = useReducer(function (x) { return x + 1; }, 0), forceUpdate = _c[1];
     var sheetIds = Object.keys(sheetsRegistry[context] || {});
@@ -105,4 +105,3 @@ var RenderSheet = function (_a) {
         return null;
     return !visible ? null : <Sheet sheetId={id} payload={payload}/>;
 };
-export default SheetProvider;

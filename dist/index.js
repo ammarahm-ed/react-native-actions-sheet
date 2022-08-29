@@ -1,6 +1,5 @@
 import ActionSheet from './src/index';
-import { SheetManager, setBaseZIndexForActionSheets } from './src/sheetmanager';
-import SheetProvider, { registerSheet } from './src/provider';
-import useScrollHandlers from './src/hooks/use-scroll-handlers';
-export { SheetManager, SheetProvider, registerSheet, useScrollHandlers, setBaseZIndexForActionSheets, };
+export { SheetManager, setBaseZIndexForActionSheets } from './src/sheetmanager';
+export { registerSheet, SheetProvider } from './src/provider';
+export { useScrollHandlers } from './src/hooks/use-scroll-handlers';
 export default ActionSheet;
