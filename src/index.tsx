@@ -114,7 +114,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         : snapPoints;
     const initialValue = useRef(-1);
     const actionSheetHeight = useRef(0);
-    const safeAreaPaddingTop = useRef(0);
+    const safeAreaPaddingTop = useRef<number>();
     const contextRef = useRef('global');
     const currentSnapIndex = useRef(initialSnapIndex);
     const minTranslateValue = useRef(0);
@@ -347,7 +347,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           },
         );
 
-        if (safeAreaPaddingTop.current !== 0 || Platform.OS !== 'ios') {
+        if (safeAreaPaddingTop.current !== undefined || Platform.OS !== 'ios') {
           actionSheetEventManager.publish('safeAreaLayout');
         }
       },
@@ -819,8 +819,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             pointerEvents="none"
             collapsable={false}
             onLayout={event => {
+              // safe rea height is 0 inside a modal
               let height = event.nativeEvent.layout.height;
-              if (height) {
+              if (height !== undefined) {
                 actionSheetEventManager.publish('safeAreaLayout');
                 safeAreaPaddingTop.current = event.nativeEvent.layout.height;
               }
