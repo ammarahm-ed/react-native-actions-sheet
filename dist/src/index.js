@@ -347,7 +347,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                         return false;
                     var vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
                     var vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
-                    if (vy < 0.01 || vx > 0.05) {
+                    if (vy < 0.05 || vx > 0.05) {
                         return false;
                     }
                     var gestures = true;

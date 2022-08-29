@@ -1,5 +1,5 @@
 {
-  "include": ["index.ts"],
+  "include": ["index.tsx"],
   "compilerOptions": {
     "baseUrl": "./",
     "jsx": "react-native",
