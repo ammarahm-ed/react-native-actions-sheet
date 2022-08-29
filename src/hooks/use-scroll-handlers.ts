@@ -17,7 +17,7 @@ import {ActionSheetRef} from '../index';
  * @param ref ref of the ActionSheet in which the ScrollView is present.
  * @returns
  */
-function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
+export function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
   //const [enabled,setEnabled] = useState(false);
   const scrollRef = useRef<T>(null);
   const scrollLayout = useRef<LayoutRectangle>();
@@ -100,5 +100,3 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     scrollEventThrottle: 50,
   };
 }
-
-export default useScrollHandlers;

@@ -50,7 +50,7 @@ registerSheet('local-sheet', LocalSheet,'local-context');
 ``` 
  * @returns 
  */
-function SheetProvider({
+export function SheetProvider({
   context = 'global',
   children,
 }: {
@@ -137,5 +137,3 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
 
   return !visible ? null : <Sheet sheetId={id} payload={payload} />;
 };
-
-export default SheetProvider;
