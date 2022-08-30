@@ -781,7 +781,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           ? StatusBar.currentHeight && StatusBar.currentHeight > 35
             ? 35
             : StatusBar.currentHeight
-          : safeAreaPaddingTop.current > 30
+          : (safeAreaPaddingTop.current || 0) > 30
           ? 30
           : safeAreaPaddingTop.current;
 
@@ -819,7 +819,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             pointerEvents="none"
             collapsable={false}
             onLayout={event => {
-              // safe rea height is 0 inside a modal
               let height = event.nativeEvent.layout.height;
               if (height !== undefined) {
                 actionSheetEventManager.publish('safeAreaLayout');
@@ -865,7 +864,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   style={{
                     height:
                       Dimensions.get('window').height + 100 ||
-                      dimensions.height + safeAreaPaddingTop.current + 100,
+                      dimensions.height + (safeAreaPaddingTop.current || 0) + 100,
                     width: '100%',
                     position: 'absolute',
                     zIndex: 2,
