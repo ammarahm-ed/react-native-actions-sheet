@@ -179,6 +179,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
       },
       () => {
+        // Don't run `hideKeyboard` callback if the `showKeyboard` hasn't ran yet.
+        // Fix a race condition when you open a action sheet while you have the keyboard opened.
+        if (initialValue.current === -1) {
+          return;
+        } 
+
         if (initialValue.current < prevKeyboardHeight.current + 50) {
           initialValue.current = 0;
           lock.current = true;

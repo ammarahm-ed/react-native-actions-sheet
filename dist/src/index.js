@@ -47,7 +47,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             ? __spreadArray(__spreadArray([], snapPoints, true), [100], false) : snapPoints;
     var initialValue = useRef(-1);
     var actionSheetHeight = useRef(0);
-    var safeAreaPaddingTop = useRef(0);
+    var safeAreaPaddingTop = useRef();
     var contextRef = useRef('global');
     var currentSnapIndex = useRef(initialSnapIndex);
     var minTranslateValue = useRef(0);
@@ -98,6 +98,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
             }, 500);
         }
     }, function () {
+        // Don't run `hideKeyboard` callback if the `showKeyboard` hasn't ran yet.
+        // Fix a race condition when you open a action sheet while you have the keyboard opened.
+        if (initialValue.current === -1) {
+            return;
+        }
         if (initialValue.current < prevKeyboardHeight.current + 50) {
             initialValue.current = 0;
             lock.current = true;
@@ -226,7 +231,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 portrait: height > width
             });
         });
-        if (safeAreaPaddingTop.current !== 0 || Platform.OS !== 'ios') {
+        if (safeAreaPaddingTop.current !== undefined || Platform.OS !== 'ios') {
             actionSheetEventManager.publish('safeAreaLayout');
         }
     }, [dimensions.width, isModal, keyboard.keyboardShown]);
@@ -347,7 +352,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                         return false;
                     var vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
                     var vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
-                    if (vy < 0.05 || vx > 0.05) {
+                    if (vy < 0.01 || vx > 0.05) {
                         return false;
                     }
                     var gestures = true;
@@ -607,7 +612,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             ? StatusBar.currentHeight && StatusBar.currentHeight > 35
                 ? 35
                 : StatusBar.currentHeight
-            : safeAreaPaddingTop.current > 30
+            : (safeAreaPaddingTop.current || 0) > 30
                 ? 30
                 : safeAreaPaddingTop.current;
         if (!props.useBottomSafeAreaPadding && props.containerStyle) {
@@ -634,7 +639,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     return (<>
         {Platform.OS === 'ios' ? (<SafeAreaView pointerEvents="none" collapsable={false} onLayout={function (event) {
                 var height = event.nativeEvent.layout.height;
-                if (height) {
+                if (height !== undefined) {
                     actionSheetEventManager.publish('safeAreaLayout');
                     safeAreaPaddingTop.current = event.nativeEvent.layout.height;
                 }
@@ -663,7 +668,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
               {ExtraOverlayComponent}
               {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<TouchableOpacity onPress={onTouch} activeOpacity={defaultOverlayOpacity} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
                     height: Dimensions.get('window').height + 100 ||
-                        dimensions.height + safeAreaPaddingTop.current + 100,
+                        dimensions.height + (safeAreaPaddingTop.current || 0) + 100,
                     width: '100%',
                     position: 'absolute',
                     zIndex: 2,
