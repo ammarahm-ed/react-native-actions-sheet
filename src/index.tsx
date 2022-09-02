@@ -487,7 +487,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   return false;
                 let vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
                 let vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
-                if (vy < 0.01 || vx > 0.05) {
+                if (vy < 0.05 || vx > 0.05) {
                   return false;
                 }
                 let gestures = true;

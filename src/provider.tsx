@@ -34,23 +34,23 @@ export function registerSheet(
 /**
  * The SheetProvider makes available the sheets in a given context. The default context is
  * `global`. However if you want to render a Sheet within another sheet or if you want to render
- * Sheets in a modal. You can use a seperate Provider with a custom context value. 
- * 
+ * Sheets in a modal. You can use a seperate Provider with a custom context value.
+ *
  * For example
 ```ts
-// Define your SheetProvider in the component/modal where 
+// Define your SheetProvider in the component/modal where
 // you want to show some Sheets.
 <SheetProvider context="local-context" />
 
-// Then register your sheet when for example the 
+// Then register your sheet when for example the
 // Modal component renders.
 
 registerSheet('local-sheet', LocalSheet,'local-context');
 
-``` 
- * @returns 
+```
+ * @returns
  */
-function SheetProvider({
+export function SheetProvider({
   context = 'global',
   children,
 }: {
@@ -137,5 +137,3 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
 
   return !visible ? null : <Sheet sheetId={id} payload={payload} />;
 };
-
-export default SheetProvider;

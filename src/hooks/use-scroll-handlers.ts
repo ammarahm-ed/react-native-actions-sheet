@@ -17,7 +17,10 @@ import {ActionSheetRef} from '../index';
  * @param ref ref of the ActionSheet in which the ScrollView is present.
  * @returns
  */
-function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
+export function useScrollHandlers<T>(
+  id: string,
+  ref: RefObject<ActionSheetRef>,
+) {
   //const [enabled,setEnabled] = useState(false);
   const scrollRef = useRef<T>(null);
   const scrollLayout = useRef<LayoutRectangle>();
@@ -43,7 +46,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
       //@ts-ignore
       scrollRef.current.style.overflowY = 'hidden';
     }
-  }, []);
+  }, [scrollRef]);
 
   const enableScrolling = React.useCallback(() => {
     //@ts-ignore
@@ -56,7 +59,7 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
       //@ts-ignore
       scrollRef.current.style.touchAction = 'auto';
     }
-  }, []);
+  }, [scrollRef]);
 
   useEffect(() => {
     const subscription = actionSheetEventManager.subscribe(
@@ -100,5 +103,3 @@ function useScrollHandlers<T>(id: string, ref: RefObject<ActionSheetRef>) {
     scrollEventThrottle: 50,
   };
 }
-
-export default useScrollHandlers;
