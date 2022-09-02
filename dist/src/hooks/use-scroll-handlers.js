@@ -32,7 +32,7 @@ export function useScrollHandlers(id, ref) {
             //@ts-ignore
             scrollRef.current.style.overflowY = 'hidden';
         }
-    }, []);
+    }, [scrollRef]);
     var enableScrolling = React.useCallback(function () {
         var _a, _b;
         //@ts-ignore
@@ -45,7 +45,7 @@ export function useScrollHandlers(id, ref) {
             //@ts-ignore
             scrollRef.current.style.touchAction = 'auto';
         }
-    }, []);
+    }, [scrollRef]);
     useEffect(function () {
         var subscription = actionSheetEventManager.subscribe('onoffsetchange', function (offset) {
             var _a;
