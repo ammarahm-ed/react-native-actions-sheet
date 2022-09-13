@@ -9,7 +9,7 @@ export declare type ActionSheetRef = {
     /**
      * Hide the ActionSheet.
      */
-    hide: (data: any) => void;
+    hide: (data?: any) => void;
     /**
      * @removed Use `show` or `hide` functions or SheetManager to open/close ActionSheet.
      */
