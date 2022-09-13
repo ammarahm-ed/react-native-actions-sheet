@@ -30,7 +30,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 /* eslint-disable curly */
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState, } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, } from 'react';
 import { Animated, BackHandler, Dimensions, Easing, Modal, PanResponder, Platform, SafeAreaView, StatusBar, TouchableOpacity, View, } from 'react-native';
 import { actionSheetEventManager } from './eventmanager';
 import useSheetManager from './hooks/use-sheet-manager';
@@ -512,7 +512,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         keyboard.keyboardShown,
         keyboard.keyboardHeight,
     ]);
-    var getRef = function () { return ({
+    var getRef = useCallback(function () { return ({
         show: function () {
             setTimeout(function () {
                 setVisible(true);
@@ -554,8 +554,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         },
         isGestureEnabled: function () { return gestureEnabled; },
         isOpen: function () { return visible; }
-    }); };
-    useImperativeHandle(ref, getRef, [
+    }); }, [
         animations.translateY,
         gestureEnabled,
         getNextPosition,
@@ -565,6 +564,14 @@ export default forwardRef(function ActionSheet(_a, ref) {
         snapPoints.length,
         visible,
     ]);
+    useImperativeHandle(ref, getRef, [getRef]);
+    useEffect(function () {
+        if (props.id) {
+            SheetManager.registerRef(props.id, contextRef.current, {
+                current: getRef()
+            });
+        }
+    }, [getRef, props.id]);
     var onRequestClose = React.useCallback(function () {
         hideSheet();
     }, [hideSheet]);
@@ -668,7 +675,9 @@ export default forwardRef(function ActionSheet(_a, ref) {
               {ExtraOverlayComponent}
               {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<TouchableOpacity onPress={onTouch} activeOpacity={defaultOverlayOpacity} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
                     height: Dimensions.get('window').height + 100 ||
-                        dimensions.height + (safeAreaPaddingTop.current || 0) + 100,
+                        dimensions.height +
+                            (safeAreaPaddingTop.current || 0) +
+                            100,
                     width: '100%',
                     position: 'absolute',
                     zIndex: 2,

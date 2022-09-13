@@ -2,6 +2,7 @@
 import React, {
   forwardRef,
   RefObject,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -183,7 +184,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         // Fix a race condition when you open a action sheet while you have the keyboard opened.
         if (initialValue.current === -1) {
           return;
-        } 
+        }
 
         if (initialValue.current < prevKeyboardHeight.current + 50) {
           initialValue.current = 0;
@@ -670,71 +671,82 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       ],
     );
 
-    const getRef = (): ActionSheetRef => ({
-      show: () => {
-        setTimeout(() => {
-          setVisible(true);
-        }, 1);
-      },
-      hide: (data: any) => {
-        hideSheet(data);
-      },
-      setModalVisible: (_visible?: boolean) => {
-        if (_visible) {
+    const getRef = useCallback(
+      (): ActionSheetRef => ({
+        show: () => {
           setTimeout(() => {
             setVisible(true);
           }, 1);
-        } else {
-          hideSheet();
-        }
-      },
-      snapToOffset: (offset: number) => {
-        initialValue.current =
-          actionSheetHeight.current +
-          minTranslateValue.current -
-          (actionSheetHeight.current * offset) / 100;
-        Animated.spring(animations.translateY, {
-          toValue: initialValue.current,
-          useNativeDriver: true,
-          ...props.openAnimationConfig,
-        }).start();
-      },
-      snapToIndex: (index: number) => {
-        if (index > snapPoints.length || index < 0) return;
-        currentSnapIndex.current = index;
-        initialValue.current = getNextPosition(index);
-        Animated.spring(animations.translateY, {
-          toValue: initialValue.current,
-          useNativeDriver: true,
-          ...props.openAnimationConfig,
-        }).start();
-      },
-      handleChildScrollEnd: () => {
-        console.warn(
-          'handleChildScrollEnd has been removed. Please use `useScrollHandlers` hook to enable scrolling in ActionSheet',
-        );
-      },
-      modifyGesturesForLayout: (id, layout, scrollOffset) => {
-        //@ts-ignore
-        gestureBoundaries.current[id] = {
-          ...layout,
-          scrollOffset: scrollOffset,
-        };
-      },
-      isGestureEnabled: () => gestureEnabled,
-      isOpen: () => visible,
-    });
+        },
+        hide: (data: any) => {
+          hideSheet(data);
+        },
+        setModalVisible: (_visible?: boolean) => {
+          if (_visible) {
+            setTimeout(() => {
+              setVisible(true);
+            }, 1);
+          } else {
+            hideSheet();
+          }
+        },
+        snapToOffset: (offset: number) => {
+          initialValue.current =
+            actionSheetHeight.current +
+            minTranslateValue.current -
+            (actionSheetHeight.current * offset) / 100;
+          Animated.spring(animations.translateY, {
+            toValue: initialValue.current,
+            useNativeDriver: true,
+            ...props.openAnimationConfig,
+          }).start();
+        },
+        snapToIndex: (index: number) => {
+          if (index > snapPoints.length || index < 0) return;
+          currentSnapIndex.current = index;
+          initialValue.current = getNextPosition(index);
+          Animated.spring(animations.translateY, {
+            toValue: initialValue.current,
+            useNativeDriver: true,
+            ...props.openAnimationConfig,
+          }).start();
+        },
+        handleChildScrollEnd: () => {
+          console.warn(
+            'handleChildScrollEnd has been removed. Please use `useScrollHandlers` hook to enable scrolling in ActionSheet',
+          );
+        },
+        modifyGesturesForLayout: (id, layout, scrollOffset) => {
+          //@ts-ignore
+          gestureBoundaries.current[id] = {
+            ...layout,
+            scrollOffset: scrollOffset,
+          };
+        },
+        isGestureEnabled: () => gestureEnabled,
+        isOpen: () => visible,
+      }),
+      [
+        animations.translateY,
+        gestureEnabled,
+        getNextPosition,
+        hideSheet,
+        props.openAnimationConfig,
+        setVisible,
+        snapPoints.length,
+        visible,
+      ],
+    );
 
-    useImperativeHandle(ref, getRef, [
-      animations.translateY,
-      gestureEnabled,
-      getNextPosition,
-      hideSheet,
-      props.openAnimationConfig,
-      setVisible,
-      snapPoints.length,
-      visible,
-    ]);
+    useImperativeHandle(ref, getRef, [getRef]);
+
+    useEffect(() => {
+      if (props.id) {
+        SheetManager.registerRef(props.id, contextRef.current, {
+          current: getRef(),
+        } as RefObject<ActionSheetRef>);
+      }
+    }, [getRef, props.id]);
 
     const onRequestClose = React.useCallback(() => {
       hideSheet();
@@ -870,7 +882,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   style={{
                     height:
                       Dimensions.get('window').height + 100 ||
-                      dimensions.height + (safeAreaPaddingTop.current || 0) + 100,
+                      dimensions.height +
+                        (safeAreaPaddingTop.current || 0) +
+                        100,
                     width: '100%',
                     position: 'absolute',
                     zIndex: 2,
