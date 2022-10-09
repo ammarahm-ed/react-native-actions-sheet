@@ -14,10 +14,11 @@ export function useKeyboard(enabled, isModal, onKeyboardShow, onKeyboardHide) {
     var _a = useState(false), shown = _a[0], setShown = _a[1];
     var _b = useState(initialValue), coordinates = _b[0], setCoordinates = _b[1];
     var _c = useState(0), keyboardHeight = _c[0], setKeyboardHeight = _c[1];
-    var withTimeout = React.useCallback(function (callback) {
+    var withTimeout = React.useCallback(function (callback, timeout) {
+        if (timeout === void 0) { timeout = 1; }
         if (isModal || Platform.OS === 'ios')
             return callback();
-        setTimeout(callback, 1);
+        setTimeout(callback, timeout);
     }, [isModal]);
     var handleKeyboardWillShow = function (e) {
         setCoordinates({ start: e.startCoordinates, end: e.endCoordinates });
@@ -44,7 +45,7 @@ export function useKeyboard(enabled, isModal, onKeyboardShow, onKeyboardHide) {
                 setCoordinates(initialValue);
                 setKeyboardHeight(0);
             }
-        });
+        }, 1);
     }, [onKeyboardHide, withTimeout]);
     useEffect(function () {
         var subscriptions = [];

@@ -128,6 +128,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         scrollOffset?: number;
       };
     }>({});
+    const initialWindowHeight = useRef(Dimensions.get('screen').height);
     const [dimensions, setDimensions] = useState<{
       width: number;
       height: number;
@@ -159,41 +160,20 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       opacity: new Animated.Value(0),
       translateY: new Animated.Value(0),
       underlayTranslateY: new Animated.Value(100),
+      keyboardTranslate: new Animated.Value(0),
     });
 
     const keyboard = useKeyboard(
       keyboardHandlerEnabled,
-      isModal,
-      height => {
-        // Calculate next position and move the sheet before
-        // next state update to ensure there is no flickering.
-        // Yeah, this is a hack but it works. Keyboard is painful in
-        // action sheets.
-        if (initialValue.current === 0 || initialValue.current - height < 0) {
-          initialValue.current = height;
-          lock.current = true;
-          animations.translateY.setValue(initialValue.current);
-          animations.underlayTranslateY.setValue(0);
-          setTimeout(() => {
-            lock.current = false;
-          }, 500);
-        }
-      },
+      true,
+      () => null,
       () => {
         // Don't run `hideKeyboard` callback if the `showKeyboard` hasn't ran yet.
         // Fix a race condition when you open a action sheet while you have the keyboard opened.
         if (initialValue.current === -1) {
           return;
         }
-
-        if (initialValue.current < prevKeyboardHeight.current + 50) {
-          initialValue.current = 0;
-          lock.current = true;
-          animations.translateY.setValue(initialValue.current);
-          setTimeout(() => {
-            lock.current = false;
-          }, 500);
-        }
+        keyboardAnimation(false);
       },
     );
 
@@ -217,11 +197,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           toValue: initialValue.current,
           useNativeDriver: true,
           ...config,
-          velocity: velocity,
+          velocity: typeof velocity !== 'number' ? undefined : velocity,
         }).start();
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [animated, props.openAnimationConfig],
+    );
+
+    const keyboardAnimation = React.useCallback(
+      (shown = true) => {
+        Animated.spring(animations.keyboardTranslate, {
+          toValue: shown ? -keyboard.keyboardHeight : 0,
+          useNativeDriver: true,
+        }).start();
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [animated, props.openAnimationConfig, keyboard],
     );
 
     const opacityAnimation = React.useCallback(
@@ -246,7 +237,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         const config = props.closeAnimationConfig;
         opacityAnimation(0);
         Animated.spring(animations.translateY, {
-          velocity: vy,
+          velocity: typeof vy !== 'number' ? undefined : vy,
           toValue: dimensions.height * 1.3,
           useNativeDriver: true,
           ...config,
@@ -301,9 +292,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           const correctedOffset = keyboard.keyboardShown
             ? value.value - keyboard.keyboardHeight
             : value.value;
+
           if (actionSheetHeight.current > correctedHeight - 1) {
             if (correctedOffset < 100) {
-              animations.underlayTranslateY.setValue(correctedOffset);
+              animations.underlayTranslateY.setValue(
+                Math.max(correctedOffset, 0),
+              );
             } else {
               //@ts-ignore
               if (animations.underlayTranslateY._value < 100) {
@@ -641,12 +635,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             ? initialValue.current
             : nextInitialValue;
         if (keyboard.keyboardShown) {
+          keyboardAnimation();
           keyboardWasVisible.current = true;
           prevKeyboardHeight.current = keyboard.keyboardHeight;
         } else {
           keyboardWasVisible.current = false;
         }
-
         opacityAnimation(1);
         returnAnimation();
 
@@ -660,14 +654,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
       },
       [
-        animations.translateY,
-        animations.underlayTranslateY,
-        opacityAnimation,
-        returnAnimation,
-        snapPoints,
         dimensions.height,
+        snapPoints,
         keyboard.keyboardShown,
         keyboard.keyboardHeight,
+        opacityAnimation,
+        returnAnimation,
+        keyboardAnimation,
+        animations.translateY,
+        animations.underlayTranslateY,
       ],
     );
 
@@ -784,7 +779,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   ? getZIndexFromStack(props.id, contextRef.current)
                   : 999,
                 width: '100%',
-                height: '100%',
+                height: initialWindowHeight.current,
               },
               pointerEvents: props?.backgroundInteractionEnabled
                 ? 'box-none'
@@ -866,10 +861,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   opacity: animations.opacity,
                   width: '100%',
                   justifyContent: 'flex-end',
-                  paddingBottom:
-                    (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
-                      ? keyboard.keyboardHeight
-                      : 0,
+                  transform: [
+                    {
+                      translateY: animations.keyboardTranslate,
+                    },
+                  ],
                 },
               ]}>
               {props.withNestedSheetProvider}
@@ -914,14 +910,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   ),
                   flex: undefined,
                   height: dimensions.height,
-                  maxHeight:
-                    (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
-                      ? dimensions.height - keyboard.keyboardHeight
-                      : dimensions.height,
-                  marginBottom:
-                    (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
-                      ? keyboard.keyboardHeight
-                      : 0,
+                  maxHeight: dimensions.height,
+                  paddingBottom: keyboard.keyboardShown
+                    ? keyboard.keyboardHeight
+                    : 0,
                   zIndex: 10,
                   transform: [
                     {
@@ -943,7 +935,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       },
                       props.containerStyle,
                       {
-                        paddingBottom: paddingBottom,
+                        paddingBottom: keyboard.keyboardShown
+                          ? paddingBottom + 2
+                          : paddingBottom,
                         maxHeight: keyboard.keyboardShown
                           ? dimensions.height - keyboard.keyboardHeight
                           : dimensions.height,
@@ -958,7 +952,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                           backgroundColor:
                             props.containerStyle?.backgroundColor || 'white',
                           width: '100%',
-                          borderRadius:
+                          borderTopRightRadius:
+                            props.containerStyle?.borderRadius || 10,
+                          borderTopLeftRadius:
                             props.containerStyle?.borderRadius || 10,
                           transform: [
                             {

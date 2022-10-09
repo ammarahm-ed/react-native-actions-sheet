@@ -32,9 +32,9 @@ export function useKeyboard(
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
 
   const withTimeout = React.useCallback(
-    (callback: () => void) => {
+    (callback: () => void, timeout = 1) => {
       if (isModal || Platform.OS === 'ios') return callback();
-      setTimeout(callback, 1);
+      setTimeout(callback, timeout);
     },
     [isModal],
   );
@@ -67,7 +67,7 @@ export function useKeyboard(
           setCoordinates(initialValue);
           setKeyboardHeight(0);
         }
-      });
+      }, 1);
     },
     [onKeyboardHide, withTimeout],
   );

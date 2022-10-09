@@ -40,8 +40,8 @@ import { styles } from './styles';
 import { getElevation, SUPPORTED_ORIENTATIONS } from './utils';
 var CALCULATED_DEVICE_HEIGHT = 0;
 export default forwardRef(function ActionSheet(_a, ref) {
-    var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
-    var _q = _a.animated, animated = _q === void 0 ? true : _q, _r = _a.closeOnPressBack, closeOnPressBack = _r === void 0 ? true : _r, _s = _a.springOffset, springOffset = _s === void 0 ? 50 : _s, _t = _a.elevation, elevation = _t === void 0 ? 5 : _t, _u = _a.defaultOverlayOpacity, defaultOverlayOpacity = _u === void 0 ? 0.3 : _u, _v = _a.overlayColor, overlayColor = _v === void 0 ? 'black' : _v, _w = _a.closable, closable = _w === void 0 ? true : _w, _x = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _x === void 0 ? true : _x, _y = _a.drawUnderStatusBar, drawUnderStatusBar = _y === void 0 ? false : _y, _z = _a.gestureEnabled, gestureEnabled = _z === void 0 ? false : _z, _0 = _a.isModal, isModal = _0 === void 0 ? true : _0, _1 = _a.snapPoints, snapPoints = _1 === void 0 ? [100] : _1, _2 = _a.initialSnapIndex, initialSnapIndex = _2 === void 0 ? 0 : _2, _3 = _a.overdrawEnabled, overdrawEnabled = _3 === void 0 ? true : _3, _4 = _a.overdrawFactor, overdrawFactor = _4 === void 0 ? 15 : _4, _5 = _a.overdrawSize, overdrawSize = _5 === void 0 ? 100 : _5, _6 = _a.zIndex, zIndex = _6 === void 0 ? 9999 : _6, _7 = _a.keyboardHandlerEnabled, keyboardHandlerEnabled = _7 === void 0 ? true : _7, ExtraOverlayComponent = _a.ExtraOverlayComponent, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex", "keyboardHandlerEnabled", "ExtraOverlayComponent"]);
+    var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+    var _r = _a.animated, animated = _r === void 0 ? true : _r, _s = _a.closeOnPressBack, closeOnPressBack = _s === void 0 ? true : _s, _t = _a.springOffset, springOffset = _t === void 0 ? 50 : _t, _u = _a.elevation, elevation = _u === void 0 ? 5 : _u, _v = _a.defaultOverlayOpacity, defaultOverlayOpacity = _v === void 0 ? 0.3 : _v, _w = _a.overlayColor, overlayColor = _w === void 0 ? 'black' : _w, _x = _a.closable, closable = _x === void 0 ? true : _x, _y = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _y === void 0 ? true : _y, _z = _a.drawUnderStatusBar, drawUnderStatusBar = _z === void 0 ? false : _z, _0 = _a.gestureEnabled, gestureEnabled = _0 === void 0 ? false : _0, _1 = _a.isModal, isModal = _1 === void 0 ? true : _1, _2 = _a.snapPoints, snapPoints = _2 === void 0 ? [100] : _2, _3 = _a.initialSnapIndex, initialSnapIndex = _3 === void 0 ? 0 : _3, _4 = _a.overdrawEnabled, overdrawEnabled = _4 === void 0 ? true : _4, _5 = _a.overdrawFactor, overdrawFactor = _5 === void 0 ? 15 : _5, _6 = _a.overdrawSize, overdrawSize = _6 === void 0 ? 100 : _6, _7 = _a.zIndex, zIndex = _7 === void 0 ? 9999 : _7, _8 = _a.keyboardHandlerEnabled, keyboardHandlerEnabled = _8 === void 0 ? true : _8, ExtraOverlayComponent = _a.ExtraOverlayComponent, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex", "keyboardHandlerEnabled", "ExtraOverlayComponent"]);
     snapPoints =
         snapPoints[snapPoints.length - 1] !== 100
             ? __spreadArray(__spreadArray([], snapPoints, true), [100], false) : snapPoints;
@@ -56,13 +56,14 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var lock = useRef(false);
     var panViewRef = useRef();
     var gestureBoundaries = useRef({});
-    var _8 = useState({
+    var initialWindowHeight = useRef(Dimensions.get('screen').height);
+    var _9 = useState({
         width: Dimensions.get('window').width,
         height: 0,
         portrait: true,
         paddingBottom: (props === null || props === void 0 ? void 0 : props.useBottomSafeAreaPadding) ? 25 : 0
-    }), dimensions = _8[0], setDimensions = _8[1];
-    var _9 = useSheetManager({
+    }), dimensions = _9[0], setDimensions = _9[1];
+    var _10 = useSheetManager({
         id: props.id,
         onHide: function (data) {
             hideSheet(undefined, data);
@@ -77,40 +78,20 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 });
             }
         }
-    }), visible = _9.visible, setVisible = _9.setVisible;
+    }), visible = _10.visible, setVisible = _10.setVisible;
     var animations = useState({
         opacity: new Animated.Value(0),
         translateY: new Animated.Value(0),
-        underlayTranslateY: new Animated.Value(100)
+        underlayTranslateY: new Animated.Value(100),
+        keyboardTranslate: new Animated.Value(0)
     })[0];
-    var keyboard = useKeyboard(keyboardHandlerEnabled, isModal, function (height) {
-        // Calculate next position and move the sheet before
-        // next state update to ensure there is no flickering.
-        // Yeah, this is a hack but it works. Keyboard is painful in
-        // action sheets.
-        if (initialValue.current === 0 || initialValue.current - height < 0) {
-            initialValue.current = height;
-            lock.current = true;
-            animations.translateY.setValue(initialValue.current);
-            animations.underlayTranslateY.setValue(0);
-            setTimeout(function () {
-                lock.current = false;
-            }, 500);
-        }
-    }, function () {
+    var keyboard = useKeyboard(keyboardHandlerEnabled, true, function () { return null; }, function () {
         // Don't run `hideKeyboard` callback if the `showKeyboard` hasn't ran yet.
         // Fix a race condition when you open a action sheet while you have the keyboard opened.
         if (initialValue.current === -1) {
             return;
         }
-        if (initialValue.current < prevKeyboardHeight.current + 50) {
-            initialValue.current = 0;
-            lock.current = true;
-            animations.translateY.setValue(initialValue.current);
-            setTimeout(function () {
-                lock.current = false;
-            }, 500);
-        }
+        keyboardAnimation(false);
     });
     var notifyOffsetChange = function (value) {
         actionSheetEventManager.publish('onoffsetchange', value);
@@ -125,10 +106,19 @@ export default forwardRef(function ActionSheet(_a, ref) {
             ? initialValue.current
             : 0;
         notifyOffsetChange(correctedValue);
-        Animated.spring(animations.translateY, __assign(__assign({ toValue: initialValue.current, useNativeDriver: true }, config), { velocity: velocity })).start();
+        Animated.spring(animations.translateY, __assign(__assign({ toValue: initialValue.current, useNativeDriver: true }, config), { velocity: typeof velocity !== 'number' ? undefined : velocity })).start();
     }, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [animated, props.openAnimationConfig]);
+    var keyboardAnimation = React.useCallback(function (shown) {
+        if (shown === void 0) { shown = true; }
+        Animated.spring(animations.keyboardTranslate, {
+            toValue: shown ? -keyboard.keyboardHeight : 0,
+            useNativeDriver: true
+        }).start();
+    }, 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [animated, props.openAnimationConfig, keyboard]);
     var opacityAnimation = React.useCallback(function (opacity) {
         Animated.timing(animations.opacity, {
             duration: 150,
@@ -146,7 +136,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         }
         var config = props.closeAnimationConfig;
         opacityAnimation(0);
-        Animated.spring(animations.translateY, __assign({ velocity: vy, toValue: dimensions.height * 1.3, useNativeDriver: true }, config)).start();
+        Animated.spring(animations.translateY, __assign({ velocity: typeof vy !== 'number' ? undefined : vy, toValue: dimensions.height * 1.3, useNativeDriver: true }, config)).start();
         setTimeout(function () {
             callback === null || callback === void 0 ? void 0 : callback({ finished: true });
         }, 300);
@@ -189,7 +179,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     : value.value;
                 if (actionSheetHeight.current > correctedHeight - 1) {
                     if (correctedOffset < 100) {
-                        animations.underlayTranslateY.setValue(correctedOffset);
+                        animations.underlayTranslateY.setValue(Math.max(correctedOffset, 0));
                     }
                     else {
                         //@ts-ignore
@@ -485,6 +475,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 ? initialValue.current
                 : nextInitialValue;
         if (keyboard.keyboardShown) {
+            keyboardAnimation();
             keyboardWasVisible.current = true;
             prevKeyboardHeight.current = keyboard.keyboardHeight;
         }
@@ -503,14 +494,15 @@ export default forwardRef(function ActionSheet(_a, ref) {
             document.documentElement.style.overflowY = 'hidden';
         }
     }, [
-        animations.translateY,
-        animations.underlayTranslateY,
-        opacityAnimation,
-        returnAnimation,
-        snapPoints,
         dimensions.height,
+        snapPoints,
         keyboard.keyboardShown,
         keyboard.keyboardHeight,
+        opacityAnimation,
+        returnAnimation,
+        keyboardAnimation,
+        animations.translateY,
+        animations.underlayTranslateY,
     ]);
     var getRef = useCallback(function () { return ({
         show: function () {
@@ -606,7 +598,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                             ? getZIndexFromStack(props.id, contextRef.current)
                             : 999,
                     width: '100%',
-                    height: '100%'
+                    height: initialWindowHeight.current
                 },
                 pointerEvents: (props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled)
                     ? 'box-none'
@@ -666,9 +658,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     opacity: animations.opacity,
                     width: '100%',
                     justifyContent: 'flex-end',
-                    paddingBottom: (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
-                        ? keyboard.keyboardHeight
-                        : 0
+                    transform: [
+                        {
+                            translateY: animations.keyboardTranslate
+                        },
+                    ]
                 },
             ]}>
               {props.withNestedSheetProvider}
@@ -685,9 +679,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     opacity: defaultOverlayOpacity
                 }}/>) : null}
 
-              <Animated.View pointerEvents="box-none" style={__assign(__assign({ borderTopRightRadius: ((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.borderTopRightRadius) || 10, borderTopLeftRadius: ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.borderTopLeftRadius) || 10, backgroundColor: ((_e = props.containerStyle) === null || _e === void 0 ? void 0 : _e.backgroundColor) || 'white', borderBottomLeftRadius: ((_f = props.containerStyle) === null || _f === void 0 ? void 0 : _f.borderBottomLeftRadius) || undefined, borderBottomRightRadius: ((_g = props.containerStyle) === null || _g === void 0 ? void 0 : _g.borderBottomRightRadius) || undefined, borderRadius: ((_h = props.containerStyle) === null || _h === void 0 ? void 0 : _h.borderRadius) || undefined, width: ((_j = props.containerStyle) === null || _j === void 0 ? void 0 : _j.width) || '100%' }, getElevation(typeof elevation === 'number' ? elevation : 5)), { flex: undefined, height: dimensions.height, maxHeight: (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
-                    ? dimensions.height - keyboard.keyboardHeight
-                    : dimensions.height, marginBottom: (isModal || Platform.OS === 'ios') && keyboard.keyboardShown
+              <Animated.View pointerEvents="box-none" style={__assign(__assign({ borderTopRightRadius: ((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.borderTopRightRadius) || 10, borderTopLeftRadius: ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.borderTopLeftRadius) || 10, backgroundColor: ((_e = props.containerStyle) === null || _e === void 0 ? void 0 : _e.backgroundColor) || 'white', borderBottomLeftRadius: ((_f = props.containerStyle) === null || _f === void 0 ? void 0 : _f.borderBottomLeftRadius) || undefined, borderBottomRightRadius: ((_g = props.containerStyle) === null || _g === void 0 ? void 0 : _g.borderBottomRightRadius) || undefined, borderRadius: ((_h = props.containerStyle) === null || _h === void 0 ? void 0 : _h.borderRadius) || undefined, width: ((_j = props.containerStyle) === null || _j === void 0 ? void 0 : _j.width) || '100%' }, getElevation(typeof elevation === 'number' ? elevation : 5)), { flex: undefined, height: dimensions.height, maxHeight: dimensions.height, paddingBottom: keyboard.keyboardShown
                     ? keyboard.keyboardHeight
                     : 0, zIndex: 10, transform: [
                     {
@@ -702,7 +694,9 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     },
                     props.containerStyle,
                     {
-                        paddingBottom: paddingBottom,
+                        paddingBottom: keyboard.keyboardShown
+                            ? paddingBottom + 2
+                            : paddingBottom,
                         maxHeight: keyboard.keyboardShown
                             ? dimensions.height - keyboard.keyboardHeight
                             : dimensions.height
@@ -714,7 +708,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
                         top: -50,
                         backgroundColor: ((_l = props.containerStyle) === null || _l === void 0 ? void 0 : _l.backgroundColor) || 'white',
                         width: '100%',
-                        borderRadius: ((_m = props.containerStyle) === null || _m === void 0 ? void 0 : _m.borderRadius) || 10,
+                        borderTopRightRadius: ((_m = props.containerStyle) === null || _m === void 0 ? void 0 : _m.borderRadius) || 10,
+                        borderTopLeftRadius: ((_o = props.containerStyle) === null || _o === void 0 ? void 0 : _o.borderRadius) || 10,
                         transform: [
                             {
                                 translateY: animations.underlayTranslateY
@@ -729,8 +724,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     position: 'absolute',
                     height: overdrawSize,
                     bottom: -overdrawSize,
-                    backgroundColor: ((_o = props.containerStyle) === null || _o === void 0 ? void 0 : _o.backgroundColor) || 'white',
-                    width: ((_p = props.containerStyle) === null || _p === void 0 ? void 0 : _p.width) || dimensions.width
+                    backgroundColor: ((_p = props.containerStyle) === null || _p === void 0 ? void 0 : _p.backgroundColor) || 'white',
+                    width: ((_q = props.containerStyle) === null || _q === void 0 ? void 0 : _q.width) || dimensions.width
                 }}/>) : null}
               </Animated.View>
             </Animated.View>
