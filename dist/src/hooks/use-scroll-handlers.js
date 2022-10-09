@@ -1,7 +1,6 @@
 /* eslint-disable curly */
 import React, { useEffect, useRef } from 'react';
 import { Platform, } from 'react-native';
-import { actionSheetEventManager } from '../eventmanager';
 /**
  * If you are using a `ScrollView` or `FlatList` in ActionSheet. You must attach `scrollHandlers`
  * with it to enable vertical scrolling. For horizontal ScrollViews, you should not use this hook.
@@ -15,6 +14,7 @@ export function useScrollHandlers(id, ref) {
     var scrollLayout = useRef();
     var scrollOffset = useRef(0);
     var prevState = useRef(false);
+    var subscription = useRef();
     var onScroll = function (event) {
         var _a;
         scrollOffset.current = event.nativeEvent.contentOffset.y;
@@ -47,7 +47,15 @@ export function useScrollHandlers(id, ref) {
         }
     }, [scrollRef]);
     useEffect(function () {
-        var subscription = actionSheetEventManager.subscribe('onoffsetchange', function (offset) {
+        return function () {
+            var _a;
+            (_a = subscription.current) === null || _a === void 0 ? void 0 : _a.unsubscribe();
+        };
+    }, [id, ref, disableScrolling, enableScrolling]);
+    var onLayout = function (event) {
+        var _a, _b;
+        scrollLayout.current = event.nativeEvent.layout;
+        subscription.current = (_a = ref.current) === null || _a === void 0 ? void 0 : _a.ev.subscribe('onoffsetchange', function (offset) {
             var _a;
             (_a = ref.current) === null || _a === void 0 ? void 0 : _a.modifyGesturesForLayout(id, scrollLayout.current, scrollOffset.current);
             if (offset < 3) {
@@ -63,14 +71,7 @@ export function useScrollHandlers(id, ref) {
                 disableScrolling();
             }
         });
-        return function () {
-            subscription === null || subscription === void 0 ? void 0 : subscription.unsubscribe();
-        };
-    }, [id, ref, disableScrolling, enableScrolling]);
-    var onLayout = function (event) {
-        var _a;
-        scrollLayout.current = event.nativeEvent.layout;
-        (_a = ref.current) === null || _a === void 0 ? void 0 : _a.modifyGesturesForLayout(id, scrollLayout.current, scrollOffset.current);
+        (_b = ref.current) === null || _b === void 0 ? void 0 : _b.modifyGesturesForLayout(id, scrollLayout.current, scrollOffset.current);
     };
     return {
         scrollEnabled: false,

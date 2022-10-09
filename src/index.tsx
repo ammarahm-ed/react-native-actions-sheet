@@ -24,7 +24,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {actionSheetEventManager} from './eventmanager';
+import EventManager, {actionSheetEventManager} from './eventmanager';
 import useSheetManager from './hooks/use-sheet-manager';
 import {useKeyboard} from './hooks/useKeyboard';
 import {
@@ -79,6 +79,7 @@ export type ActionSheetRef = {
   isGestureEnabled: () => boolean;
 
   isOpen: () => boolean;
+  ev: EventManager;
 };
 
 const CALCULATED_DEVICE_HEIGHT = 0;
@@ -116,6 +117,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const initialValue = useRef(-1);
     const actionSheetHeight = useRef(0);
     const safeAreaPaddingTop = useRef<number>();
+    const internalEventManager = React.useMemo(() => new EventManager(), []);
     const contextRef = useRef('global');
     const currentSnapIndex = useRef(initialSnapIndex);
     const minTranslateValue = useRef(0);
@@ -178,7 +180,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const notifyOffsetChange = (value: number) => {
-      actionSheetEventManager.publish('onoffsetchange', value);
+      internalEventManager.publish('onoffsetchange', value);
     };
     const returnAnimation = React.useCallback(
       (velocity?: number) => {
@@ -323,7 +325,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (keyboard.keyboardShown && !isModal) {
           return;
         }
-        let subscription = actionSheetEventManager.subscribe(
+        let subscription = internalEventManager.subscribe(
           'safeAreaLayout',
           () => {
             subscription?.unsubscribe();
@@ -349,10 +351,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         );
 
         if (safeAreaPaddingTop.current !== undefined || Platform.OS !== 'ios') {
-          actionSheetEventManager.publish('safeAreaLayout');
+          internalEventManager.publish('safeAreaLayout');
         }
       },
-      [dimensions.width, isModal, keyboard.keyboardShown],
+      [dimensions.width, isModal, keyboard.keyboardShown, internalEventManager],
     );
 
     const hideSheet = React.useCallback(
@@ -720,6 +722,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         },
         isGestureEnabled: () => gestureEnabled,
         isOpen: () => visible,
+        ev: internalEventManager,
       }),
       [
         animations.translateY,
@@ -730,6 +733,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         setVisible,
         snapPoints.length,
         visible,
+        internalEventManager,
       ],
     );
 
@@ -834,7 +838,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             onLayout={event => {
               let height = event.nativeEvent.layout.height;
               if (height !== undefined) {
-                actionSheetEventManager.publish('safeAreaLayout');
+                internalEventManager.publish('safeAreaLayout');
                 safeAreaPaddingTop.current = event.nativeEvent.layout.height;
               }
             }}

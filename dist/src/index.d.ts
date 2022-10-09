@@ -1,5 +1,6 @@
 import React from 'react';
 import { LayoutRectangle } from 'react-native';
+import EventManager from './eventmanager';
 import type { ActionSheetProps } from './types';
 export declare type ActionSheetRef = {
     /**
@@ -36,6 +37,7 @@ export declare type ActionSheetRef = {
     modifyGesturesForLayout: (id: string, layout: LayoutRectangle | undefined, scrollOffset: number) => void;
     isGestureEnabled: () => boolean;
     isOpen: () => boolean;
+    ev: EventManager;
 };
 declare const _default: React.ForwardRefExoticComponent<ActionSheetProps & React.RefAttributes<ActionSheetRef>>;
 export default _default;

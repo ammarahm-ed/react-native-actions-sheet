@@ -7,7 +7,7 @@ import {
   NativeSyntheticEvent,
   Platform,
 } from 'react-native';
-import {actionSheetEventManager} from '../eventmanager';
+import {EventHandlerSubscription} from '../eventmanager';
 import {ActionSheetRef} from '../index';
 
 /**
@@ -26,6 +26,7 @@ export function useScrollHandlers<T>(
   const scrollLayout = useRef<LayoutRectangle>();
   const scrollOffset = useRef(0);
   const prevState = useRef(false);
+  const subscription = useRef<EventHandlerSubscription>();
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollOffset.current = event.nativeEvent.contentOffset.y;
     ref.current?.modifyGesturesForLayout(
@@ -62,7 +63,14 @@ export function useScrollHandlers<T>(
   }, [scrollRef]);
 
   useEffect(() => {
-    const subscription = actionSheetEventManager.subscribe(
+    return () => {
+      subscription.current?.unsubscribe();
+    };
+  }, [id, ref, disableScrolling, enableScrolling]);
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    scrollLayout.current = event.nativeEvent.layout;
+    subscription.current = ref.current?.ev.subscribe(
       'onoffsetchange',
       (offset: number) => {
         ref.current?.modifyGesturesForLayout(
@@ -81,13 +89,6 @@ export function useScrollHandlers<T>(
         }
       },
     );
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, [id, ref, disableScrolling, enableScrolling]);
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    scrollLayout.current = event.nativeEvent.layout;
     ref.current?.modifyGesturesForLayout(
       id,
       scrollLayout.current,

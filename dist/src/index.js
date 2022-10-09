@@ -32,7 +32,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 /* eslint-disable curly */
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, } from 'react';
 import { Animated, BackHandler, Dimensions, Easing, Modal, PanResponder, Platform, SafeAreaView, StatusBar, TouchableOpacity, View, } from 'react-native';
-import { actionSheetEventManager } from './eventmanager';
+import EventManager, { actionSheetEventManager } from './eventmanager';
 import useSheetManager from './hooks/use-sheet-manager';
 import { useKeyboard } from './hooks/useKeyboard';
 import { getZIndexFromStack, isRenderedOnTop, SheetManager, } from './sheetmanager';
@@ -48,6 +48,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var initialValue = useRef(-1);
     var actionSheetHeight = useRef(0);
     var safeAreaPaddingTop = useRef();
+    var internalEventManager = React.useMemo(function () { return new EventManager(); }, []);
     var contextRef = useRef('global');
     var currentSnapIndex = useRef(initialSnapIndex);
     var minTranslateValue = useRef(0);
@@ -94,7 +95,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         keyboardAnimation(false);
     });
     var notifyOffsetChange = function (value) {
-        actionSheetEventManager.publish('onoffsetchange', value);
+        internalEventManager.publish('onoffsetchange', value);
     };
     var returnAnimation = React.useCallback(function (velocity) {
         if (!animated) {
@@ -204,7 +205,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         if (keyboard.keyboardShown && !isModal) {
             return;
         }
-        var subscription = actionSheetEventManager.subscribe('safeAreaLayout', function () {
+        var subscription = internalEventManager.subscribe('safeAreaLayout', function () {
             subscription === null || subscription === void 0 ? void 0 : subscription.unsubscribe();
             var safeMarginFromTop = Platform.OS === 'ios'
                 ? safeAreaPaddingTop.current || 0
@@ -222,9 +223,9 @@ export default forwardRef(function ActionSheet(_a, ref) {
             });
         });
         if (safeAreaPaddingTop.current !== undefined || Platform.OS !== 'ios') {
-            actionSheetEventManager.publish('safeAreaLayout');
+            internalEventManager.publish('safeAreaLayout');
         }
-    }, [dimensions.width, isModal, keyboard.keyboardShown]);
+    }, [dimensions.width, isModal, keyboard.keyboardShown, internalEventManager]);
     var hideSheet = React.useCallback(function (vy, data) {
         if (!closable) {
             returnAnimation(vy);
@@ -545,7 +546,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
             gestureBoundaries.current[id] = __assign(__assign({}, layout), { scrollOffset: scrollOffset });
         },
         isGestureEnabled: function () { return gestureEnabled; },
-        isOpen: function () { return visible; }
+        isOpen: function () { return visible; },
+        ev: internalEventManager
     }); }, [
         animations.translateY,
         gestureEnabled,
@@ -555,6 +557,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         setVisible,
         snapPoints.length,
         visible,
+        internalEventManager,
     ]);
     useImperativeHandle(ref, getRef, [getRef]);
     useEffect(function () {
@@ -639,7 +642,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         {Platform.OS === 'ios' ? (<SafeAreaView pointerEvents="none" collapsable={false} onLayout={function (event) {
                 var height = event.nativeEvent.layout.height;
                 if (height !== undefined) {
-                    actionSheetEventManager.publish('safeAreaLayout');
+                    internalEventManager.publish('safeAreaLayout');
                     safeAreaPaddingTop.current = event.nativeEvent.layout.height;
                 }
             }} style={{
