@@ -804,7 +804,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
       if (!props.useBottomSafeAreaPadding && props.containerStyle) {
         return (
-          props.containerStyle?.paddingBottom || props.containerStyle.padding
+          props.containerStyle?.paddingBottom || props.containerStyle.padding || 0
         );
       }
       if (!props.containerStyle && props?.useBottomSafeAreaPadding) {
