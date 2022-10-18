@@ -319,22 +319,27 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       keyboard.keyboardShown,
       keyboard.keyboardHeight,
     ]);
-
+    const onDeviceLayoutReset = useRef<{
+      timer?: any;
+      sub?: {unsubscribe: () => void};
+    }>({});
     const onDeviceLayout = React.useCallback(
       (event: LayoutChangeEvent) => {
         if (keyboard.keyboardShown && !isModal) {
           return;
         }
-        let subscription = internalEventManager.subscribe(
+        let deviceHeight = event.nativeEvent.layout.height;
+        onDeviceLayoutReset.current.sub?.unsubscribe();
+        onDeviceLayoutReset.current.sub = internalEventManager.subscribe(
           'safeAreaLayout',
           () => {
-            subscription?.unsubscribe();
+            onDeviceLayoutReset.current.sub?.unsubscribe();
             const safeMarginFromTop =
               Platform.OS === 'ios'
                 ? safeAreaPaddingTop.current || 0
                 : StatusBar.currentHeight || 0;
 
-            let height = event.nativeEvent.layout.height - safeMarginFromTop;
+            let height = deviceHeight - safeMarginFromTop;
             let width = Dimensions.get('window').width;
             if (
               height?.toFixed(0) === CALCULATED_DEVICE_HEIGHT?.toFixed(0) &&
@@ -349,9 +354,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             });
           },
         );
-
+        clearTimeout(onDeviceLayoutReset.current.timer);
         if (safeAreaPaddingTop.current !== undefined || Platform.OS !== 'ios') {
-          internalEventManager.publish('safeAreaLayout');
+          onDeviceLayoutReset.current.timer = setTimeout(() => {
+            internalEventManager.publish('safeAreaLayout');
+          }, 64);
         }
       },
       [dimensions.width, isModal, keyboard.keyboardShown, internalEventManager],
@@ -367,16 +374,19 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           if (finished) {
             if (closable) {
               setVisible(false);
-              props.onClose?.(data || props.payload || data);
+              setTimeout(() => {
+                props.onClose?.(data || props.payload || data);
+              }, 1);
               hardwareBackPressEvent.current?.remove();
-
               if (props.id) {
                 SheetManager.remove(props.id, contextRef.current);
-                actionSheetEventManager.publish(
-                  `onclose_${props.id}`,
-                  data || props.payload || data,
-                  contextRef.current,
-                );
+                setTimeout(() => {
+                  actionSheetEventManager.publish(
+                    `onclose_${props.id}`,
+                    data || props.payload || data,
+                    contextRef.current,
+                  );
+                }, 1);
               }
             } else {
               returnAnimation();
@@ -838,8 +848,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             onLayout={event => {
               let height = event.nativeEvent.layout.height;
               if (height !== undefined) {
-                internalEventManager.publish('safeAreaLayout');
-                safeAreaPaddingTop.current = event.nativeEvent.layout.height;
+                clearTimeout(onDeviceLayoutReset.current.timer);
+                onDeviceLayoutReset.current.timer = setTimeout(() => {
+                  internalEventManager.publish('safeAreaLayout');
+                  safeAreaPaddingTop.current = height;
+                }, 64);
               }
             }}
             style={{

@@ -201,16 +201,21 @@ export default forwardRef(function ActionSheet(_a, ref) {
         keyboard.keyboardShown,
         keyboard.keyboardHeight,
     ]);
+    var onDeviceLayoutReset = useRef({});
     var onDeviceLayout = React.useCallback(function (event) {
+        var _a;
         if (keyboard.keyboardShown && !isModal) {
             return;
         }
-        var subscription = internalEventManager.subscribe('safeAreaLayout', function () {
-            subscription === null || subscription === void 0 ? void 0 : subscription.unsubscribe();
+        var deviceHeight = event.nativeEvent.layout.height;
+        (_a = onDeviceLayoutReset.current.sub) === null || _a === void 0 ? void 0 : _a.unsubscribe();
+        onDeviceLayoutReset.current.sub = internalEventManager.subscribe('safeAreaLayout', function () {
+            var _a;
+            (_a = onDeviceLayoutReset.current.sub) === null || _a === void 0 ? void 0 : _a.unsubscribe();
             var safeMarginFromTop = Platform.OS === 'ios'
                 ? safeAreaPaddingTop.current || 0
                 : StatusBar.currentHeight || 0;
-            var height = event.nativeEvent.layout.height - safeMarginFromTop;
+            var height = deviceHeight - safeMarginFromTop;
             var width = Dimensions.get('window').width;
             if ((height === null || height === void 0 ? void 0 : height.toFixed(0)) === (CALCULATED_DEVICE_HEIGHT === null || CALCULATED_DEVICE_HEIGHT === void 0 ? void 0 : CALCULATED_DEVICE_HEIGHT.toFixed(0)) &&
                 (width === null || width === void 0 ? void 0 : width.toFixed(0)) === dimensions.width.toFixed(0)) {
@@ -222,8 +227,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 portrait: height > width
             });
         });
+        clearTimeout(onDeviceLayoutReset.current.timer);
         if (safeAreaPaddingTop.current !== undefined || Platform.OS !== 'ios') {
-            internalEventManager.publish('safeAreaLayout');
+            onDeviceLayoutReset.current.timer = setTimeout(function () {
+                internalEventManager.publish('safeAreaLayout');
+            }, 64);
         }
     }, [dimensions.width, isModal, keyboard.keyboardShown, internalEventManager]);
     var hideSheet = React.useCallback(function (vy, data) {
@@ -232,16 +240,21 @@ export default forwardRef(function ActionSheet(_a, ref) {
             return;
         }
         hideAnimation(vy, function (_a) {
-            var _b, _c;
+            var _b;
             var finished = _a.finished;
             if (finished) {
                 if (closable) {
                     setVisible(false);
-                    (_b = props.onClose) === null || _b === void 0 ? void 0 : _b.call(props, data || props.payload || data);
-                    (_c = hardwareBackPressEvent.current) === null || _c === void 0 ? void 0 : _c.remove();
+                    setTimeout(function () {
+                        var _a;
+                        (_a = props.onClose) === null || _a === void 0 ? void 0 : _a.call(props, data || props.payload || data);
+                    }, 1);
+                    (_b = hardwareBackPressEvent.current) === null || _b === void 0 ? void 0 : _b.remove();
                     if (props.id) {
                         SheetManager.remove(props.id, contextRef.current);
-                        actionSheetEventManager.publish("onclose_".concat(props.id), data || props.payload || data, contextRef.current);
+                        setTimeout(function () {
+                            actionSheetEventManager.publish("onclose_".concat(props.id), data || props.payload || data, contextRef.current);
+                        }, 1);
                     }
                 }
                 else {
@@ -642,8 +655,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
         {Platform.OS === 'ios' ? (<SafeAreaView pointerEvents="none" collapsable={false} onLayout={function (event) {
                 var height = event.nativeEvent.layout.height;
                 if (height !== undefined) {
-                    internalEventManager.publish('safeAreaLayout');
-                    safeAreaPaddingTop.current = event.nativeEvent.layout.height;
+                    clearTimeout(onDeviceLayoutReset.current.timer);
+                    onDeviceLayoutReset.current.timer = setTimeout(function () {
+                        internalEventManager.publish('safeAreaLayout');
+                        safeAreaPaddingTop.current = height;
+                    }, 64);
                 }
             }} style={{
                 position: 'absolute',
