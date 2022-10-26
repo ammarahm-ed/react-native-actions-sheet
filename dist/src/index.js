@@ -86,7 +86,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         underlayTranslateY: new Animated.Value(100),
         keyboardTranslate: new Animated.Value(0)
     })[0];
-    var keyboard = useKeyboard(keyboardHandlerEnabled, true, function () { return null; }, function () {
+    var keyboard = useKeyboard(keyboardHandlerEnabled && visible && dimensions.height !== 0, true, function () { return null; }, function () {
         // Don't run `hideKeyboard` callback if the `showKeyboard` hasn't ran yet.
         // Fix a race condition when you open a action sheet while you have the keyboard opened.
         if (initialValue.current === -1) {
@@ -631,14 +631,16 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 ? 30
                 : safeAreaPaddingTop.current;
         if (!props.useBottomSafeAreaPadding && props.containerStyle) {
-            return (((_a = props.containerStyle) === null || _a === void 0 ? void 0 : _a.paddingBottom) || props.containerStyle.padding);
+            return (((_a = props.containerStyle) === null || _a === void 0 ? void 0 : _a.paddingBottom) ||
+                props.containerStyle.padding ||
+                0);
         }
         if (!props.containerStyle && (props === null || props === void 0 ? void 0 : props.useBottomSafeAreaPadding)) {
             return topPadding;
         }
-        if (((_b = props.containerStyle) === null || _b === void 0 ? void 0 : _b.paddingBottom) === 'string')
+        if (typeof ((_b = props.containerStyle) === null || _b === void 0 ? void 0 : _b.paddingBottom) === 'string')
             return props.containerStyle.paddingBottom;
-        if (((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.padding) === 'string')
+        if (typeof ((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.padding) === 'string')
             return props.containerStyle.padding;
         if ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.paddingBottom) {
             //@ts-ignore
@@ -650,15 +652,15 @@ export default forwardRef(function ActionSheet(_a, ref) {
         }
         return topPadding;
     };
-    var paddingBottom = getPaddingBottom();
+    var paddingBottom = getPaddingBottom() || 0;
     return (<>
         {Platform.OS === 'ios' ? (<SafeAreaView pointerEvents="none" collapsable={false} onLayout={function (event) {
                 var height = event.nativeEvent.layout.height;
                 if (height !== undefined) {
+                    safeAreaPaddingTop.current = height;
                     clearTimeout(onDeviceLayoutReset.current.timer);
                     onDeviceLayoutReset.current.timer = setTimeout(function () {
                         internalEventManager.publish('safeAreaLayout');
-                        safeAreaPaddingTop.current = height;
                     }, 64);
                 }
             }} style={{
@@ -699,7 +701,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 }}/>) : null}
 
               <Animated.View pointerEvents="box-none" style={__assign(__assign({ borderTopRightRadius: ((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.borderTopRightRadius) || 10, borderTopLeftRadius: ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.borderTopLeftRadius) || 10, backgroundColor: ((_e = props.containerStyle) === null || _e === void 0 ? void 0 : _e.backgroundColor) || 'white', borderBottomLeftRadius: ((_f = props.containerStyle) === null || _f === void 0 ? void 0 : _f.borderBottomLeftRadius) || undefined, borderBottomRightRadius: ((_g = props.containerStyle) === null || _g === void 0 ? void 0 : _g.borderBottomRightRadius) || undefined, borderRadius: ((_h = props.containerStyle) === null || _h === void 0 ? void 0 : _h.borderRadius) || undefined, width: ((_j = props.containerStyle) === null || _j === void 0 ? void 0 : _j.width) || '100%' }, getElevation(typeof elevation === 'number' ? elevation : 5)), { flex: undefined, height: dimensions.height, maxHeight: dimensions.height, paddingBottom: keyboard.keyboardShown
-                    ? keyboard.keyboardHeight
+                    ? keyboard.keyboardHeight || 0
                     : 0, zIndex: 10, transform: [
                     {
                         translateY: animations.translateY
@@ -713,7 +715,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     },
                     props.containerStyle,
                     {
-                        paddingBottom: keyboard.keyboardShown
+                        paddingBottom: keyboard.keyboardShown &&
+                            typeof paddingBottom !== 'string'
                             ? paddingBottom + 2
                             : paddingBottom,
                         maxHeight: keyboard.keyboardShown

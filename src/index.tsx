@@ -166,7 +166,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     });
 
     const keyboard = useKeyboard(
-      keyboardHandlerEnabled,
+      keyboardHandlerEnabled && visible && dimensions.height !== 0,
       true,
       () => null,
       () => {
@@ -814,16 +814,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
       if (!props.useBottomSafeAreaPadding && props.containerStyle) {
         return (
-          props.containerStyle?.paddingBottom || props.containerStyle.padding || 0
+          props.containerStyle?.paddingBottom ||
+          props.containerStyle.padding ||
+          0
         );
       }
       if (!props.containerStyle && props?.useBottomSafeAreaPadding) {
         return topPadding;
       }
 
-      if (props.containerStyle?.paddingBottom === 'string')
+      if (typeof props.containerStyle?.paddingBottom === 'string')
         return props.containerStyle.paddingBottom;
-      if (props.containerStyle?.padding === 'string')
+      if (typeof props.containerStyle?.padding === 'string')
         return props.containerStyle.padding;
 
       if (props.containerStyle?.paddingBottom) {
@@ -838,7 +840,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       return topPadding;
     };
 
-    const paddingBottom = getPaddingBottom();
+    const paddingBottom = getPaddingBottom() || 0;
     return (
       <>
         {Platform.OS === 'ios' ? (
@@ -848,10 +850,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             onLayout={event => {
               let height = event.nativeEvent.layout.height;
               if (height !== undefined) {
+                safeAreaPaddingTop.current = height;
                 clearTimeout(onDeviceLayoutReset.current.timer);
                 onDeviceLayoutReset.current.timer = setTimeout(() => {
                   internalEventManager.publish('safeAreaLayout');
-                  safeAreaPaddingTop.current = height;
                 }, 64);
               }
             }}
@@ -929,7 +931,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   height: dimensions.height,
                   maxHeight: dimensions.height,
                   paddingBottom: keyboard.keyboardShown
-                    ? keyboard.keyboardHeight
+                    ? keyboard.keyboardHeight || 0
                     : 0,
                   zIndex: 10,
                   transform: [
@@ -952,9 +954,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       },
                       props.containerStyle,
                       {
-                        paddingBottom: keyboard.keyboardShown
-                          ? paddingBottom + 2
-                          : paddingBottom,
+                        paddingBottom:
+                          keyboard.keyboardShown &&
+                          typeof paddingBottom !== 'string'
+                            ? paddingBottom + 2
+                            : paddingBottom,
                         maxHeight: keyboard.keyboardShown
                           ? dimensions.height - keyboard.keyboardHeight
                           : dimensions.height,

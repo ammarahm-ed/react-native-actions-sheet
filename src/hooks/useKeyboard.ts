@@ -89,7 +89,7 @@ export function useKeyboard(
   }, [enabled, handleKeyboardDidHide, handleKeyboardDidShow]);
   return {
     keyboardShown: !enabled ? false : shown,
-    coordinates: !enabled ? emptyCoordinates : coordinates,
-    keyboardHeight: !enabled ? 0 : keyboardHeight,
+    coordinates: !enabled || !shown ? emptyCoordinates : coordinates,
+    keyboardHeight: !enabled || !shown ? 0 : keyboardHeight,
   };
 }
