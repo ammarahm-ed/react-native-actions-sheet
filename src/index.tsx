@@ -686,7 +686,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }, 1);
         },
         hide: (data: any) => {
-          hideSheet(data);
+          hideSheet(undefined, data);
         },
         setModalVisible: (_visible?: boolean) => {
           if (_visible) {
