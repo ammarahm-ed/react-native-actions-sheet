@@ -906,6 +906,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                     backgroundColor: overlayColor,
                     opacity: defaultOverlayOpacity,
                   }}
+                  {...(props.backdropProps ? props.backdropProps : {})}
                 />
               ) : null}
 
