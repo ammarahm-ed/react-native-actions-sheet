@@ -472,11 +472,15 @@ export default forwardRef(function ActionSheet(_a, ref) {
         }
     };
     var onSheetLayout = React.useCallback(function (event) {
+        var safeMarginFromTop = Platform.OS === 'ios'
+            ? safeAreaPaddingTop.current || 0
+            : StatusBar.currentHeight || 0;
+        var height = Dimensions.get('window').height - safeMarginFromTop;
         actionSheetHeight.current = event.nativeEvent.layout.height;
         minTranslateValue.current =
-            dimensions.height - actionSheetHeight.current;
+            height - actionSheetHeight.current;
         if (initialValue.current < 0) {
-            animations.translateY.setValue(dimensions.height * 1.1);
+            animations.translateY.setValue(height * 1.1);
         }
         var nextInitialValue = actionSheetHeight.current +
             minTranslateValue.current -
@@ -508,7 +512,6 @@ export default forwardRef(function ActionSheet(_a, ref) {
             document.documentElement.style.overflowY = 'hidden';
         }
     }, [
-        dimensions.height,
         snapPoints,
         keyboard.keyboardShown,
         keyboard.keyboardHeight,
