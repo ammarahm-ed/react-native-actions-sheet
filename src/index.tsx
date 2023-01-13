@@ -628,11 +628,16 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const onSheetLayout = React.useCallback(
       (event: LayoutChangeEvent) => {
+        const safeMarginFromTop =
+              Platform.OS === 'ios'
+                ? safeAreaPaddingTop.current || 0
+                : StatusBar.currentHeight || 0;
+        const height = Dimensions.get('window').height - safeMarginFromTop;
         actionSheetHeight.current = event.nativeEvent.layout.height;
         minTranslateValue.current =
-          dimensions.height - actionSheetHeight.current;
+          height - actionSheetHeight.current;
         if (initialValue.current < 0) {
-          animations.translateY.setValue(dimensions.height * 1.1);
+          animations.translateY.setValue(height * 1.1);
         }
         const nextInitialValue =
           actionSheetHeight.current +
@@ -666,7 +671,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
       },
       [
-        dimensions.height,
         snapPoints,
         keyboard.keyboardShown,
         keyboard.keyboardHeight,
