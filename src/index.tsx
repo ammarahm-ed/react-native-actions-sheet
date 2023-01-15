@@ -906,7 +906,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         100,
                     width: '100%',
                     position: 'absolute',
-                    zIndex: 2,
                     backgroundColor: overlayColor,
                     opacity: defaultOverlayOpacity,
                   }}
