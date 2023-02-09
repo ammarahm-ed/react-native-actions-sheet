@@ -732,7 +732,6 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 },
             ]}>
               {props.withNestedSheetProvider}
-              {ExtraOverlayComponent}
               {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<TouchableOpacity onPress={onTouch} activeOpacity={defaultOverlayOpacity} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
                     height: dimensions.height +
                         (safeAreaPaddingTop.current || 0) +
@@ -793,6 +792,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     width: ((_q = props.containerStyle) === null || _q === void 0 ? void 0 : _q.width) || dimensions.width
                 }}/>) : null}
               </Animated.View>
+
+              {ExtraOverlayComponent}
             </Animated.View>
           </Root>) : null}
       </>);

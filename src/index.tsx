@@ -941,7 +941,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 },
               ]}>
               {props.withNestedSheetProvider}
-              {ExtraOverlayComponent}
               {!props?.backgroundInteractionEnabled ? (
                 <TouchableOpacity
                   onPress={onTouch}
@@ -1063,6 +1062,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   />
                 ) : null}
               </Animated.View>
+
+              {ExtraOverlayComponent}
             </Animated.View>
           </Root>
         ) : null}
