@@ -1,12 +1,9 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Button, Text, View} from 'react-native';
-import ActionSheet, {
-  SheetManager,
-  SheetProps,
-  SheetProvider,
-} from '../../index';
+import ActionSheet, {SheetManager, SheetProps, SheetProvider} from '../../';
 
 function ConfirmSheet(props: SheetProps) {
+  const [payload, setPayload] = useState();
   return (
     <ActionSheet
       id={props.sheetId}
@@ -16,6 +13,10 @@ function ConfirmSheet(props: SheetProps) {
       containerStyle={{
         paddingHorizontal: 12,
       }}
+      onClose={data => {
+        console.log(data, 'called');
+      }}
+      payload={payload}
       springOffset={50}
       defaultOverlayOpacity={0.3}>
       <SheetProvider context="local">
@@ -44,9 +45,8 @@ function ConfirmSheet(props: SheetProps) {
           <Button
             title="Yes"
             onPress={() => {
-              SheetManager.hide(props.sheetId, {
-                payload: true,
-              });
+              setPayload('boom');
+              SheetManager.hide(props.sheetId);
             }}
           />
         </View>

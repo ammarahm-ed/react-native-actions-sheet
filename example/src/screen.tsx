@@ -1,12 +1,23 @@
 /* eslint-disable curly */
 import React from 'react';
-import {SafeAreaView, StyleSheet, Text, TouchableOpacity} from 'react-native';
+import {
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
 import {SheetManager} from '../../';
 
 const ExampleScreen = () => {
   return (
     <>
       <SafeAreaView style={styles.safeareview}>
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle="dark-content"
+        />
         <Text
           style={{
             color: 'black',

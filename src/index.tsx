@@ -82,8 +82,6 @@ export type ActionSheetRef = {
   ev: EventManager;
 };
 
-const CALCULATED_DEVICE_HEIGHT = 0;
-
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
     {
@@ -106,6 +104,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       zIndex = 9999,
       keyboardHandlerEnabled = true,
       ExtraOverlayComponent,
+      payload,
       ...props
     },
     ref,
@@ -125,11 +124,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const prevKeyboardHeight = useRef(0);
     const lock = useRef(false);
     const panViewRef = useRef<View>();
+    const deviceContainerRef = useRef<View>(null);
     const gestureBoundaries = useRef<{
       [name: string]: LayoutRectangle & {
         scrollOffset?: number;
       };
     }>({});
+    const hiding = useRef(false);
+    const payloadRef = useRef(payload);
     const initialWindowHeight = useRef(Dimensions.get('screen').height);
     const [dimensions, setDimensions] = useState<{
       width: number;
@@ -145,7 +147,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const {visible, setVisible} = useSheetManager({
       id: props.id,
       onHide: data => {
-        hideSheet(undefined, data);
+        hideSheet(undefined, data, true);
       },
       onBeforeShow: props.onBeforeShow,
       onContextUpdate: context => {
@@ -164,6 +166,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       underlayTranslateY: new Animated.Value(100),
       keyboardTranslate: new Animated.Value(0),
     });
+
+    useEffect(() => {
+      payloadRef.current = payload;
+    }, [payload]);
 
     const keyboard = useKeyboard(
       keyboardHandlerEnabled && visible && dimensions.height !== 0,
@@ -325,9 +331,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     }>({});
     const onDeviceLayout = React.useCallback(
       (event: LayoutChangeEvent) => {
+        const windowDimensions = Dimensions.get('window');
+        const isPortraitMode = windowDimensions.height > windowDimensions.width;
         if (keyboard.keyboardShown && !isModal) {
           return;
         }
+
         let deviceHeight = event.nativeEvent.layout.height;
         onDeviceLayoutReset.current.sub?.unsubscribe();
         onDeviceLayoutReset.current.sub = internalEventManager.subscribe(
@@ -342,15 +351,16 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             let height = deviceHeight - safeMarginFromTop;
             let width = Dimensions.get('window').width;
             if (
-              height?.toFixed(0) === CALCULATED_DEVICE_HEIGHT?.toFixed(0) &&
-              width?.toFixed(0) === dimensions.width.toFixed(0)
+              height?.toFixed(0) === dimensions.height?.toFixed(0) &&
+              width?.toFixed(0) === dimensions.width.toFixed(0) &&
+              dimensions.portrait === isPortraitMode
             ) {
               return;
             }
             setDimensions({
-              width,
-              height,
-              portrait: height > width,
+              width: isPortraitMode ? width : height,
+              height: isPortraitMode ? height : width,
+              portrait: isPortraitMode,
             });
           },
         );
@@ -361,32 +371,47 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }, 64);
         }
       },
-      [dimensions.width, isModal, keyboard.keyboardShown, internalEventManager],
+      [
+        keyboard.keyboardShown,
+        isModal,
+        internalEventManager,
+        dimensions.width,
+        dimensions.portrait,
+        dimensions.height,
+      ],
     );
 
     const hideSheet = React.useCallback(
-      (vy?: number, data?: any) => {
-        if (!closable) {
+      (vy?: number, data?: any, isSheetManagerOrRef?: boolean) => {
+        if (hiding.current) return;
+        if (!closable && !isSheetManagerOrRef) {
           returnAnimation(vy);
           return;
         }
+        hiding.current = true;
         hideAnimation(vy, ({finished}) => {
           if (finished) {
             if (closable) {
               setVisible(false);
-              setTimeout(() => {
-                props.onClose?.(data || props.payload || data);
-              }, 1);
+              if (props.onClose) {
+                setTimeout(() => {
+                  props.onClose?.(data || payloadRef.current || data);
+                  hiding.current = false;
+                }, 1);
+              }
               hardwareBackPressEvent.current?.remove();
               if (props.id) {
                 SheetManager.remove(props.id, contextRef.current);
                 setTimeout(() => {
+                  hiding.current = false;
                   actionSheetEventManager.publish(
                     `onclose_${props.id}`,
-                    data || props.payload || data,
+                    data || payloadRef.current || data,
                     contextRef.current,
                   );
                 }, 1);
+              } else {
+                hiding.current = false;
               }
             } else {
               returnAnimation();
@@ -629,13 +654,33 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const onSheetLayout = React.useCallback(
       (event: LayoutChangeEvent) => {
         const safeMarginFromTop =
-              Platform.OS === 'ios'
-                ? safeAreaPaddingTop.current || 0
-                : StatusBar.currentHeight || 0;
-        const height = Dimensions.get('window').height - safeMarginFromTop;
-        actionSheetHeight.current = event.nativeEvent.layout.height;
-        minTranslateValue.current =
-          height - actionSheetHeight.current;
+          Platform.OS === 'ios'
+            ? safeAreaPaddingTop.current || 0
+            : StatusBar.currentHeight || 0;
+        const windowDimensions = Dimensions.get('window');
+        const height = windowDimensions.height - safeMarginFromTop;
+        const orientationChanged =
+          dimensions.portrait !==
+          windowDimensions.width < windowDimensions.height;
+
+        deviceContainerRef.current?.setNativeProps({
+          style: {
+            height: windowDimensions.height,
+          },
+        });
+        setDimensions(dim => {
+          return {
+            ...dim,
+            height: height,
+            portrait: windowDimensions.width < windowDimensions.height,
+          };
+        });
+        actionSheetHeight.current =
+          event.nativeEvent.layout.height > height
+            ? height
+            : event.nativeEvent.layout.height;
+        minTranslateValue.current = height - actionSheetHeight.current;
+
         if (initialValue.current < 0) {
           animations.translateY.setValue(height * 1.1);
         }
@@ -644,13 +689,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           minTranslateValue.current -
           (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
             100;
-
         initialValue.current =
           (keyboard.keyboardShown || keyboardWasVisible.current) &&
           initialValue.current <= nextInitialValue &&
           initialValue.current >= minTranslateValue.current
             ? initialValue.current
             : nextInitialValue;
+
         if (keyboard.keyboardShown) {
           keyboardAnimation();
           keyboardWasVisible.current = true;
@@ -659,7 +704,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           keyboardWasVisible.current = false;
         }
         opacityAnimation(1);
-        returnAnimation();
+        if (!orientationChanged) {
+          returnAnimation();
+        }
 
         if (initialValue.current > 100) {
           if (lock.current) return;
@@ -679,6 +726,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         keyboardAnimation,
         animations.translateY,
         animations.underlayTranslateY,
+        dimensions.portrait,
       ],
     );
 
@@ -690,7 +738,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }, 1);
         },
         hide: (data: any) => {
-          hideSheet(undefined, data);
+          hideSheet(undefined, data, true);
         },
         setModalVisible: (_visible?: boolean) => {
           if (_visible) {
@@ -875,6 +923,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           <Root {...rootProps}>
             <Animated.View
               onLayout={onDeviceLayout}
+              ref={deviceContainerRef}
               pointerEvents={
                 props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
               }
@@ -900,10 +949,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   testID={props.testIDs?.backdrop}
                   style={{
                     height:
-                      Dimensions.get('window').height + 100 ||
                       dimensions.height +
-                        (safeAreaPaddingTop.current || 0) +
-                        100,
+                      (safeAreaPaddingTop.current || 0) +
+                      100,
                     width: '100%',
                     position: 'absolute',
                     backgroundColor: overlayColor,

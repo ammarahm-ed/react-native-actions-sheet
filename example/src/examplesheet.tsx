@@ -7,8 +7,12 @@ import {
   ScrollView,
 } from 'react-native';
 
-import ActionSheet, {ActionSheetRef, SheetManager, SheetProps} from '../..';
-import useScrollHandlers from '../../src/hooks/use-scroll-handlers';
+import ActionSheet, {
+  ActionSheetRef,
+  SheetManager,
+  SheetProps,
+  useScrollHandlers,
+} from '../..';
 
 const colors = ['#4a4e4d', '#0e9aa7', '#3da4ab', '#f6cd61', '#fe8a71'];
 const items = [
@@ -55,7 +59,10 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
             />
           ))}
         </View>
-        <ScrollView {...scrollHandlers} style={styles.scrollview}>
+        <ScrollView
+          {...scrollHandlers}
+          scrollEnabled={false}
+          style={styles.scrollview}>
           <TextInput
             style={styles.input}
             multiline={true}

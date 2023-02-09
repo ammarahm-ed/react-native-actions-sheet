@@ -38,10 +38,9 @@ import { useKeyboard } from './hooks/useKeyboard';
 import { getZIndexFromStack, isRenderedOnTop, SheetManager, } from './sheetmanager';
 import { styles } from './styles';
 import { getElevation, SUPPORTED_ORIENTATIONS } from './utils';
-var CALCULATED_DEVICE_HEIGHT = 0;
 export default forwardRef(function ActionSheet(_a, ref) {
     var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
-    var _r = _a.animated, animated = _r === void 0 ? true : _r, _s = _a.closeOnPressBack, closeOnPressBack = _s === void 0 ? true : _s, _t = _a.springOffset, springOffset = _t === void 0 ? 50 : _t, _u = _a.elevation, elevation = _u === void 0 ? 5 : _u, _v = _a.defaultOverlayOpacity, defaultOverlayOpacity = _v === void 0 ? 0.3 : _v, _w = _a.overlayColor, overlayColor = _w === void 0 ? 'black' : _w, _x = _a.closable, closable = _x === void 0 ? true : _x, _y = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _y === void 0 ? true : _y, _z = _a.drawUnderStatusBar, drawUnderStatusBar = _z === void 0 ? false : _z, _0 = _a.gestureEnabled, gestureEnabled = _0 === void 0 ? false : _0, _1 = _a.isModal, isModal = _1 === void 0 ? true : _1, _2 = _a.snapPoints, snapPoints = _2 === void 0 ? [100] : _2, _3 = _a.initialSnapIndex, initialSnapIndex = _3 === void 0 ? 0 : _3, _4 = _a.overdrawEnabled, overdrawEnabled = _4 === void 0 ? true : _4, _5 = _a.overdrawFactor, overdrawFactor = _5 === void 0 ? 15 : _5, _6 = _a.overdrawSize, overdrawSize = _6 === void 0 ? 100 : _6, _7 = _a.zIndex, zIndex = _7 === void 0 ? 9999 : _7, _8 = _a.keyboardHandlerEnabled, keyboardHandlerEnabled = _8 === void 0 ? true : _8, ExtraOverlayComponent = _a.ExtraOverlayComponent, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex", "keyboardHandlerEnabled", "ExtraOverlayComponent"]);
+    var _r = _a.animated, animated = _r === void 0 ? true : _r, _s = _a.closeOnPressBack, closeOnPressBack = _s === void 0 ? true : _s, _t = _a.springOffset, springOffset = _t === void 0 ? 50 : _t, _u = _a.elevation, elevation = _u === void 0 ? 5 : _u, _v = _a.defaultOverlayOpacity, defaultOverlayOpacity = _v === void 0 ? 0.3 : _v, _w = _a.overlayColor, overlayColor = _w === void 0 ? 'black' : _w, _x = _a.closable, closable = _x === void 0 ? true : _x, _y = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _y === void 0 ? true : _y, _z = _a.drawUnderStatusBar, drawUnderStatusBar = _z === void 0 ? false : _z, _0 = _a.gestureEnabled, gestureEnabled = _0 === void 0 ? false : _0, _1 = _a.isModal, isModal = _1 === void 0 ? true : _1, _2 = _a.snapPoints, snapPoints = _2 === void 0 ? [100] : _2, _3 = _a.initialSnapIndex, initialSnapIndex = _3 === void 0 ? 0 : _3, _4 = _a.overdrawEnabled, overdrawEnabled = _4 === void 0 ? true : _4, _5 = _a.overdrawFactor, overdrawFactor = _5 === void 0 ? 15 : _5, _6 = _a.overdrawSize, overdrawSize = _6 === void 0 ? 100 : _6, _7 = _a.zIndex, zIndex = _7 === void 0 ? 9999 : _7, _8 = _a.keyboardHandlerEnabled, keyboardHandlerEnabled = _8 === void 0 ? true : _8, ExtraOverlayComponent = _a.ExtraOverlayComponent, payload = _a.payload, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex", "keyboardHandlerEnabled", "ExtraOverlayComponent", "payload"]);
     snapPoints =
         snapPoints[snapPoints.length - 1] !== 100
             ? __spreadArray(__spreadArray([], snapPoints, true), [100], false) : snapPoints;
@@ -56,7 +55,10 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var prevKeyboardHeight = useRef(0);
     var lock = useRef(false);
     var panViewRef = useRef();
+    var deviceContainerRef = useRef(null);
     var gestureBoundaries = useRef({});
+    var hiding = useRef(false);
+    var payloadRef = useRef(payload);
     var initialWindowHeight = useRef(Dimensions.get('screen').height);
     var _9 = useState({
         width: Dimensions.get('window').width,
@@ -67,7 +69,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var _10 = useSheetManager({
         id: props.id,
         onHide: function (data) {
-            hideSheet(undefined, data);
+            hideSheet(undefined, data, true);
         },
         onBeforeShow: props.onBeforeShow,
         onContextUpdate: function (context) {
@@ -86,6 +88,9 @@ export default forwardRef(function ActionSheet(_a, ref) {
         underlayTranslateY: new Animated.Value(100),
         keyboardTranslate: new Animated.Value(0)
     })[0];
+    useEffect(function () {
+        payloadRef.current = payload;
+    }, [payload]);
     var keyboard = useKeyboard(keyboardHandlerEnabled && visible && dimensions.height !== 0, true, function () { return null; }, function () {
         // Don't run `hideKeyboard` callback if the `showKeyboard` hasn't ran yet.
         // Fix a race condition when you open a action sheet while you have the keyboard opened.
@@ -204,27 +209,30 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var onDeviceLayoutReset = useRef({});
     var onDeviceLayout = React.useCallback(function (event) {
         var _a;
+        var windowDimensions = Dimensions.get('window');
+        var isPortraitMode = windowDimensions.height > windowDimensions.width;
         if (keyboard.keyboardShown && !isModal) {
             return;
         }
         var deviceHeight = event.nativeEvent.layout.height;
         (_a = onDeviceLayoutReset.current.sub) === null || _a === void 0 ? void 0 : _a.unsubscribe();
         onDeviceLayoutReset.current.sub = internalEventManager.subscribe('safeAreaLayout', function () {
-            var _a;
+            var _a, _b;
             (_a = onDeviceLayoutReset.current.sub) === null || _a === void 0 ? void 0 : _a.unsubscribe();
             var safeMarginFromTop = Platform.OS === 'ios'
                 ? safeAreaPaddingTop.current || 0
                 : StatusBar.currentHeight || 0;
             var height = deviceHeight - safeMarginFromTop;
             var width = Dimensions.get('window').width;
-            if ((height === null || height === void 0 ? void 0 : height.toFixed(0)) === (CALCULATED_DEVICE_HEIGHT === null || CALCULATED_DEVICE_HEIGHT === void 0 ? void 0 : CALCULATED_DEVICE_HEIGHT.toFixed(0)) &&
-                (width === null || width === void 0 ? void 0 : width.toFixed(0)) === dimensions.width.toFixed(0)) {
+            if ((height === null || height === void 0 ? void 0 : height.toFixed(0)) === ((_b = dimensions.height) === null || _b === void 0 ? void 0 : _b.toFixed(0)) &&
+                (width === null || width === void 0 ? void 0 : width.toFixed(0)) === dimensions.width.toFixed(0) &&
+                dimensions.portrait === isPortraitMode) {
                 return;
             }
             setDimensions({
-                width: width,
-                height: height,
-                portrait: height > width
+                width: isPortraitMode ? width : height,
+                height: isPortraitMode ? height : width,
+                portrait: isPortraitMode
             });
         });
         clearTimeout(onDeviceLayoutReset.current.timer);
@@ -233,28 +241,45 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 internalEventManager.publish('safeAreaLayout');
             }, 64);
         }
-    }, [dimensions.width, isModal, keyboard.keyboardShown, internalEventManager]);
-    var hideSheet = React.useCallback(function (vy, data) {
-        if (!closable) {
+    }, [
+        keyboard.keyboardShown,
+        isModal,
+        internalEventManager,
+        dimensions.width,
+        dimensions.portrait,
+        dimensions.height,
+    ]);
+    var hideSheet = React.useCallback(function (vy, data, isSheetManagerOrRef) {
+        if (hiding.current)
+            return;
+        if (!closable && !isSheetManagerOrRef) {
             returnAnimation(vy);
             return;
         }
+        hiding.current = true;
         hideAnimation(vy, function (_a) {
             var _b;
             var finished = _a.finished;
             if (finished) {
                 if (closable) {
                     setVisible(false);
-                    setTimeout(function () {
-                        var _a;
-                        (_a = props.onClose) === null || _a === void 0 ? void 0 : _a.call(props, data || props.payload || data);
-                    }, 1);
+                    if (props.onClose) {
+                        setTimeout(function () {
+                            var _a;
+                            (_a = props.onClose) === null || _a === void 0 ? void 0 : _a.call(props, data || payloadRef.current || data);
+                            hiding.current = false;
+                        }, 1);
+                    }
                     (_b = hardwareBackPressEvent.current) === null || _b === void 0 ? void 0 : _b.remove();
                     if (props.id) {
                         SheetManager.remove(props.id, contextRef.current);
                         setTimeout(function () {
-                            actionSheetEventManager.publish("onclose_".concat(props.id), data || props.payload || data, contextRef.current);
+                            hiding.current = false;
+                            actionSheetEventManager.publish("onclose_".concat(props.id), data || payloadRef.current || data, contextRef.current);
                         }, 1);
+                    }
+                    else {
+                        hiding.current = false;
                     }
                 }
                 else {
@@ -472,13 +497,27 @@ export default forwardRef(function ActionSheet(_a, ref) {
         }
     };
     var onSheetLayout = React.useCallback(function (event) {
+        var _a;
         var safeMarginFromTop = Platform.OS === 'ios'
             ? safeAreaPaddingTop.current || 0
             : StatusBar.currentHeight || 0;
-        var height = Dimensions.get('window').height - safeMarginFromTop;
-        actionSheetHeight.current = event.nativeEvent.layout.height;
-        minTranslateValue.current =
-            height - actionSheetHeight.current;
+        var windowDimensions = Dimensions.get('window');
+        var height = windowDimensions.height - safeMarginFromTop;
+        var orientationChanged = dimensions.portrait !==
+            windowDimensions.width < windowDimensions.height;
+        (_a = deviceContainerRef.current) === null || _a === void 0 ? void 0 : _a.setNativeProps({
+            style: {
+                height: windowDimensions.height
+            }
+        });
+        setDimensions(function (dim) {
+            return __assign(__assign({}, dim), { height: height, portrait: windowDimensions.width < windowDimensions.height });
+        });
+        actionSheetHeight.current =
+            event.nativeEvent.layout.height > height
+                ? height
+                : event.nativeEvent.layout.height;
+        minTranslateValue.current = height - actionSheetHeight.current;
         if (initialValue.current < 0) {
             animations.translateY.setValue(height * 1.1);
         }
@@ -501,7 +540,9 @@ export default forwardRef(function ActionSheet(_a, ref) {
             keyboardWasVisible.current = false;
         }
         opacityAnimation(1);
-        returnAnimation();
+        if (!orientationChanged) {
+            returnAnimation();
+        }
         if (initialValue.current > 100) {
             if (lock.current)
                 return;
@@ -520,6 +561,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         keyboardAnimation,
         animations.translateY,
         animations.underlayTranslateY,
+        dimensions.portrait,
     ]);
     var getRef = useCallback(function () { return ({
         show: function () {
@@ -528,7 +570,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             }, 1);
         },
         hide: function (data) {
-            hideSheet(data);
+            hideSheet(undefined, data, true);
         },
         setModalVisible: function (_visible) {
             if (_visible) {
@@ -676,7 +718,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             <View />
           </SafeAreaView>) : null}
         {visible ? (<Root {...rootProps}>
-            <Animated.View onLayout={onDeviceLayout} pointerEvents={(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? 'box-none' : 'auto'} style={[
+            <Animated.View onLayout={onDeviceLayout} ref={deviceContainerRef} pointerEvents={(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? 'box-none' : 'auto'} style={[
                 styles.parentContainer,
                 {
                     opacity: animations.opacity,
@@ -692,13 +734,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
               {props.withNestedSheetProvider}
               {ExtraOverlayComponent}
               {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<TouchableOpacity onPress={onTouch} activeOpacity={defaultOverlayOpacity} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
-                    height: Dimensions.get('window').height + 100 ||
-                        dimensions.height +
-                            (safeAreaPaddingTop.current || 0) +
-                            100,
+                    height: dimensions.height +
+                        (safeAreaPaddingTop.current || 0) +
+                        100,
                     width: '100%',
                     position: 'absolute',
-                    zIndex: 2,
                     backgroundColor: overlayColor,
                     opacity: defaultOverlayOpacity
                 }} {...(props.backdropProps ? props.backdropProps : {})}/>) : null}
