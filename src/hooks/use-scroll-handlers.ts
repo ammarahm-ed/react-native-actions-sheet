@@ -38,9 +38,9 @@ export function useScrollHandlers<T>(
 
   const disableScrolling = React.useCallback(() => {
     //@ts-ignore
-    scrollRef.current?.setNativeProps?.({
-      scrollEnabled: false,
-    });
+    // scrollRef.current?.setNativeProps?.({
+    //   scrollEnabled: false,
+    // });
     if (Platform.OS === 'web') {
       //@ts-ignore
       scrollRef.current.style.touchAction = 'none';
@@ -51,9 +51,9 @@ export function useScrollHandlers<T>(
 
   const enableScrolling = React.useCallback(() => {
     //@ts-ignore
-    scrollRef.current?.setNativeProps?.({
-      scrollEnabled: true,
-    });
+    // scrollRef.current?.setNativeProps?.({
+    //   scrollEnabled: true,
+    // });
     if (Platform.OS === 'web') {
       //@ts-ignore
       scrollRef.current.style.overflowY = 'scroll';
@@ -97,7 +97,7 @@ export function useScrollHandlers<T>(
   };
 
   return {
-    scrollEnabled: false,
+    scrollEnabled: true,
     onScroll,
     ref: scrollRef,
     onLayout: onLayout,

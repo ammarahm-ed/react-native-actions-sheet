@@ -420,7 +420,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
                         if (event.nativeEvent.pageY < (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.y) ||
                             (gesture.vy > 0 && scrollOffset <= 0) ||
                             getCurrentPosition() !== 0) {
-                            gestures = true;
+                            if (event.nativeEvent.pageY > (gestureBoundary === null || gestureBoundary === void 0 ? void 0 : gestureBoundary.y))
+                                gestures = false;
+                            if (Platform.OS === 'web') {
+                                gestures = true;
+                            }
                         }
                         else {
                             gestures = false;

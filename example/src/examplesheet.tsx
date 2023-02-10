@@ -59,10 +59,7 @@ function ExampleSheet(props: SheetProps<{data: string}>) {
             />
           ))}
         </View>
-        <ScrollView
-          {...scrollHandlers}
-          scrollEnabled={false}
-          style={styles.scrollview}>
+        <ScrollView {...scrollHandlers} style={styles.scrollview}>
           <TextInput
             style={styles.input}
             multiline={true}

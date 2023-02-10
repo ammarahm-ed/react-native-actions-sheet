@@ -17,7 +17,9 @@ export const providerRegistryStack: string[] = [];
  */
 export const sheetsRegistry: {
   [context: string]: {[id: string]: React.ElementType};
-} = {};
+} = {
+  global: {},
+};
 
 export interface SheetProps<BeforeShowPayload = any> {
   sheetId: string;
@@ -70,7 +72,7 @@ export function SheetProvider({
   const providerRegistryIndexRef = useRef(0);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
   const sheetIds = Object.keys(
-    sheetsRegistry[context] || sheetsRegistry['global'],
+    sheetsRegistry[context] || sheetsRegistry['global'] || {},
   );
   const onRegister = React.useCallback(() => {
     // Rerender when a new sheet is added.
@@ -110,9 +112,9 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [payload, setPayload] = useState();
   const [visible, setVisible] = useState(false);
   const Sheet = context.startsWith('$$-auto-')
-    ? sheetsRegistry['global'][id]
+    ? sheetsRegistry['global']?.[id]
     : sheetsRegistry[context]
-    ? sheetsRegistry[context][id]
+    ? sheetsRegistry[context]?.[id]
     : undefined;
 
   const onShow = React.useCallback(

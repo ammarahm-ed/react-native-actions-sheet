@@ -5,7 +5,9 @@ export var providerRegistryStack = [];
 /**
  * An object that holds all the sheet components against their ids.
  */
-export var sheetsRegistry = {};
+export var sheetsRegistry = {
+    global: {}
+};
 // Registers your Sheet with the SheetProvider.
 export function registerSheet(id, Sheet) {
     var contexts = [];
@@ -48,7 +50,7 @@ export function SheetProvider(_a) {
     var _b = _a.context, context = _b === void 0 ? 'global' : _b, children = _a.children;
     var providerRegistryIndexRef = useRef(0);
     var _c = useReducer(function (x) { return x + 1; }, 0), forceUpdate = _c[1];
-    var sheetIds = Object.keys(sheetsRegistry[context] || sheetsRegistry['global']);
+    var sheetIds = Object.keys(sheetsRegistry[context] || sheetsRegistry['global'] || {});
     var onRegister = React.useCallback(function () {
         // Rerender when a new sheet is added.
         forceUpdate();
@@ -73,13 +75,14 @@ export function SheetProvider(_a) {
 var ProviderContext = createContext('global');
 export var useProviderContext = function () { return useContext(ProviderContext); };
 var RenderSheet = function (_a) {
+    var _b, _c;
     var id = _a.id, context = _a.context;
-    var _b = useState(), payload = _b[0], setPayload = _b[1];
-    var _c = useState(false), visible = _c[0], setVisible = _c[1];
+    var _d = useState(), payload = _d[0], setPayload = _d[1];
+    var _e = useState(false), visible = _e[0], setVisible = _e[1];
     var Sheet = context.startsWith('$$-auto-')
-        ? sheetsRegistry['global'][id]
+        ? (_b = sheetsRegistry['global']) === null || _b === void 0 ? void 0 : _b[id]
         : sheetsRegistry[context]
-            ? sheetsRegistry[context][id]
+            ? (_c = sheetsRegistry[context]) === null || _c === void 0 ? void 0 : _c[id]
             : undefined;
     var onShow = React.useCallback(function (data, ctx) {
         if (ctx === void 0) { ctx = 'global'; }

@@ -6,8 +6,8 @@ import {registerSheet} from '../..';
  * Registering the sheets here because otherwise sheet closes on
  * hot reload during development.
  */
-registerSheet('confirm-sheet', ConfirmSheet, 'global', 'local');
-registerSheet('example-sheet', ExampleSheet, 'global', 'local');
+registerSheet('confirm-sheet', ConfirmSheet);
+registerSheet('example-sheet', ExampleSheet);
 
 export {};
 
