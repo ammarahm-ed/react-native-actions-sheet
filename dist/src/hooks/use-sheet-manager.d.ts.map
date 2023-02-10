@@ -1,1 +1,1 @@
-{"version":3,"file":"use-sheet-manager.d.ts","sourceRoot":"","sources":["../../../src/hooks/use-sheet-manager.ts"],"names":[],"mappings":";AAKA,QAAA,MAAM,eAAe;;oBAOH,GAAG,KAAK,IAAI;4BACL,GAAG,KAAK,IAAI;gCACP,MAAM,KAAK,IAAI;;;;CAqC5C,CAAC;AAEF,eAAe,eAAe,CAAC"}
+{"version":3,"file":"use-sheet-manager.d.ts","sourceRoot":"","sources":["../../../src/hooks/use-sheet-manager.ts"],"names":[],"mappings":";AAKA,QAAA,MAAM,eAAe;;oBAOH,GAAG,KAAK,IAAI;4BACL,GAAG,KAAK,IAAI;qBAClB,MAAM,IAAI;;;;CAmC5B,CAAC;AAEF,eAAe,eAAe,CAAC"}

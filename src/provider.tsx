@@ -1,6 +1,16 @@
 /* eslint-disable curly */
-import React, {ReactNode, useEffect, useReducer, useState} from 'react';
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import {actionSheetEventManager} from './eventmanager';
+
+export const providerRegistryStack: string[] = [];
 
 /**
  * An object that holds all the sheet components against their ids.
@@ -57,19 +67,27 @@ export function SheetProvider({
   context?: string;
   children?: ReactNode;
 }) {
+  const providerRegistryIndexRef = useRef(0);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
-  const sheetIds = Object.keys(sheetsRegistry[context] || {});
+  const sheetIds = Object.keys(
+    sheetsRegistry[context] || sheetsRegistry['global'],
+  );
   const onRegister = React.useCallback(() => {
     // Rerender when a new sheet is added.
     forceUpdate();
   }, [forceUpdate]);
 
   useEffect(() => {
+    providerRegistryIndexRef.current =
+      providerRegistryStack.indexOf(context) > -1
+        ? providerRegistryStack.indexOf(context)
+        : providerRegistryStack.push(context) - 1;
     const unsub = actionSheetEventManager.subscribe(
       `${context}-on-register`,
       onRegister,
     );
     return () => {
+      providerRegistryStack.splice(providerRegistryIndexRef.current, 1);
       unsub?.unsubscribe();
     };
   }, [context, onRegister]);
@@ -85,11 +103,17 @@ export function SheetProvider({
     </>
   );
 }
+const ProviderContext = createContext('global');
+export const useProviderContext = () => useContext(ProviderContext);
 
 const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [payload, setPayload] = useState();
   const [visible, setVisible] = useState(false);
-  const Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
+  const Sheet = context.startsWith('$$-auto-')
+    ? sheetsRegistry['global'][id]
+    : sheetsRegistry[context]
+    ? sheetsRegistry[context][id]
+    : undefined;
 
   const onShow = React.useCallback(
     (data: any, ctx = 'global') => {
@@ -103,8 +127,8 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const onClose = React.useCallback(
     (_data: any, ctx = 'global') => {
       if (context !== ctx) return;
-      setVisible(false);
       setPayload(undefined);
+      setVisible(false);
     },
     [context],
   );
@@ -135,5 +159,9 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
 
   if (!Sheet) return null;
 
-  return !visible ? null : <Sheet sheetId={id} payload={payload} />;
+  return !visible ? null : (
+    <ProviderContext.Provider value={context}>
+      <Sheet sheetId={id} payload={payload} />
+    </ProviderContext.Provider>
+  );
 };

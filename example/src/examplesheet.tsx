@@ -19,15 +19,15 @@ const items = [
   100, 60, 150, 200, 170, 80, 41, 101, 61, 151, 202, 172, 82, 43, 103, 64, 155,
   205, 176, 86, 46, 106, 66, 152, 203, 173, 81, 42,
 ];
-function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
+function ExampleSheet(props: SheetProps<{data: string}>) {
   const actionSheetRef = useRef<ActionSheetRef>(null);
   const scrollHandlers = useScrollHandlers<ScrollView>('1', actionSheetRef);
   return (
     <ActionSheet
-      id={sheetId}
+      id={props.sheetId}
       ref={actionSheetRef}
       onBeforeShow={() => {
-        console.log('sheet payload', payload?.data);
+        console.log('sheet payload', props.payload?.data);
       }}
       isModal={false}
       snapPoints={[100]}
@@ -47,7 +47,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
           {colors.map(color => (
             <TouchableOpacity
               onPress={() => {
-                actionSheetRef.current?.snapToOffset(20);
+                actionSheetRef.current?.snapToRelativeOffset(30);
               }}
               key={color}
               style={[
@@ -75,7 +75,7 @@ function ExampleSheet({sheetId, payload}: SheetProps<{data: string}>) {
                 activeOpacity={0.8}
                 key={item}
                 onPress={() => {
-                  SheetManager.hide(sheetId);
+                  SheetManager.hide(props.sheetId);
                 }}
                 style={styles.listItem}>
                 <View

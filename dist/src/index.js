@@ -33,22 +33,24 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, } from 'react';
 import { Animated, BackHandler, Dimensions, Easing, Modal, PanResponder, Platform, SafeAreaView, StatusBar, TouchableOpacity, View, } from 'react-native';
 import EventManager, { actionSheetEventManager } from './eventmanager';
+import { RouterContext, RouterParamsContext, useRouter, } from './hooks/use-router';
 import useSheetManager from './hooks/use-sheet-manager';
 import { useKeyboard } from './hooks/useKeyboard';
+import { SheetProvider, useProviderContext } from './provider';
 import { getZIndexFromStack, isRenderedOnTop, SheetManager, } from './sheetmanager';
 import { styles } from './styles';
 import { getElevation, SUPPORTED_ORIENTATIONS } from './utils';
 export default forwardRef(function ActionSheet(_a, ref) {
     var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
-    var _r = _a.animated, animated = _r === void 0 ? true : _r, _s = _a.closeOnPressBack, closeOnPressBack = _s === void 0 ? true : _s, _t = _a.springOffset, springOffset = _t === void 0 ? 50 : _t, _u = _a.elevation, elevation = _u === void 0 ? 5 : _u, _v = _a.defaultOverlayOpacity, defaultOverlayOpacity = _v === void 0 ? 0.3 : _v, _w = _a.overlayColor, overlayColor = _w === void 0 ? 'black' : _w, _x = _a.closable, closable = _x === void 0 ? true : _x, _y = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _y === void 0 ? true : _y, _z = _a.drawUnderStatusBar, drawUnderStatusBar = _z === void 0 ? false : _z, _0 = _a.gestureEnabled, gestureEnabled = _0 === void 0 ? false : _0, _1 = _a.isModal, isModal = _1 === void 0 ? true : _1, _2 = _a.snapPoints, snapPoints = _2 === void 0 ? [100] : _2, _3 = _a.initialSnapIndex, initialSnapIndex = _3 === void 0 ? 0 : _3, _4 = _a.overdrawEnabled, overdrawEnabled = _4 === void 0 ? true : _4, _5 = _a.overdrawFactor, overdrawFactor = _5 === void 0 ? 15 : _5, _6 = _a.overdrawSize, overdrawSize = _6 === void 0 ? 100 : _6, _7 = _a.zIndex, zIndex = _7 === void 0 ? 9999 : _7, _8 = _a.keyboardHandlerEnabled, keyboardHandlerEnabled = _8 === void 0 ? true : _8, ExtraOverlayComponent = _a.ExtraOverlayComponent, payload = _a.payload, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex", "keyboardHandlerEnabled", "ExtraOverlayComponent", "payload"]);
+    var _r = _a.animated, animated = _r === void 0 ? true : _r, _s = _a.closeOnPressBack, closeOnPressBack = _s === void 0 ? true : _s, _t = _a.springOffset, springOffset = _t === void 0 ? 50 : _t, _u = _a.elevation, elevation = _u === void 0 ? 5 : _u, _v = _a.defaultOverlayOpacity, defaultOverlayOpacity = _v === void 0 ? 0.3 : _v, _w = _a.overlayColor, overlayColor = _w === void 0 ? 'black' : _w, _x = _a.closable, closable = _x === void 0 ? true : _x, _y = _a.closeOnTouchBackdrop, closeOnTouchBackdrop = _y === void 0 ? true : _y, _z = _a.drawUnderStatusBar, drawUnderStatusBar = _z === void 0 ? false : _z, _0 = _a.gestureEnabled, gestureEnabled = _0 === void 0 ? false : _0, _1 = _a.isModal, isModal = _1 === void 0 ? true : _1, _2 = _a.snapPoints, snapPoints = _2 === void 0 ? [100] : _2, _3 = _a.initialSnapIndex, initialSnapIndex = _3 === void 0 ? 0 : _3, _4 = _a.overdrawEnabled, overdrawEnabled = _4 === void 0 ? true : _4, _5 = _a.overdrawFactor, overdrawFactor = _5 === void 0 ? 15 : _5, _6 = _a.overdrawSize, overdrawSize = _6 === void 0 ? 100 : _6, _7 = _a.zIndex, zIndex = _7 === void 0 ? 999 : _7, _8 = _a.keyboardHandlerEnabled, keyboardHandlerEnabled = _8 === void 0 ? true : _8, ExtraOverlayComponent = _a.ExtraOverlayComponent, payload = _a.payload, safeAreaInsets = _a.safeAreaInsets, routes = _a.routes, initialRoute = _a.initialRoute, props = __rest(_a, ["animated", "closeOnPressBack", "springOffset", "elevation", "defaultOverlayOpacity", "overlayColor", "closable", "closeOnTouchBackdrop", "drawUnderStatusBar", "gestureEnabled", "isModal", "snapPoints", "initialSnapIndex", "overdrawEnabled", "overdrawFactor", "overdrawSize", "zIndex", "keyboardHandlerEnabled", "ExtraOverlayComponent", "payload", "safeAreaInsets", "routes", "initialRoute"]);
     snapPoints =
         snapPoints[snapPoints.length - 1] !== 100
             ? __spreadArray(__spreadArray([], snapPoints, true), [100], false) : snapPoints;
     var initialValue = useRef(-1);
     var actionSheetHeight = useRef(0);
-    var safeAreaPaddingTop = useRef();
+    var safeAreaPaddingTop = useRef((safeAreaInsets === null || safeAreaInsets === void 0 ? void 0 : safeAreaInsets.top) || 0);
     var internalEventManager = React.useMemo(function () { return new EventManager(); }, []);
-    var contextRef = useRef('global');
+    var currentContext = useProviderContext();
     var currentSnapIndex = useRef(initialSnapIndex);
     var minTranslateValue = useRef(0);
     var keyboardWasVisible = useRef(false);
@@ -56,6 +58,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     var lock = useRef(false);
     var panViewRef = useRef();
     var deviceContainerRef = useRef(null);
+    var isOrientationChanging = useRef(false);
     var gestureBoundaries = useRef({});
     var hiding = useRef(false);
     var payloadRef = useRef(payload);
@@ -71,12 +74,15 @@ export default forwardRef(function ActionSheet(_a, ref) {
         onHide: function (data) {
             hideSheet(undefined, data, true);
         },
-        onBeforeShow: props.onBeforeShow,
-        onContextUpdate: function (context) {
+        onBeforeShow: function (data) {
+            var _a, _b;
+            (_a = routerRef.current) === null || _a === void 0 ? void 0 : _a.initialNavigation();
+            (_b = props.onBeforeShow) === null || _b === void 0 ? void 0 : _b.call(props, data);
+        },
+        onContextUpdate: function () {
             if (props.id) {
-                contextRef.current = context || 'global';
-                SheetManager.add(props.id, contextRef.current);
-                SheetManager.registerRef(props.id, contextRef.current, {
+                SheetManager.add(props.id, currentContext);
+                SheetManager.registerRef(props.id, currentContext, {
                     current: getRef()
                 });
             }
@@ -88,9 +94,20 @@ export default forwardRef(function ActionSheet(_a, ref) {
         underlayTranslateY: new Animated.Value(100),
         keyboardTranslate: new Animated.Value(0)
     })[0];
+    var router = useRouter({
+        routes: routes,
+        getRef: function () { return getRef(); },
+        initialRoute: initialRoute,
+        onNavigate: props.onNavigate,
+        onNavigateBack: props.onNavigateBack
+    });
+    var routerRef = useRef(router);
     useEffect(function () {
         payloadRef.current = payload;
     }, [payload]);
+    useEffect(function () {
+        routerRef.current = router;
+    }, [router]);
     var keyboard = useKeyboard(keyboardHandlerEnabled && visible && dimensions.height !== 0, true, function () { return null; }, function () {
         // Don't run `hideKeyboard` callback if the `showKeyboard` hasn't ran yet.
         // Fix a race condition when you open a action sheet while you have the keyboard opened.
@@ -142,10 +159,13 @@ export default forwardRef(function ActionSheet(_a, ref) {
         }
         var config = props.closeAnimationConfig;
         opacityAnimation(0);
-        Animated.spring(animations.translateY, __assign({ velocity: typeof vy !== 'number' ? undefined : vy, toValue: dimensions.height * 1.3, useNativeDriver: true }, config)).start();
+        console.log(vy);
+        var animation = Animated.spring(animations.translateY, __assign({ velocity: typeof vy !== 'number' ? 3.0 : vy + 1, toValue: dimensions.height * 1.3, useNativeDriver: true }, config));
+        animation.start();
         setTimeout(function () {
+            animation.stop();
             callback === null || callback === void 0 ? void 0 : callback({ finished: true });
-        }, 300);
+        }, 150);
     }, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -214,7 +234,14 @@ export default forwardRef(function ActionSheet(_a, ref) {
         if (keyboard.keyboardShown && !isModal) {
             return;
         }
-        var deviceHeight = event.nativeEvent.layout.height;
+        // If this is a modal, simply use window dimensions
+        // for a more accurate height value for the action sheet.
+        var deviceHeight = isModal
+            ? windowDimensions.height
+            : event.nativeEvent.layout.height;
+        var deviceWidth = isModal
+            ? windowDimensions.width
+            : event.nativeEvent.layout.width;
         (_a = onDeviceLayoutReset.current.sub) === null || _a === void 0 ? void 0 : _a.unsubscribe();
         onDeviceLayoutReset.current.sub = internalEventManager.subscribe('safeAreaLayout', function () {
             var _a, _b;
@@ -223,7 +250,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 ? safeAreaPaddingTop.current || 0
                 : StatusBar.currentHeight || 0;
             var height = deviceHeight - safeMarginFromTop;
-            var width = Dimensions.get('window').width;
+            var width = deviceWidth;
             if ((height === null || height === void 0 ? void 0 : height.toFixed(0)) === ((_b = dimensions.height) === null || _b === void 0 ? void 0 : _b.toFixed(0)) &&
                 (width === null || width === void 0 ? void 0 : width.toFixed(0)) === dimensions.width.toFixed(0) &&
                 dimensions.portrait === isPortraitMode) {
@@ -237,9 +264,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         });
         clearTimeout(onDeviceLayoutReset.current.timer);
         if (safeAreaPaddingTop.current !== undefined || Platform.OS !== 'ios') {
-            onDeviceLayoutReset.current.timer = setTimeout(function () {
-                internalEventManager.publish('safeAreaLayout');
-            }, 64);
+            internalEventManager.publish('safeAreaLayout');
         }
     }, [
         keyboard.keyboardShown,
@@ -272,10 +297,10 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     }
                     (_b = hardwareBackPressEvent.current) === null || _b === void 0 ? void 0 : _b.remove();
                     if (props.id) {
-                        SheetManager.remove(props.id, contextRef.current);
+                        SheetManager.remove(props.id, currentContext);
                         setTimeout(function () {
                             hiding.current = false;
-                            actionSheetEventManager.publish("onclose_".concat(props.id), data || payloadRef.current || data, contextRef.current);
+                            actionSheetEventManager.publish("onclose_".concat(props.id), data || payloadRef.current || data, currentContext);
                         }, 1);
                     }
                     else {
@@ -377,7 +402,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             ? { panHandlers: {} }
             : PanResponder.create({
                 onMoveShouldSetPanResponder: function (event, gesture) {
-                    if (props.id && !isRenderedOnTop(props.id, contextRef.current))
+                    if (props.id && !isRenderedOnTop(props.id, currentContext))
                         return false;
                     var vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
                     var vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
@@ -415,7 +440,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     return gestures;
                 },
                 onStartShouldSetPanResponder: function (event, _gesture) {
-                    if (props.id && !isRenderedOnTop(props.id, contextRef.current))
+                    if (props.id && !isRenderedOnTop(props.id, currentContext))
                         return false;
                     if (Platform.OS === 'web') {
                         var gestures = true;
@@ -481,6 +506,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     }, [
         gestureEnabled,
         props.id,
+        currentContext,
         getCurrentPosition,
         overdrawFactor,
         overdrawSize,
@@ -498,6 +524,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
     };
     var onSheetLayout = React.useCallback(function (event) {
         var _a;
+        if (isOrientationChanging.current)
+            return;
         var safeMarginFromTop = Platform.OS === 'ios'
             ? safeAreaPaddingTop.current || 0
             : StatusBar.currentHeight || 0;
@@ -505,6 +533,8 @@ export default forwardRef(function ActionSheet(_a, ref) {
         var height = windowDimensions.height - safeMarginFromTop;
         var orientationChanged = dimensions.portrait !==
             windowDimensions.width < windowDimensions.height;
+        if (orientationChanged)
+            isOrientationChanging.current = true;
         (_a = deviceContainerRef.current) === null || _a === void 0 ? void 0 : _a.setNativeProps({
             style: {
                 height: windowDimensions.height
@@ -543,6 +573,11 @@ export default forwardRef(function ActionSheet(_a, ref) {
         if (!orientationChanged) {
             returnAnimation();
         }
+        else {
+            setTimeout(function () {
+                isOrientationChanging.current = false;
+            }, 300);
+        }
         if (initialValue.current > 100) {
             if (lock.current)
                 return;
@@ -565,18 +600,16 @@ export default forwardRef(function ActionSheet(_a, ref) {
     ]);
     var getRef = useCallback(function () { return ({
         show: function () {
-            setTimeout(function () {
-                setVisible(true);
-            }, 1);
+            var _a;
+            (_a = routerRef.current) === null || _a === void 0 ? void 0 : _a.initialNavigation();
+            setVisible(true);
         },
         hide: function (data) {
             hideSheet(undefined, data, true);
         },
         setModalVisible: function (_visible) {
             if (_visible) {
-                setTimeout(function () {
-                    setVisible(true);
-                }, 1);
+                setVisible(true);
             }
             else {
                 hideSheet();
@@ -587,6 +620,20 @@ export default forwardRef(function ActionSheet(_a, ref) {
                 actionSheetHeight.current +
                     minTranslateValue.current -
                     (actionSheetHeight.current * offset) / 100;
+            Animated.spring(animations.translateY, __assign({ toValue: initialValue.current, useNativeDriver: true }, props.openAnimationConfig)).start();
+        },
+        snapToRelativeOffset: function (offset) {
+            if (offset === 0) {
+                getRef().snapToIndex(currentSnapIndex.current);
+                return;
+            }
+            var availableHeight = actionSheetHeight.current + minTranslateValue.current;
+            initialValue.current =
+                initialValue.current + initialValue.current * (offset / 100);
+            if (initialValue.current > availableHeight) {
+                getRef().snapToOffset(100);
+                return;
+            }
             Animated.spring(animations.translateY, __assign({ toValue: initialValue.current, useNativeDriver: true }, props.openAnimationConfig)).start();
         },
         snapToIndex: function (index) {
@@ -607,24 +654,24 @@ export default forwardRef(function ActionSheet(_a, ref) {
         isOpen: function () { return visible; },
         ev: internalEventManager
     }); }, [
-        animations.translateY,
-        gestureEnabled,
-        getNextPosition,
-        hideSheet,
-        props.openAnimationConfig,
-        setVisible,
-        snapPoints.length,
-        visible,
         internalEventManager,
+        setVisible,
+        hideSheet,
+        animations.translateY,
+        props.openAnimationConfig,
+        snapPoints.length,
+        getNextPosition,
+        gestureEnabled,
+        visible,
     ]);
     useImperativeHandle(ref, getRef, [getRef]);
     useEffect(function () {
         if (props.id) {
-            SheetManager.registerRef(props.id, contextRef.current, {
+            SheetManager.registerRef(props.id, currentContext, {
                 current: getRef()
             });
         }
-    }, [getRef, props.id]);
+    }, [currentContext, getRef, props.id]);
     var onRequestClose = React.useCallback(function () {
         hideSheet();
     }, [hideSheet]);
@@ -656,7 +703,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     zIndex: zIndex
                         ? zIndex
                         : props.id
-                            ? getZIndexFromStack(props.id, contextRef.current)
+                            ? getZIndexFromStack(props.id, currentContext)
                             : 999,
                     width: '100%',
                     height: initialWindowHeight.current
@@ -665,7 +712,14 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     ? 'box-none'
                     : 'auto'
             };
-    }, [isModal, onHardwareBackPress, onRequestClose, props, zIndex]);
+    }, [
+        currentContext,
+        isModal,
+        onHardwareBackPress,
+        onRequestClose,
+        props,
+        zIndex,
+    ]);
     var getPaddingBottom = function () {
         var _a, _b, _c, _d, _e;
         var topPadding = Platform.OS === 'android'
@@ -699,7 +753,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
     };
     var paddingBottom = getPaddingBottom() || 0;
     return (<>
-        {Platform.OS === 'ios' ? (<SafeAreaView pointerEvents="none" collapsable={false} onLayout={function (event) {
+        {Platform.OS === 'ios' && !safeAreaInsets ? (<SafeAreaView pointerEvents="none" collapsable={false} onLayout={function (event) {
                 var height = event.nativeEvent.layout.height;
                 if (height !== undefined) {
                     safeAreaPaddingTop.current = height;
@@ -731,7 +785,6 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     ]
                 },
             ]}>
-              {props.withNestedSheetProvider}
               {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<TouchableOpacity onPress={onTouch} activeOpacity={defaultOverlayOpacity} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
                     height: dimensions.height +
                         (safeAreaPaddingTop.current || 0) +
@@ -744,11 +797,13 @@ export default forwardRef(function ActionSheet(_a, ref) {
 
               <Animated.View pointerEvents="box-none" style={__assign(__assign({ borderTopRightRadius: ((_c = props.containerStyle) === null || _c === void 0 ? void 0 : _c.borderTopRightRadius) || 10, borderTopLeftRadius: ((_d = props.containerStyle) === null || _d === void 0 ? void 0 : _d.borderTopLeftRadius) || 10, backgroundColor: ((_e = props.containerStyle) === null || _e === void 0 ? void 0 : _e.backgroundColor) || 'white', borderBottomLeftRadius: ((_f = props.containerStyle) === null || _f === void 0 ? void 0 : _f.borderBottomLeftRadius) || undefined, borderBottomRightRadius: ((_g = props.containerStyle) === null || _g === void 0 ? void 0 : _g.borderBottomRightRadius) || undefined, borderRadius: ((_h = props.containerStyle) === null || _h === void 0 ? void 0 : _h.borderRadius) || undefined, width: ((_j = props.containerStyle) === null || _j === void 0 ? void 0 : _j.width) || '100%' }, getElevation(typeof elevation === 'number' ? elevation : 5)), { flex: undefined, height: dimensions.height, maxHeight: dimensions.height, paddingBottom: keyboard.keyboardShown
                     ? keyboard.keyboardHeight || 0
-                    : 0, zIndex: 10, transform: [
+                    : 0, 
+                //zIndex: 10,
+                transform: [
                     {
                         translateY: animations.translateY
                     },
-                ] })}>
+                ], overflow: 'hidden' })}>
                 {dimensions.height === 0 ? null : (<Animated.View {...handlers.panHandlers} onLayout={onSheetLayout} ref={panViewRef} testID={(_k = props.testIDs) === null || _k === void 0 ? void 0 : _k.sheet} style={[
                     styles.container,
                     {
@@ -782,7 +837,21 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     }}/>) : null}
                     {gestureEnabled || props.headerAlwaysVisible ? (props.CustomHeaderComponent ? (props.CustomHeaderComponent) : (<Animated.View style={[styles.indicator, props.indicatorStyle]}/>)) : null}
 
-                    {props === null || props === void 0 ? void 0 : props.children}
+                    {(router === null || router === void 0 ? void 0 : router.hasRoutes()) ? (<RouterContext.Provider value={router}>
+                        {router === null || router === void 0 ? void 0 : router.stack.map(function (route) {
+                        var _a;
+                        var RouteComponent = route.component;
+                        return (<View key={route.name} style={{
+                                display: route.name !== ((_a = router.currentRoute) === null || _a === void 0 ? void 0 : _a.name)
+                                    ? 'none'
+                                    : 'flex'
+                            }}>
+                              <RouterParamsContext.Provider value={route === null || route === void 0 ? void 0 : route.params}>
+                                <RouteComponent router={router} params={route === null || route === void 0 ? void 0 : route.params} payload={payloadRef.current}/>
+                              </RouterParamsContext.Provider>
+                            </View>);
+                    })}
+                      </RouterContext.Provider>) : (props === null || props === void 0 ? void 0 : props.children)}
                   </Animated.View>)}
                 {overdrawEnabled ? (<Animated.View style={{
                     position: 'absolute',
@@ -792,8 +861,9 @@ export default forwardRef(function ActionSheet(_a, ref) {
                     width: ((_q = props.containerStyle) === null || _q === void 0 ? void 0 : _q.width) || dimensions.width
                 }}/>) : null}
               </Animated.View>
-
               {ExtraOverlayComponent}
+              {props.withNestedSheetProvider}
+              {props.id ? (<SheetProvider context={"$$-auto-".concat(props.id, "-").concat(currentContext, "-provider")}/>) : null}
             </Animated.View>
           </Root>) : null}
       </>);

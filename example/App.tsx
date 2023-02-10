@@ -6,7 +6,7 @@ import './src/sheets';
 const App = () => {
   return (
     <>
-      <SheetProvider>
+      <SheetProvider context="global">
         <ExampleScreen />
       </SheetProvider>
     </>

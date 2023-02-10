@@ -31,6 +31,7 @@ export declare type ActionSheetRef = {
      * @removed Use `useScrollHandlers` hook to enable scrolling in ActionSheet.
      */
     handleChildScrollEnd: () => void;
+    snapToRelativeOffset: (offset: number) => void;
     /**
      * Used internally for scrollable views.
      */

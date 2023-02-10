@@ -1,8 +1,9 @@
+import {Route} from './hooks/use-router';
 import React from 'react';
 import {Animated, TouchableOpacityProps, ViewStyle} from 'react-native';
 
 export type ActionSheetProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   /**
    * A unique id for the ActionSheet. You must set this if you are using `SheetManager`.
    *
@@ -263,4 +264,15 @@ export type ActionSheetProps = {
    * additional props to pass to the backdrop element. Useful for adding custom accessibility props.
    */
   backdropProps?: Partial<TouchableOpacityProps>;
+
+  /**
+   * Default safeArea insets provided through a library such as
+   * react-native-safe-area-insets. This also helps in giving a tiny boost
+   * in performance as the sheet does not have to calculate insets anymore.
+   */
+  safeAreaInsets?: {top: number; left: number; right: number; bottom: number};
+  routes?: Route[];
+  onNavigate?: (route: string) => void;
+  onNavigateBack?: (route: string) => void;
+  initialRoute?: string;
 };

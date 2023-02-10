@@ -1,9 +1,61 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {Button, Text, View} from 'react-native';
-import ActionSheet, {SheetManager, SheetProps, SheetProvider} from '../../';
+import ActionSheet, {Route, SheetProps} from '../../';
+
+const RouteA = ({router}: {router: any}) => {
+  return (
+    <View>
+      <Text
+        style={{
+          marginBottom: 10,
+          color: 'black',
+          height: 500,
+        }}>
+        A
+      </Text>
+      <Button
+        title="No"
+        onPress={() => {
+          router?.navigate('route-b', undefined, 'out');
+        }}
+      />
+    </View>
+  );
+};
+
+const RouteB = ({router}: {router: any}) => {
+  return (
+    <View>
+      <Text
+        style={{
+          marginBottom: 10,
+          color: 'black',
+          height: 100,
+        }}>
+        B
+      </Text>
+      <Button
+        title="No"
+        onPress={() => {
+          router?.goBack();
+        }}
+      />
+    </View>
+  );
+};
+
+const routes: Route[] = [
+  {
+    name: 'route-a',
+    component: RouteA,
+  },
+  {
+    name: 'route-b',
+    component: RouteB,
+  },
+];
 
 function ConfirmSheet(props: SheetProps) {
-  const [payload, setPayload] = useState();
   return (
     <ActionSheet
       id={props.sheetId}
@@ -16,42 +68,11 @@ function ConfirmSheet(props: SheetProps) {
       onClose={data => {
         console.log(data, 'called');
       }}
-      payload={payload}
+      routes={routes}
+      initialRoute="route-a"
       springOffset={50}
-      defaultOverlayOpacity={0.3}>
-      <SheetProvider context="local">
-        <View>
-          <Text
-            style={{
-              marginBottom: 10,
-              color: 'black',
-            }}>
-            Pressing yes or no will return the result back to the caller.
-          </Text>
-          <Button
-            title="No"
-            onPress={() => {
-              SheetManager.show('example-sheet', {
-                payload: false,
-                context: 'local',
-              });
-            }}
-          />
-          <View
-            style={{
-              height: 10,
-            }}
-          />
-          <Button
-            title="Yes"
-            onPress={() => {
-              setPayload('boom');
-              SheetManager.hide(props.sheetId);
-            }}
-          />
-        </View>
-      </SheetProvider>
-    </ActionSheet>
+      defaultOverlayOpacity={0.3}
+    />
   );
 }
 

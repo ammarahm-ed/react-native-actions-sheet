@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import {useEffect, useState} from 'react';
 import {actionSheetEventManager} from '../eventmanager';
-import {useRef} from 'react';
+import {useProviderContext} from '../provider';
 
 const useSheetManager = ({
   id,
@@ -12,10 +12,10 @@ const useSheetManager = ({
   id?: string;
   onHide: (data?: any) => void;
   onBeforeShow?: (data?: any) => void;
-  onContextUpdate: (context?: string) => void;
+  onContextUpdate: () => void;
 }) => {
   const [visible, setVisible] = useState(false);
-  const contextRef = useRef<string>();
+  const currentContext = useProviderContext();
 
   useEffect(() => {
     if (!id) return;
@@ -23,19 +23,17 @@ const useSheetManager = ({
       actionSheetEventManager.subscribe(
         `show_${id}`,
         (data: any, context?: string) => {
+          if (currentContext !== context) return;
           if (visible) return;
-          contextRef.current = context || 'global';
-          onContextUpdate?.(context);
+          onContextUpdate?.();
           onBeforeShow?.(data);
-          setTimeout(() => {
-            setVisible(true);
-          }, 1);
+          setVisible(true);
         },
       ),
       actionSheetEventManager.subscribe(
         `hide_${id}`,
         (data: any, context = 'global') => {
-          if (context !== contextRef.current) return;
+          if (currentContext !== context) return;
           onHide?.(data);
         },
       ),
@@ -43,7 +41,7 @@ const useSheetManager = ({
     return () => {
       subscriptions.forEach(s => s?.unsubscribe?.());
     };
-  }, [id, onHide, onBeforeShow, onContextUpdate, visible]);
+  }, [id, onHide, onBeforeShow, onContextUpdate, visible, currentContext]);
 
   return {
     visible,

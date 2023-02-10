@@ -1,6 +1,7 @@
 /* eslint-disable curly */
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef, useState, } from 'react';
 import { actionSheetEventManager } from './eventmanager';
+export var providerRegistryStack = [];
 /**
  * An object that holds all the sheet components against their ids.
  */
@@ -45,15 +46,21 @@ registerSheet('local-sheet', LocalSheet,'local-context');
  */
 export function SheetProvider(_a) {
     var _b = _a.context, context = _b === void 0 ? 'global' : _b, children = _a.children;
+    var providerRegistryIndexRef = useRef(0);
     var _c = useReducer(function (x) { return x + 1; }, 0), forceUpdate = _c[1];
-    var sheetIds = Object.keys(sheetsRegistry[context] || {});
+    var sheetIds = Object.keys(sheetsRegistry[context] || sheetsRegistry['global']);
     var onRegister = React.useCallback(function () {
         // Rerender when a new sheet is added.
         forceUpdate();
     }, [forceUpdate]);
     useEffect(function () {
+        providerRegistryIndexRef.current =
+            providerRegistryStack.indexOf(context) > -1
+                ? providerRegistryStack.indexOf(context)
+                : providerRegistryStack.push(context) - 1;
         var unsub = actionSheetEventManager.subscribe("".concat(context, "-on-register"), onRegister);
         return function () {
+            providerRegistryStack.splice(providerRegistryIndexRef.current, 1);
             unsub === null || unsub === void 0 ? void 0 : unsub.unsubscribe();
         };
     }, [context, onRegister]);
@@ -63,11 +70,17 @@ export function SheetProvider(_a) {
       {sheetIds.map(renderSheet)}
     </>);
 }
+var ProviderContext = createContext('global');
+export var useProviderContext = function () { return useContext(ProviderContext); };
 var RenderSheet = function (_a) {
     var id = _a.id, context = _a.context;
     var _b = useState(), payload = _b[0], setPayload = _b[1];
     var _c = useState(false), visible = _c[0], setVisible = _c[1];
-    var Sheet = sheetsRegistry[context] && sheetsRegistry[context][id];
+    var Sheet = context.startsWith('$$-auto-')
+        ? sheetsRegistry['global'][id]
+        : sheetsRegistry[context]
+            ? sheetsRegistry[context][id]
+            : undefined;
     var onShow = React.useCallback(function (data, ctx) {
         if (ctx === void 0) { ctx = 'global'; }
         if (ctx !== context)
@@ -79,8 +92,8 @@ var RenderSheet = function (_a) {
         if (ctx === void 0) { ctx = 'global'; }
         if (context !== ctx)
             return;
-        setVisible(false);
         setPayload(undefined);
+        setVisible(false);
     }, [context]);
     var onHide = React.useCallback(function (data, ctx) {
         if (ctx === void 0) { ctx = 'global'; }
@@ -103,5 +116,7 @@ var RenderSheet = function (_a) {
     }, [id, context, onShow, onHide, onClose]);
     if (!Sheet)
         return null;
-    return !visible ? null : <Sheet sheetId={id} payload={payload}/>;
+    return !visible ? null : (<ProviderContext.Provider value={context}>
+      <Sheet sheetId={id} payload={payload}/>
+    </ProviderContext.Provider>);
 };

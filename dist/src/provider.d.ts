@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+export declare const providerRegistryStack: string[];
 /**
  * An object that holds all the sheet components against their ids.
  */
@@ -35,4 +36,5 @@ export declare function SheetProvider({ context, children, }: {
     context?: string;
     children?: ReactNode;
 }): JSX.Element;
+export declare const useProviderContext: () => string;
 //# sourceMappingURL=provider.d.ts.map

@@ -25,8 +25,14 @@ import {
   View,
 } from 'react-native';
 import EventManager, {actionSheetEventManager} from './eventmanager';
+import {
+  RouterContext,
+  RouterParamsContext,
+  useRouter,
+} from './hooks/use-router';
 import useSheetManager from './hooks/use-sheet-manager';
 import {useKeyboard} from './hooks/useKeyboard';
+import {SheetProvider, useProviderContext} from './provider';
 import {
   getZIndexFromStack,
   isRenderedOnTop,
@@ -66,6 +72,7 @@ export type ActionSheetRef = {
    * @removed Use `useScrollHandlers` hook to enable scrolling in ActionSheet.
    */
   handleChildScrollEnd: () => void;
+  snapToRelativeOffset: (offset: number) => void;
 
   /**
    * Used internally for scrollable views.
@@ -101,10 +108,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       overdrawEnabled = true,
       overdrawFactor = 15,
       overdrawSize = 100,
-      zIndex = 9999,
+      zIndex = 999,
       keyboardHandlerEnabled = true,
       ExtraOverlayComponent,
       payload,
+      safeAreaInsets,
+      routes,
+      initialRoute,
       ...props
     },
     ref,
@@ -115,16 +125,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         : snapPoints;
     const initialValue = useRef(-1);
     const actionSheetHeight = useRef(0);
-    const safeAreaPaddingTop = useRef<number>();
+    const safeAreaPaddingTop = useRef<number>(safeAreaInsets?.top || 0);
     const internalEventManager = React.useMemo(() => new EventManager(), []);
-    const contextRef = useRef('global');
+    const currentContext = useProviderContext();
     const currentSnapIndex = useRef(initialSnapIndex);
     const minTranslateValue = useRef(0);
     const keyboardWasVisible = useRef(false);
     const prevKeyboardHeight = useRef(0);
+
     const lock = useRef(false);
     const panViewRef = useRef<View>();
     const deviceContainerRef = useRef<View>(null);
+    const isOrientationChanging = useRef(false);
     const gestureBoundaries = useRef<{
       [name: string]: LayoutRectangle & {
         scrollOffset?: number;
@@ -149,12 +161,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       onHide: data => {
         hideSheet(undefined, data, true);
       },
-      onBeforeShow: props.onBeforeShow,
-      onContextUpdate: context => {
+      onBeforeShow: data => {
+        routerRef.current?.initialNavigation();
+        props.onBeforeShow?.(data);
+      },
+      onContextUpdate: () => {
         if (props.id) {
-          contextRef.current = context || 'global';
-          SheetManager.add(props.id, contextRef.current);
-          SheetManager.registerRef(props.id, contextRef.current, {
+          SheetManager.add(props.id, currentContext);
+          SheetManager.registerRef(props.id, currentContext, {
             current: getRef(),
           } as RefObject<ActionSheetRef>);
         }
@@ -167,9 +181,21 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       keyboardTranslate: new Animated.Value(0),
     });
 
+    const router = useRouter({
+      routes: routes,
+      getRef: () => getRef(),
+      initialRoute: initialRoute,
+      onNavigate: props.onNavigate,
+      onNavigateBack: props.onNavigateBack,
+    });
+    const routerRef = useRef(router);
     useEffect(() => {
       payloadRef.current = payload;
     }, [payload]);
+
+    useEffect(() => {
+      routerRef.current = router;
+    }, [router]);
 
     const keyboard = useKeyboard(
       keyboardHandlerEnabled && visible && dimensions.height !== 0,
@@ -244,15 +270,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
         const config = props.closeAnimationConfig;
         opacityAnimation(0);
-        Animated.spring(animations.translateY, {
-          velocity: typeof vy !== 'number' ? undefined : vy,
+        console.log(vy);
+        const animation = Animated.spring(animations.translateY, {
+          velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
           toValue: dimensions.height * 1.3,
           useNativeDriver: true,
           ...config,
-        }).start();
+        });
+        animation.start();
         setTimeout(() => {
+          animation.stop();
           callback?.({finished: true});
-        }, 300);
+        }, 150);
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [
@@ -336,8 +365,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (keyboard.keyboardShown && !isModal) {
           return;
         }
+        // If this is a modal, simply use window dimensions
+        // for a more accurate height value for the action sheet.
+        let deviceHeight = isModal
+          ? windowDimensions.height
+          : event.nativeEvent.layout.height;
+        let deviceWidth = isModal
+          ? windowDimensions.width
+          : event.nativeEvent.layout.width;
 
-        let deviceHeight = event.nativeEvent.layout.height;
         onDeviceLayoutReset.current.sub?.unsubscribe();
         onDeviceLayoutReset.current.sub = internalEventManager.subscribe(
           'safeAreaLayout',
@@ -349,7 +385,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 : StatusBar.currentHeight || 0;
 
             let height = deviceHeight - safeMarginFromTop;
-            let width = Dimensions.get('window').width;
+            let width = deviceWidth;
             if (
               height?.toFixed(0) === dimensions.height?.toFixed(0) &&
               width?.toFixed(0) === dimensions.width.toFixed(0) &&
@@ -366,9 +402,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         );
         clearTimeout(onDeviceLayoutReset.current.timer);
         if (safeAreaPaddingTop.current !== undefined || Platform.OS !== 'ios') {
-          onDeviceLayoutReset.current.timer = setTimeout(() => {
-            internalEventManager.publish('safeAreaLayout');
-          }, 64);
+          internalEventManager.publish('safeAreaLayout');
         }
       },
       [
@@ -401,13 +435,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               }
               hardwareBackPressEvent.current?.remove();
               if (props.id) {
-                SheetManager.remove(props.id, contextRef.current);
+                SheetManager.remove(props.id, currentContext);
                 setTimeout(() => {
                   hiding.current = false;
                   actionSheetEventManager.publish(
                     `onclose_${props.id}`,
                     data || payloadRef.current || data,
-                    contextRef.current,
+                    currentContext,
                   );
                 }, 1);
               } else {
@@ -521,7 +555,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           ? {panHandlers: {}}
           : PanResponder.create({
               onMoveShouldSetPanResponder: (event, gesture) => {
-                if (props.id && !isRenderedOnTop(props.id, contextRef.current))
+                if (props.id && !isRenderedOnTop(props.id, currentContext))
                   return false;
                 let vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
                 let vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
@@ -559,7 +593,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 return gestures;
               },
               onStartShouldSetPanResponder: (event, _gesture) => {
-                if (props.id && !isRenderedOnTop(props.id, contextRef.current))
+                if (props.id && !isRenderedOnTop(props.id, currentContext))
                   return false;
 
                 if (Platform.OS === 'web') {
@@ -633,6 +667,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [
         gestureEnabled,
         props.id,
+        currentContext,
         getCurrentPosition,
         overdrawFactor,
         overdrawSize,
@@ -653,6 +688,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const onSheetLayout = React.useCallback(
       (event: LayoutChangeEvent) => {
+        if (isOrientationChanging.current) return;
         const safeMarginFromTop =
           Platform.OS === 'ios'
             ? safeAreaPaddingTop.current || 0
@@ -662,7 +698,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         const orientationChanged =
           dimensions.portrait !==
           windowDimensions.width < windowDimensions.height;
-
+        if (orientationChanged) isOrientationChanging.current = true;
         deviceContainerRef.current?.setNativeProps({
           style: {
             height: windowDimensions.height,
@@ -706,6 +742,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         opacityAnimation(1);
         if (!orientationChanged) {
           returnAnimation();
+        } else {
+          setTimeout(() => {
+            isOrientationChanging.current = false;
+          }, 300);
         }
 
         if (initialValue.current > 100) {
@@ -733,18 +773,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const getRef = useCallback(
       (): ActionSheetRef => ({
         show: () => {
-          setTimeout(() => {
-            setVisible(true);
-          }, 1);
+          routerRef.current?.initialNavigation();
+          setVisible(true);
         },
         hide: (data: any) => {
           hideSheet(undefined, data, true);
         },
         setModalVisible: (_visible?: boolean) => {
           if (_visible) {
-            setTimeout(() => {
-              setVisible(true);
-            }, 1);
+            setVisible(true);
           } else {
             hideSheet();
           }
@@ -754,6 +791,25 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             actionSheetHeight.current +
             minTranslateValue.current -
             (actionSheetHeight.current * offset) / 100;
+          Animated.spring(animations.translateY, {
+            toValue: initialValue.current,
+            useNativeDriver: true,
+            ...props.openAnimationConfig,
+          }).start();
+        },
+        snapToRelativeOffset: (offset: number) => {
+          if (offset === 0) {
+            getRef().snapToIndex(currentSnapIndex.current);
+            return;
+          }
+          const availableHeight =
+            actionSheetHeight.current + minTranslateValue.current;
+          initialValue.current =
+            initialValue.current + initialValue.current * (offset / 100);
+          if (initialValue.current > availableHeight) {
+            getRef().snapToOffset(100);
+            return;
+          }
           Animated.spring(animations.translateY, {
             toValue: initialValue.current,
             useNativeDriver: true,
@@ -787,15 +843,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         ev: internalEventManager,
       }),
       [
-        animations.translateY,
-        gestureEnabled,
-        getNextPosition,
-        hideSheet,
-        props.openAnimationConfig,
-        setVisible,
-        snapPoints.length,
-        visible,
         internalEventManager,
+        setVisible,
+        hideSheet,
+        animations.translateY,
+        props.openAnimationConfig,
+        snapPoints.length,
+        getNextPosition,
+        gestureEnabled,
+        visible,
       ],
     );
 
@@ -803,11 +859,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     useEffect(() => {
       if (props.id) {
-        SheetManager.registerRef(props.id, contextRef.current, {
+        SheetManager.registerRef(props.id, currentContext, {
           current: getRef(),
         } as RefObject<ActionSheetRef>);
       }
-    }, [getRef, props.id]);
+    }, [currentContext, getRef, props.id]);
 
     const onRequestClose = React.useCallback(() => {
       hideSheet();
@@ -842,7 +898,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 zIndex: zIndex
                   ? zIndex
                   : props.id
-                  ? getZIndexFromStack(props.id, contextRef.current)
+                  ? getZIndexFromStack(props.id, currentContext)
                   : 999,
                 width: '100%',
                 height: initialWindowHeight.current,
@@ -851,7 +907,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 ? 'box-none'
                 : 'auto',
             },
-      [isModal, onHardwareBackPress, onRequestClose, props, zIndex],
+      [
+        currentContext,
+        isModal,
+        onHardwareBackPress,
+        onRequestClose,
+        props,
+        zIndex,
+      ],
     );
 
     const getPaddingBottom = () => {
@@ -895,7 +958,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const paddingBottom = getPaddingBottom() || 0;
     return (
       <>
-        {Platform.OS === 'ios' ? (
+        {Platform.OS === 'ios' && !safeAreaInsets ? (
           <SafeAreaView
             pointerEvents="none"
             collapsable={false}
@@ -940,7 +1003,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   ],
                 },
               ]}>
-              {props.withNestedSheetProvider}
               {!props?.backgroundInteractionEnabled ? (
                 <TouchableOpacity
                   onPress={onTouch}
@@ -984,12 +1046,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   paddingBottom: keyboard.keyboardShown
                     ? keyboard.keyboardHeight || 0
                     : 0,
-                  zIndex: 10,
+                  //zIndex: 10,
                   transform: [
                     {
                       translateY: animations.translateY,
                     },
                   ],
+                  overflow: 'hidden',
                 }}>
                 {dimensions.height === 0 ? null : (
                   <Animated.View
@@ -1046,7 +1109,34 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       )
                     ) : null}
 
-                    {props?.children}
+                    {router?.hasRoutes() ? (
+                      <RouterContext.Provider value={router}>
+                        {router?.stack.map(route => {
+                          const RouteComponent = route.component as any;
+                          return (
+                            <View
+                              key={route.name}
+                              style={{
+                                display:
+                                  route.name !== router.currentRoute?.name
+                                    ? 'none'
+                                    : 'flex',
+                              }}>
+                              <RouterParamsContext.Provider
+                                value={route?.params}>
+                                <RouteComponent
+                                  router={router}
+                                  params={route?.params}
+                                  payload={payloadRef.current}
+                                />
+                              </RouterParamsContext.Provider>
+                            </View>
+                          );
+                        })}
+                      </RouterContext.Provider>
+                    ) : (
+                      props?.children
+                    )}
                   </Animated.View>
                 )}
                 {overdrawEnabled ? (
@@ -1062,8 +1152,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   />
                 ) : null}
               </Animated.View>
-
               {ExtraOverlayComponent}
+              {props.withNestedSheetProvider}
+              {props.id ? (
+                <SheetProvider
+                  context={`$$-auto-${props.id}-${currentContext}-provider`}
+                />
+              ) : null}
             </Animated.View>
           </Root>
         ) : null}

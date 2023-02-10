@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 import { actionSheetEventManager } from './eventmanager';
-import { sheetsRegistry } from './provider';
+import { providerRegistryStack, sheetsRegistry } from './provider';
 var baseZindex = 999;
 // Array of all the ids of ActionSheets currently rendered in the app.
 var ids = [];
@@ -88,6 +88,12 @@ export function getZIndexFromStack(id, context) {
 }
 var SM = /** @class */ (function () {
     function SM() {
+        /**
+         * Show the ActionSheet with a given id.
+         *
+         * @param id id of the ActionSheet to show
+         * @param options
+         */
         this.registerRef = function (id, context, instance) {
             refs["".concat(id, ":").concat(context)] = instance;
         };
@@ -111,22 +117,28 @@ var SM = /** @class */ (function () {
             }
         };
     }
-    /**
-     * Show the ActionSheet with a given id.
-     *
-     * @param id id of the ActionSheet to show
-     * @param options
-     */
+    SM.prototype.context = function (options) {
+        if (!options)
+            options = {};
+        if (!(options === null || options === void 0 ? void 0 : options.context)) {
+            // If no context is provided, use to current top most context
+            // to render the sheet.
+            options.context = providerRegistryStack[providerRegistryStack.length - 1];
+        }
+        return options.context;
+    };
     SM.prototype.show = function (id, options) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
+                        var currentContext = _this.context(options);
                         var handler = function (data, context) {
                             var _a;
                             if (context === void 0) { context = 'global'; }
                             if (context !== 'global' &&
-                                (options === null || options === void 0 ? void 0 : options.context) &&
-                                options.context !== context)
+                                currentContext &&
+                                currentContext !== context)
                                 return;
                             (_a = options === null || options === void 0 ? void 0 : options.onClose) === null || _a === void 0 ? void 0 : _a.call(options, data);
                             sub === null || sub === void 0 ? void 0 : sub.unsubscribe();
@@ -142,7 +154,7 @@ var SM = /** @class */ (function () {
                                 }
                             }
                         }
-                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "show_wrap_".concat(id) : "show_".concat(id), options === null || options === void 0 ? void 0 : options.payload, options === null || options === void 0 ? void 0 : options.context);
+                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "show_wrap_".concat(id) : "show_".concat(id), options === null || options === void 0 ? void 0 : options.payload, currentContext);
                     })];
             });
         });
@@ -155,13 +167,15 @@ var SM = /** @class */ (function () {
      */
     SM.prototype.hide = function (id, options) {
         return __awaiter(this, void 0, void 0, function () {
+            var currentContext;
             return __generator(this, function (_a) {
+                currentContext = this.context(options);
                 return [2 /*return*/, new Promise(function (resolve) {
                         var hideHandler = function (data, context) {
                             if (context === void 0) { context = 'global'; }
                             if (context !== 'global' &&
-                                (options === null || options === void 0 ? void 0 : options.context) &&
-                                options.context !== context)
+                                currentContext &&
+                                currentContext !== context)
                                 return;
                             sub === null || sub === void 0 ? void 0 : sub.unsubscribe();
                             resolve(data);
@@ -176,7 +190,7 @@ var SM = /** @class */ (function () {
                                 }
                             }
                         }
-                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "hide_wrap_".concat(id) : "hide_".concat(id), options === null || options === void 0 ? void 0 : options.payload, options === null || options === void 0 ? void 0 : options.context);
+                        actionSheetEventManager.publish(isRegisteredWithSheetProvider ? "hide_wrap_".concat(id) : "hide_".concat(id), options === null || options === void 0 ? void 0 : options.payload, currentContext);
                     })];
             });
         });

@@ -2,7 +2,7 @@
 import {RefObject} from 'react';
 import {ActionSheetRef} from '.';
 import {actionSheetEventManager} from './eventmanager';
-import {sheetsRegistry} from './provider';
+import {providerRegistryStack, sheetsRegistry} from './provider';
 let baseZindex = 999;
 // Array of all the ids of ActionSheets currently rendered in the app.
 const ids: string[] = [];
@@ -64,6 +64,17 @@ class SM {
    * @param id id of the ActionSheet to show
    * @param options
    */
+
+  context(options?: {context?: string}) {
+    if (!options) options = {};
+    if (!options?.context) {
+      // If no context is provided, use to current top most context
+      // to render the sheet.
+      options.context = providerRegistryStack[providerRegistryStack.length - 1];
+    }
+    return options.context;
+  }
+
   async show<BeforeShowPayload extends any, ReturnPayload extends any>(
     id: string,
     options?: {
@@ -84,11 +95,12 @@ class SM {
     },
   ): Promise<ReturnPayload> {
     return new Promise(resolve => {
+      const currentContext = this.context(options);
       const handler = (data: ReturnPayload, context = 'global') => {
         if (
           context !== 'global' &&
-          options?.context &&
-          options.context !== context
+          currentContext &&
+          currentContext !== context
         )
           return;
 
@@ -110,7 +122,7 @@ class SM {
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
         options?.payload,
-        options?.context,
+        currentContext,
       );
     });
   }
@@ -134,12 +146,13 @@ class SM {
       context?: string;
     },
   ): Promise<ReturnPayload> {
+    const currentContext = this.context(options);
     return new Promise(resolve => {
       const hideHandler = (data: ReturnPayload, context = 'global') => {
         if (
           context !== 'global' &&
-          options?.context &&
-          options.context !== context
+          currentContext &&
+          currentContext !== context
         )
           return;
         sub?.unsubscribe();
@@ -161,7 +174,7 @@ class SM {
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `hide_wrap_${id}` : `hide_${id}`,
         options?.payload,
-        options?.context,
+        currentContext,
       );
     });
   }

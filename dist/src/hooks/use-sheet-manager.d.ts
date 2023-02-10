@@ -3,7 +3,7 @@ declare const useSheetManager: ({ id, onHide, onBeforeShow, onContextUpdate, }: 
     id?: string | undefined;
     onHide: (data?: any) => void;
     onBeforeShow?: ((data?: any) => void) | undefined;
-    onContextUpdate: (context?: string) => void;
+    onContextUpdate: () => void;
 }) => {
     visible: boolean;
     setVisible: import("react").Dispatch<import("react").SetStateAction<boolean>>;
