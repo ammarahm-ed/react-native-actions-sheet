@@ -19,12 +19,12 @@ export declare type Router = {
     /**
      * @param name  Name of the route to navigate to
      * @param params Params to pass to the route upon navigation
-     * @param snap Snap value for navigation animation. Between -100 - 100. A positive value snaps inwards, while a negative value snaps outwards.
+     * @param snap Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
      */
     navigate: (name: string, params?: any, snap?: number) => void;
     /**
      * @param name  Name of the route to navigate back to.
-     * @param snap Snap value for navigation animation. Between -100 - 100. A positive value snaps inwards, while a negative value snaps outwards.
+     * @param snap Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
      */
     goBack: (name?: string, snap?: number) => void;
     /**
@@ -65,7 +65,7 @@ export declare const RouterParamsContext: import("react").Context<any>;
  * A hook that returns the params for current navigation route.
  */
 export declare const useSheetRouteParams: () => any;
-export declare type RouteScreenProps<T> = {
+export declare type RouteScreenProps<T = {}> = {
     router: Router;
     params: any;
     payload: any;

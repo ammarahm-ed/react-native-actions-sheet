@@ -1,8 +1,8 @@
 import React from 'react';
 import {Button, Text, View} from 'react-native';
-import ActionSheet, {Route, SheetProps} from '../../';
+import ActionSheet, {Route, RouteScreenProps, SheetProps} from '../../';
 
-const RouteA = ({router}: {router: any}) => {
+const RouteA = ({router}: RouteScreenProps) => {
   return (
     <View>
       <Text
@@ -16,7 +16,7 @@ const RouteA = ({router}: {router: any}) => {
       <Button
         title="No"
         onPress={() => {
-          router?.navigate('route-b', undefined, 'out');
+          router?.navigate('route-b', undefined, 1);
         }}
       />
     </View>
@@ -37,7 +37,7 @@ const RouteB = ({router}: {router: any}) => {
       <Button
         title="No"
         onPress={() => {
-          router?.goBack();
+          router?.goBack(undefined, 10);
         }}
       />
     </View>
