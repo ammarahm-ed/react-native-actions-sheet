@@ -22,13 +22,15 @@ export function getSheetStack() {
 }
 
 /**
- * A function that checks whether the action sheet is rendered on top or not.
+ * A function that checks whether the action sheet with the given id is rendered on top or not.
  * @param id
  * @param context
  * @returns
  */
-export function isRenderedOnTop(id: string, context: string) {
-  return ids[ids.length - 1] === `${id}:${context}`;
+export function isRenderedOnTop(id: string, context?: string) {
+  return context
+    ? ids[ids.length - 1] === `${id}:${context}`
+    : ids[ids.length - 1].startsWith(id);
 }
 
 /**
@@ -57,7 +59,7 @@ export function getZIndexFromStack(id: string, context: string) {
   return baseZindex;
 }
 
-class SM {
+class _SheetManager {
   /**
    * Show the ActionSheet with a given id.
    *
@@ -239,4 +241,4 @@ class SM {
  * SheetManager is used to imperitively show/hide any ActionSheet with a
  * unique id prop.
  */
-export const SheetManager = new SM();
+export const SheetManager = new _SheetManager();

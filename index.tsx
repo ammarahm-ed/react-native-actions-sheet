@@ -4,6 +4,7 @@ export {
   SheetManager,
   setBaseZIndexForActionSheets,
   getSheetStack,
+  isRenderedOnTop,
 } from './src/sheetmanager';
 export {
   registerSheet,
