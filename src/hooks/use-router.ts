@@ -18,13 +18,18 @@ export type Route = {
 
 export type Router = {
   currentRoute: Route;
+
   /**
+   * Navigate to a route
+   *
    * @param name  Name of the route to navigate to
    * @param params Params to pass to the route upon navigation. These can be accessed in the route using `useSheetRouteParams` hook.
    * @param snap Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
    */
   navigate: (name: string, params?: any, snap?: number) => void;
   /**
+   * Navigate back from a route.
+   *
    * @param name  Name of the route to navigate back to.
    * @param snap Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
    */

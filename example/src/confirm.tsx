@@ -21,7 +21,7 @@ const RouteA = ({router}: RouteScreenProps) => {
       <Button
         title="No"
         onPress={() => {
-          router?.navigate('route-b', undefined, 1);
+          SheetManager.hide('confirm-sheet');
         }}
       />
     </View>
@@ -63,14 +63,12 @@ const routes: Route[] = [
 function ConfirmSheet(props: SheetProps) {
   return (
     <ActionSheet
+      id={props.sheetId}
       statusBarTranslucent={false}
       drawUnderStatusBar={false}
       gestureEnabled={true}
       containerStyle={{
         paddingHorizontal: 12,
-      }}
-      onClose={data => {
-        SheetManager.hide(props.sheetId);
       }}
       enableRouterBackNavigation={true}
       routes={routes}

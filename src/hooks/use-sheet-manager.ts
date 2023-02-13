@@ -30,13 +30,10 @@ const useSheetManager = ({
           setVisible(true);
         },
       ),
-      actionSheetEventManager.subscribe(
-        `hide_${id}`,
-        (data: any, context = 'global') => {
-          if (currentContext !== context) return;
-          onHide?.(data);
-        },
-      ),
+      actionSheetEventManager.subscribe(`hide_${id}`, (data: any, context) => {
+        if (currentContext !== context) return;
+        onHide?.(data);
+      }),
     ];
     return () => {
       subscriptions.forEach(s => s?.unsubscribe?.());

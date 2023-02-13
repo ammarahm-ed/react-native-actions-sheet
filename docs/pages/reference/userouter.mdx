@@ -1,0 +1,79 @@
+# useRouter
+
+A hook that helps you navigate between routes inside the sheet.
+
+## `currentRoute:[/reference/route](Route)`
+
+The current navigation route in stack that has been navigated to.
+
+## `navigate(name: string, params?: any, snap?: number)`
+
+Navigate to a route
+
+Parameters:
+
+`name`
+
+Name of the route to navigate to.
+
+| Type   | Required |
+| ------ | -------- |
+| string | true     |
+
+`params`:
+
+Any data to pass to the route during navigation.
+
+| Type | Required |
+| ---- | -------- |
+| any  | false    |
+
+`snap`:
+
+Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
+
+| Type        | Required |
+| ----------- | -------- |
+| -100 to 100 | true     |
+
+## `goBack(name?:string, snap?:number)`
+
+Navigate back from a route.
+
+Parameters:
+
+`name`
+
+Name of the route to navigate to.
+
+| Type   | Required |
+| ------ | -------- |
+| string | false    |
+
+`snap`:
+
+Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
+
+| Type        | Required |
+| ----------- | -------- |
+| -100 to 100 | true     |
+
+## `close()`
+
+Close the sheet
+
+## `popToTop()`
+
+Pop to top of the stack
+
+## `hasRoutes()`
+
+Check whether any routes have been registered with this sheet.
+
+## `stack: [/reference/route](Route[])`
+
+Get the current rendered stack.
+
+## `canGoBack()`
+
+Check whether router can go back in navigation.

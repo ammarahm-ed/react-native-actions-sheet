@@ -195,13 +195,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       routeOpacity: animations.routeOpacity,
     });
     const routerRef = useRef(router);
-    useEffect(() => {
-      payloadRef.current = payload;
-    }, [payload]);
-
-    useEffect(() => {
-      routerRef.current = router;
-    }, [router]);
+    payloadRef.current = payload;
+    routerRef.current = router;
 
     const keyboard = useKeyboard(
       keyboardHandlerEnabled && visible && dimensions.height !== 0,
@@ -367,6 +362,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       (event: LayoutChangeEvent) => {
         const windowDimensions = Dimensions.get('window');
         const isPortraitMode = windowDimensions.height > windowDimensions.width;
+        if (isOrientationChanging.current) return;
         if (keyboard.keyboardShown && !isModal) {
           return;
         }
@@ -429,35 +425,33 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
         hiding.current = true;
         onBeforeClose?.(data || payloadRef.current || data);
-        hideAnimation(vy, ({finished}) => {
-          if (finished) {
-            if (closable) {
-              setVisible(false);
-              if (props.onClose) {
-                setTimeout(() => {
+        setTimeout(() => {
+          hideAnimation(vy, ({finished}) => {
+            if (finished) {
+              if (closable) {
+                setVisible(false);
+                if (props.onClose) {
                   props.onClose?.(data || payloadRef.current || data);
                   hiding.current = false;
-                }, 1);
-              }
-              hardwareBackPressEvent.current?.remove();
-              if (sheetId) {
-                SheetManager.remove(sheetId, currentContext);
-                setTimeout(() => {
+                }
+                hardwareBackPressEvent.current?.remove();
+                if (sheetId) {
+                  SheetManager.remove(sheetId, currentContext);
                   hiding.current = false;
                   actionSheetEventManager.publish(
                     `onclose_${sheetId}`,
                     data || payloadRef.current || data,
                     currentContext,
                   );
-                }, 1);
+                } else {
+                  hiding.current = false;
+                }
               } else {
-                hiding.current = false;
+                returnAnimation();
               }
-            } else {
-              returnAnimation();
             }
-          }
-        });
+          });
+        }, 1);
         if (Platform.OS === 'web') {
           document.body.style.overflowY = 'auto';
           document.documentElement.style.overflowY = 'auto';
@@ -724,15 +718,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             : StatusBar.currentHeight || 0;
         const windowDimensions = Dimensions.get('window');
         const height = windowDimensions.height - safeMarginFromTop;
+
         const orientationChanged =
           dimensions.portrait !==
           windowDimensions.width < windowDimensions.height;
         if (orientationChanged) isOrientationChanging.current = true;
+
         deviceContainerRef.current?.setNativeProps({
           style: {
-            height: windowDimensions.height,
+            height: Dimensions.get('screen').height - safeMarginFromTop,
           },
         });
+
         setDimensions(dim => {
           return {
             ...dim,
@@ -769,9 +766,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           keyboardWasVisible.current = false;
         }
         opacityAnimation(1);
-        if (!orientationChanged) {
-          returnAnimation();
-        } else {
+        returnAnimation();
+
+        if (isOrientationChanging.current) {
           setTimeout(() => {
             isOrientationChanging.current = false;
           }, 300);
@@ -954,14 +951,17 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const getPaddingBottom = () => {
-      let topPadding =
-        Platform.OS === 'android'
-          ? StatusBar.currentHeight && StatusBar.currentHeight > 35
-            ? 35
-            : StatusBar.currentHeight
-          : (safeAreaPaddingTop.current || 0) > 30
-          ? 30
-          : safeAreaPaddingTop.current;
+      if (!props.useBottomSafeAreaPadding && !props.containerStyle) return 0;
+
+      let topPadding = !props.useBottomSafeAreaPadding
+        ? 0
+        : Platform.OS === 'android'
+        ? StatusBar.currentHeight && StatusBar.currentHeight > 35
+          ? 35
+          : StatusBar.currentHeight
+        : (safeAreaPaddingTop.current || 0) > 30
+        ? 30
+        : safeAreaPaddingTop.current;
 
       if (!props.useBottomSafeAreaPadding && props.containerStyle) {
         return (

@@ -7,5 +7,10 @@
   "usescrollhandlers": "useScrollHandlers",
   "registersheet": "registerSheet",
   "showoptions": "ShowOptions",
-  "hideoptions": "HideOptions"
+  "hideoptions": "HideOptions",
+  "userouter": "useRouter",
+  "usesheetrouteparams": "useSheetRouteParams",
+  "usesheetidcontext": "useSheetIDContext",
+  "useprovidercontext": "useProviderContext",
+  "route": "Route"
 }

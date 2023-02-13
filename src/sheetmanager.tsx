@@ -124,7 +124,7 @@ class _SheetManager {
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
         options?.payload,
-        currentContext,
+        currentContext || 'global',
       );
     });
   }
@@ -155,7 +155,7 @@ class _SheetManager {
       // and select the nearest context where sheet is registered.
       for (let ctx of providerRegistryStack.reverse()) {
         for (let _id in sheetsRegistry[ctx]) {
-          if (_id === id) {
+          if (_id === id && ids.includes(`${id}:${ctx}`)) {
             isRegisteredWithSheetProvider = true;
             currentContext = ctx;
             break;
@@ -174,11 +174,10 @@ class _SheetManager {
         resolve(data);
       };
       var sub = actionSheetEventManager.subscribe(`onclose_${id}`, hideHandler);
-
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `hide_wrap_${id}` : `hide_${id}`,
         options?.payload,
-        currentContext,
+        !isRegisteredWithSheetProvider ? 'global' : currentContext,
       );
     });
   }
