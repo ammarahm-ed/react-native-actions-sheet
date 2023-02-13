@@ -273,7 +273,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
         const config = props.closeAnimationConfig;
         opacityAnimation(0);
-        console.log(vy);
         const animation = Animated.spring(animations.translateY, {
           velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
           toValue: dimensions.height * 1.3,
