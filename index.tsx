@@ -1,6 +1,10 @@
 import ActionSheet from './src/index';
 
-export {SheetManager, setBaseZIndexForActionSheets} from './src/sheetmanager';
+export {
+  SheetManager,
+  setBaseZIndexForActionSheets,
+  getSheetStack,
+} from './src/sheetmanager';
 export {
   registerSheet,
   SheetProps,
