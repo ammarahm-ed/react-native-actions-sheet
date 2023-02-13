@@ -5,7 +5,8 @@ import {Animated, TouchableOpacityProps, ViewStyle} from 'react-native';
 export type ActionSheetProps = {
   children?: React.ReactNode;
   /**
-   * A unique id for the ActionSheet. You must set this if you are using `SheetManager`.
+   * A unique id for the ActionSheet. Defining this is optional. Usually when you register
+   * a sheet with `registerSheet()` it's id get automatically assigned.
    *
    */
   id?: string;

@@ -32,7 +32,7 @@ import {
 } from './hooks/use-router';
 import useSheetManager from './hooks/use-sheet-manager';
 import {useKeyboard} from './hooks/useKeyboard';
-import {SheetProvider, useProviderContext} from './provider';
+import {SheetProvider, useProviderContext, useSheetIDContext} from './provider';
 import {
   getZIndexFromStack,
   isRenderedOnTop,
@@ -132,7 +132,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const minTranslateValue = useRef(0);
     const keyboardWasVisible = useRef(false);
     const prevKeyboardHeight = useRef(0);
-
+    const id = useSheetIDContext();
+    const sheetId = props.id || id;
     const lock = useRef(false);
     const panViewRef = useRef<View>();
     const deviceContainerRef = useRef<View>(null);
@@ -157,7 +158,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       paddingBottom: props?.useBottomSafeAreaPadding ? 25 : 0,
     });
     const {visible, setVisible} = useSheetManager({
-      id: props.id,
+      id: sheetId,
       onHide: data => {
         hideSheet(undefined, data, true);
       },
@@ -166,9 +167,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         props.onBeforeShow?.(data);
       },
       onContextUpdate: () => {
-        if (props.id) {
-          SheetManager.add(props.id, currentContext);
-          SheetManager.registerRef(props.id, currentContext, {
+        if (sheetId) {
+          SheetManager.add(sheetId, currentContext);
+          SheetManager.registerRef(sheetId, currentContext, {
             current: getRef(),
           } as RefObject<ActionSheetRef>);
         }
@@ -434,12 +435,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 }, 1);
               }
               hardwareBackPressEvent.current?.remove();
-              if (props.id) {
-                SheetManager.remove(props.id, currentContext);
+              if (sheetId) {
+                SheetManager.remove(sheetId, currentContext);
                 setTimeout(() => {
                   hiding.current = false;
                   actionSheetEventManager.publish(
-                    `onclose_${props.id}`,
+                    `onclose_${sheetId}`,
                     data || payloadRef.current || data,
                     currentContext,
                   );
@@ -555,7 +556,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           ? {panHandlers: {}}
           : PanResponder.create({
               onMoveShouldSetPanResponder: (event, gesture) => {
-                if (props.id && !isRenderedOnTop(props.id, currentContext))
+                if (sheetId && !isRenderedOnTop(sheetId, currentContext))
                   return false;
                 let vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
                 let vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
@@ -563,8 +564,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   return false;
                 }
                 let gestures = true;
-                for (let id in gestureBoundaries.current) {
-                  const gestureBoundary = gestureBoundaries.current[id];
+                for (let _id in gestureBoundaries.current) {
+                  const gestureBoundary = gestureBoundaries.current[_id];
                   if (getCurrentPosition() > 0 || !gestureBoundary) {
                     gestures = true;
                     break;
@@ -598,13 +599,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 return gestures;
               },
               onStartShouldSetPanResponder: (event, _gesture) => {
-                if (props.id && !isRenderedOnTop(props.id, currentContext))
+                if (sheetId && !isRenderedOnTop(sheetId, currentContext))
                   return false;
 
                 if (Platform.OS === 'web') {
                   let gestures = true;
-                  for (let id in gestureBoundaries.current) {
-                    const gestureBoundary = gestureBoundaries.current[id];
+                  for (let _id in gestureBoundaries.current) {
+                    const gestureBoundary = gestureBoundaries.current[_id];
                     if (getCurrentPosition() > 3 || !gestureBoundary) {
                       gestures = true;
                     }
@@ -671,7 +672,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             }),
       [
         gestureEnabled,
-        props.id,
+        sheetId,
         currentContext,
         getCurrentPosition,
         overdrawFactor,
@@ -836,9 +837,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             'handleChildScrollEnd has been removed. Please use `useScrollHandlers` hook to enable scrolling in ActionSheet',
           );
         },
-        modifyGesturesForLayout: (id, layout, scrollOffset) => {
+        modifyGesturesForLayout: (_id, layout, scrollOffset) => {
           //@ts-ignore
-          gestureBoundaries.current[id] = {
+          gestureBoundaries.current[_id] = {
             ...layout,
             scrollOffset: scrollOffset,
           };
@@ -863,12 +864,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     useImperativeHandle(ref, getRef, [getRef]);
 
     useEffect(() => {
-      if (props.id) {
-        SheetManager.registerRef(props.id, currentContext, {
+      if (sheetId) {
+        SheetManager.registerRef(sheetId, currentContext, {
           current: getRef(),
         } as RefObject<ActionSheetRef>);
       }
-    }, [currentContext, getRef, props.id]);
+    }, [currentContext, getRef, sheetId]);
 
     const onRequestClose = React.useCallback(() => {
       hideSheet();
@@ -902,8 +903,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 position: 'absolute',
                 zIndex: zIndex
                   ? zIndex
-                  : props.id
-                  ? getZIndexFromStack(props.id, currentContext)
+                  : sheetId
+                  ? getZIndexFromStack(sheetId, currentContext)
                   : 999,
                 width: '100%',
                 height: initialWindowHeight.current,
@@ -919,6 +920,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         onRequestClose,
         props,
         zIndex,
+        sheetId,
       ],
     );
 
@@ -1159,9 +1161,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               </Animated.View>
               {ExtraOverlayComponent}
               {props.withNestedSheetProvider}
-              {props.id ? (
+              {sheetId ? (
                 <SheetProvider
-                  context={`$$-auto-${props.id}-${currentContext}-provider`}
+                  context={`$$-auto-${sheetId}-${currentContext}-provider`}
                 />
               ) : null}
             </Animated.View>

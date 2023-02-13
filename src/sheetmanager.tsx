@@ -146,8 +146,21 @@ class SM {
       context?: string;
     },
   ): Promise<ReturnPayload> {
-    const currentContext = this.context(options);
+    let currentContext = this.context(options);
     return new Promise(resolve => {
+      let isRegisteredWithSheetProvider = false;
+      // Check if the sheet is registered with any `SheetProviders`
+      // and select the nearest context where sheet is registered.
+      for (let ctx of providerRegistryStack.reverse()) {
+        for (let _id in sheetsRegistry[ctx]) {
+          if (_id === id) {
+            isRegisteredWithSheetProvider = true;
+            currentContext = ctx;
+            break;
+          }
+        }
+      }
+
       const hideHandler = (data: ReturnPayload, context = 'global') => {
         if (
           context !== 'global' &&
@@ -160,17 +173,6 @@ class SM {
       };
       var sub = actionSheetEventManager.subscribe(`onclose_${id}`, hideHandler);
 
-      let isRegisteredWithSheetProvider = false;
-
-      // Check if the sheet is registered with any `SheetProviders`.
-      for (let ctx in sheetsRegistry) {
-        for (let _id in sheetsRegistry[ctx]) {
-          if (_id === id) {
-            isRegisteredWithSheetProvider = true;
-          }
-        }
-      }
-
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `hide_wrap_${id}` : `hide_${id}`,
         options?.payload,
@@ -181,10 +183,13 @@ class SM {
 
   /**
    * Hide all the opened ActionSheets.
+   *
+   * @param id Hide all sheets for the specific id.
    */
-  hideAll() {
-    ids.forEach(id => {
-      actionSheetEventManager.publish(`hide_${id.split(':')?.[0]}`);
+  hideAll(id?: string) {
+    ids.forEach(_id => {
+      if (id && !_id.startsWith(id)) return;
+      actionSheetEventManager.publish(`hide_${_id.split(':')?.[0]}`);
     });
   }
 
@@ -199,9 +204,21 @@ class SM {
   /**
    *
    * Get internal ref of a sheet by the given id.
-   * @returns
+   *
+   * @param id Id of the sheet
+   * @param context Context in which the sheet is rendered. Normally this function returns the top most rendered sheet ref automatically.
    */
-  get = (id: string, context = 'global') => {
+  get = (id: string, context?: string) => {
+    if (!context) {
+      for (let ctx of providerRegistryStack.reverse()) {
+        for (let _id in sheetsRegistry[ctx]) {
+          if (_id === id) {
+            context = ctx;
+            break;
+          }
+        }
+      }
+    }
     return refs[`${id}:${context}`];
   };
 

@@ -106,13 +106,21 @@ export function SheetProvider({
   );
 }
 const ProviderContext = createContext('global');
+const SheetIDContext = createContext('');
+/**
+ * Get id of the current context.
+ */
 export const useProviderContext = () => useContext(ProviderContext);
+/**
+ * Get id of the current sheet
+ */
+export const useSheetIDContext = () => useContext(SheetIDContext);
 
 const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [payload, setPayload] = useState();
   const [visible, setVisible] = useState(false);
   const Sheet = context.startsWith('$$-auto-')
-    ? sheetsRegistry['global']?.[id]
+    ? sheetsRegistry?.global?.[id]
     : sheetsRegistry[context]
     ? sheetsRegistry[context]?.[id]
     : undefined;
@@ -163,7 +171,9 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
 
   return !visible ? null : (
     <ProviderContext.Provider value={context}>
-      <Sheet sheetId={id} payload={payload} />
+      <SheetIDContext.Provider value={id}>
+        <Sheet sheetId={id} payload={payload} />
+      </SheetIDContext.Provider>
     </ProviderContext.Provider>
   );
 };
