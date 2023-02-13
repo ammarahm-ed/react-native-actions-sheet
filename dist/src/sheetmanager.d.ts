@@ -65,7 +65,7 @@ declare class SM {
         /**
          * Return some data to the caller on closing the Sheet.
          */
-        payload?: unknown;
+        payload?: ReturnPayload;
         /**
          * Provide `context` of the `SheetProvider` to hide the action sheet.
          */
