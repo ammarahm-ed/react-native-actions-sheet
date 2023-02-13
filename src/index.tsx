@@ -180,6 +180,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       translateY: new Animated.Value(0),
       underlayTranslateY: new Animated.Value(100),
       keyboardTranslate: new Animated.Value(0),
+      routeOpacity: new Animated.Value(0),
     });
 
     const router = useRouter({
@@ -188,6 +189,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       initialRoute: initialRoute,
       onNavigate: props.onNavigate,
       onNavigateBack: props.onNavigateBack,
+      routeOpacity: animations.routeOpacity,
     });
     const routerRef = useRef(router);
     useEffect(() => {
@@ -1121,13 +1123,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         {router?.stack.map(route => {
                           const RouteComponent = route.component as any;
                           return (
-                            <View
+                            <Animated.View
                               key={route.name}
                               style={{
                                 display:
                                   route.name !== router.currentRoute?.name
                                     ? 'none'
                                     : 'flex',
+                                opacity: animations.routeOpacity,
                               }}>
                               <RouterParamsContext.Provider
                                 value={route?.params}>
@@ -1137,7 +1140,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                   payload={payloadRef.current}
                                 />
                               </RouterParamsContext.Provider>
-                            </View>
+                            </Animated.View>
                           );
                         })}
                       </RouterContext.Provider>
