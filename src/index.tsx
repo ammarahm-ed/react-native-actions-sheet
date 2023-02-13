@@ -180,6 +180,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       underlayTranslateY: new Animated.Value(100),
       keyboardTranslate: new Animated.Value(0),
     });
+    const [styleHeigh, setStyleHeight] = useState<number>(0);
 
     const router = useRouter({
       routes: routes,
@@ -704,11 +705,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           dimensions.portrait !==
           windowDimensions.width < windowDimensions.height;
         if (orientationChanged) isOrientationChanging.current = true;
-        deviceContainerRef.current?.setNativeProps({
-          style: {
-            height: windowDimensions.height,
-          },
-        });
+        setStyleHeight(windowDimensions.height);
         setDimensions(dim => {
           return {
             ...dim,
@@ -1006,6 +1003,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       translateY: animations.keyboardTranslate,
                     },
                   ],
+                },
+                {
+                  height: styleHeigh,
                 },
               ]}>
               {!props?.backgroundInteractionEnabled ? (

@@ -94,6 +94,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
         underlayTranslateY: new Animated.Value(100),
         keyboardTranslate: new Animated.Value(0)
     })[0];
+    var _11 = useState(0), styleHeigh = _11[0], setStyleHeight = _11[1];
     var router = useRouter({
         routes: routes,
         getRef: function () { return getRef(); },
@@ -527,7 +528,6 @@ export default forwardRef(function ActionSheet(_a, ref) {
         }
     };
     var onSheetLayout = React.useCallback(function (event) {
-        var _a;
         if (isOrientationChanging.current)
             return;
         var safeMarginFromTop = Platform.OS === 'ios'
@@ -539,11 +539,7 @@ export default forwardRef(function ActionSheet(_a, ref) {
             windowDimensions.width < windowDimensions.height;
         if (orientationChanged)
             isOrientationChanging.current = true;
-        (_a = deviceContainerRef.current) === null || _a === void 0 ? void 0 : _a.setNativeProps({
-            style: {
-                height: windowDimensions.height
-            }
-        });
+        setStyleHeight(windowDimensions.height);
         setDimensions(function (dim) {
             return __assign(__assign({}, dim), { height: height, portrait: windowDimensions.width < windowDimensions.height });
         });
@@ -787,6 +783,9 @@ export default forwardRef(function ActionSheet(_a, ref) {
                             translateY: animations.keyboardTranslate
                         },
                     ]
+                },
+                {
+                    height: styleHeigh
                 },
             ]}>
               {!(props === null || props === void 0 ? void 0 : props.backgroundInteractionEnabled) ? (<TouchableOpacity onPress={onTouch} activeOpacity={defaultOverlayOpacity} testID={(_b = props.testIDs) === null || _b === void 0 ? void 0 : _b.backdrop} style={{
