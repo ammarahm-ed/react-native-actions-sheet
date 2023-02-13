@@ -20,7 +20,7 @@ export type Router = {
   currentRoute: Route;
   /**
    * @param name  Name of the route to navigate to
-   * @param params Params to pass to the route upon navigation
+   * @param params Params to pass to the route upon navigation. These can be accessed in the route using `useSheetRouteParams` hook.
    * @param snap Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
    */
   navigate: (name: string, params?: any, snap?: number) => void;
@@ -46,9 +46,10 @@ export type Router = {
    */
   stack: Route[];
   /**
-   * An internal function called by sheet to navigation to initial route.
+   * An internal function called by sheet to navigate to initial route.
    */
   initialNavigation: () => void;
+  canGoBack: () => boolean;
 };
 
 export const useRouter = ({
@@ -172,6 +173,11 @@ export const useRouter = ({
     }
     goBack(stack[0].name);
   };
+
+  const canGoBack = () => {
+    return stack && stack.length > 1;
+  };
+
   return {
     currentRoute: currentRoute as unknown as Route,
     navigate,
@@ -181,12 +187,13 @@ export const useRouter = ({
     hasRoutes: () => routes && routes.length > 0,
     stack,
     initialNavigation,
+    canGoBack,
   };
 };
 
 export const RouterContext = createContext<Router | undefined>(undefined);
 /**
- * A simple router to navigate between routes in a Sheet.
+ * A hook that you can use to control the router.
  */
 export const useSheetRouter = () => useContext(RouterContext);
 

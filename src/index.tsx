@@ -115,6 +115,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       safeAreaInsets,
       routes,
       initialRoute,
+      onBeforeShow,
+      enableRouterBackNavigation,
+      onBeforeClose,
       ...props
     },
     ref,
@@ -164,7 +167,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       },
       onBeforeShow: data => {
         routerRef.current?.initialNavigation();
-        props.onBeforeShow?.(data);
+        onBeforeShow?.(data);
       },
       onContextUpdate: () => {
         if (sheetId) {
@@ -426,6 +429,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           return;
         }
         hiding.current = true;
+        onBeforeClose?.(data || payloadRef.current || data);
         hideAnimation(vy, ({finished}) => {
           if (finished) {
             if (closable) {
@@ -465,12 +469,26 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const onHardwareBackPress = React.useCallback(() => {
+      if (
+        visible &&
+        enableRouterBackNavigation &&
+        routerRef.current?.canGoBack()
+      ) {
+        routerRef.current?.goBack();
+        return true;
+      }
       if (visible && closable && closeOnPressBack) {
         hideSheet();
         return true;
       }
       return false;
-    }, [closable, closeOnPressBack, hideSheet, visible]);
+    }, [
+      closable,
+      closeOnPressBack,
+      hideSheet,
+      enableRouterBackNavigation,
+      visible,
+    ]);
 
     /**
      * Snap towards the top
@@ -689,6 +707,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const onTouch = () => {
+      if (enableRouterBackNavigation && router.canGoBack()) {
+        router.goBack();
+        return;
+      }
       if (closeOnTouchBackdrop && closable) {
         hideSheet();
       }
@@ -781,6 +803,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const getRef = useCallback(
       (): ActionSheetRef => ({
         show: () => {
+          onBeforeShow?.();
           routerRef.current?.initialNavigation();
           setVisible(true);
         },
@@ -860,6 +883,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         getNextPosition,
         gestureEnabled,
         visible,
+        onBeforeShow,
       ],
     );
 
@@ -874,8 +898,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     }, [currentContext, getRef, sheetId]);
 
     const onRequestClose = React.useCallback(() => {
+      if (enableRouterBackNavigation && routerRef.current?.canGoBack()) {
+        routerRef.current?.goBack();
+        return;
+      }
       hideSheet();
-    }, [hideSheet]);
+    }, [hideSheet, enableRouterBackNavigation]);
     const rootProps = React.useMemo(
       () =>
         isModal && !props.backgroundInteractionEnabled

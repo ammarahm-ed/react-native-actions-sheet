@@ -1,6 +1,11 @@
 import React from 'react';
 import {Button, Text, View} from 'react-native';
-import ActionSheet, {Route, RouteScreenProps, SheetProps} from '../../';
+import ActionSheet, {
+  Route,
+  RouteScreenProps,
+  SheetManager,
+  SheetProps,
+} from '../../';
 
 const RouteA = ({router}: RouteScreenProps) => {
   return (
@@ -58,7 +63,6 @@ const routes: Route[] = [
 function ConfirmSheet(props: SheetProps) {
   return (
     <ActionSheet
-      id={props.sheetId}
       statusBarTranslucent={false}
       drawUnderStatusBar={false}
       gestureEnabled={true}
@@ -66,8 +70,9 @@ function ConfirmSheet(props: SheetProps) {
         paddingHorizontal: 12,
       }}
       onClose={data => {
-        console.log(data, 'called');
+        SheetManager.hide(props.sheetId);
       }}
+      enableRouterBackNavigation={true}
       routes={routes}
       initialRoute="route-a"
       springOffset={50}

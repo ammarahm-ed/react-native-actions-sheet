@@ -250,6 +250,8 @@ export type ActionSheetProps = {
    */
   onBeforeShow?: (data?: unknown) => void;
 
+  onBeforeClose?: (data?: unknown) => void;
+
   /**
    * An event called when the ActionSheet Opens.
    *
@@ -272,8 +274,26 @@ export type ActionSheetProps = {
    * in performance as the sheet does not have to calculate insets anymore.
    */
   safeAreaInsets?: {top: number; left: number; right: number; bottom: number};
+  /**
+   * A list of routes for the router.
+   */
   routes?: Route[];
+  /**
+   * An event called when navigating to a route in stack
+   */
   onNavigate?: (route: string) => void;
+  /**
+   * An event called when navigating back in stack.
+   */
   onNavigateBack?: (route: string) => void;
+  /**
+   * Initial route to navigate to when the sheet opens.
+   */
   initialRoute?: string;
+  /**
+   * Enable back navigation for router when pressing hardware back button or
+   * touching the back drop. Remember that swiping down the sheet will still close
+   * the sheet regardless of the route in stack.
+   */
+  enableRouterBackNavigation?: boolean;
 };
