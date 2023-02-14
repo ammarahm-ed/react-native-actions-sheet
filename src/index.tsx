@@ -32,7 +32,7 @@ import {
 } from './hooks/use-router';
 import useSheetManager from './hooks/use-sheet-manager';
 import {useKeyboard} from './hooks/useKeyboard';
-import {SheetProvider, useProviderContext} from './provider';
+import {SheetProvider, useProviderContext, useSheetIDContext} from './provider';
 import {
   getZIndexFromStack,
   isRenderedOnTop,
@@ -115,6 +115,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       safeAreaInsets,
       routes,
       initialRoute,
+      onBeforeShow,
+      enableRouterBackNavigation,
+      onBeforeClose,
       ...props
     },
     ref,
@@ -132,7 +135,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const minTranslateValue = useRef(0);
     const keyboardWasVisible = useRef(false);
     const prevKeyboardHeight = useRef(0);
-
+    const id = useSheetIDContext();
+    const sheetId = props.id || id;
     const lock = useRef(false);
     const panViewRef = useRef<View>();
     const deviceContainerRef = useRef<View>(null);
@@ -157,18 +161,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       paddingBottom: props?.useBottomSafeAreaPadding ? 25 : 0,
     });
     const {visible, setVisible} = useSheetManager({
-      id: props.id,
+      id: sheetId,
       onHide: data => {
         hideSheet(undefined, data, true);
       },
       onBeforeShow: data => {
         routerRef.current?.initialNavigation();
-        props.onBeforeShow?.(data);
+        onBeforeShow?.(data);
       },
       onContextUpdate: () => {
-        if (props.id) {
-          SheetManager.add(props.id, currentContext);
-          SheetManager.registerRef(props.id, currentContext, {
+        if (sheetId) {
+          SheetManager.add(sheetId, currentContext);
+          SheetManager.registerRef(sheetId, currentContext, {
             current: getRef(),
           } as RefObject<ActionSheetRef>);
         }
@@ -179,24 +183,20 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       translateY: new Animated.Value(0),
       underlayTranslateY: new Animated.Value(100),
       keyboardTranslate: new Animated.Value(0),
+      routeOpacity: new Animated.Value(0),
     });
-    const [styleHeigh, setStyleHeight] = useState<number>(0);
-
+    const [styleHeight, setStyleHeight] = useState<number>(0);
     const router = useRouter({
       routes: routes,
       getRef: () => getRef(),
       initialRoute: initialRoute,
       onNavigate: props.onNavigate,
       onNavigateBack: props.onNavigateBack,
+      routeOpacity: animations.routeOpacity,
     });
     const routerRef = useRef(router);
-    useEffect(() => {
-      payloadRef.current = payload;
-    }, [payload]);
-
-    useEffect(() => {
-      routerRef.current = router;
-    }, [router]);
+    payloadRef.current = payload;
+    routerRef.current = router;
 
     const keyboard = useKeyboard(
       keyboardHandlerEnabled && visible && dimensions.height !== 0,
@@ -271,7 +271,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
         const config = props.closeAnimationConfig;
         opacityAnimation(0);
-        console.log(vy);
         const animation = Animated.spring(animations.translateY, {
           velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
           toValue: dimensions.height * 1.3,
@@ -363,6 +362,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       (event: LayoutChangeEvent) => {
         const windowDimensions = Dimensions.get('window');
         const isPortraitMode = windowDimensions.height > windowDimensions.width;
+        if (isOrientationChanging.current) return;
         if (keyboard.keyboardShown && !isModal) {
           return;
         }
@@ -424,35 +424,34 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           return;
         }
         hiding.current = true;
-        hideAnimation(vy, ({finished}) => {
-          if (finished) {
-            if (closable) {
-              setVisible(false);
-              if (props.onClose) {
-                setTimeout(() => {
+        onBeforeClose?.(data || payloadRef.current || data);
+        setTimeout(() => {
+          hideAnimation(vy, ({finished}) => {
+            if (finished) {
+              if (closable) {
+                setVisible(false);
+                if (props.onClose) {
                   props.onClose?.(data || payloadRef.current || data);
                   hiding.current = false;
-                }, 1);
-              }
-              hardwareBackPressEvent.current?.remove();
-              if (props.id) {
-                SheetManager.remove(props.id, currentContext);
-                setTimeout(() => {
+                }
+                hardwareBackPressEvent.current?.remove();
+                if (sheetId) {
+                  SheetManager.remove(sheetId, currentContext);
                   hiding.current = false;
                   actionSheetEventManager.publish(
-                    `onclose_${props.id}`,
+                    `onclose_${sheetId}`,
                     data || payloadRef.current || data,
                     currentContext,
                   );
-                }, 1);
+                } else {
+                  hiding.current = false;
+                }
               } else {
-                hiding.current = false;
+                returnAnimation();
               }
-            } else {
-              returnAnimation();
             }
-          }
-        });
+          });
+        }, 1);
         if (Platform.OS === 'web') {
           document.body.style.overflowY = 'auto';
           document.documentElement.style.overflowY = 'auto';
@@ -463,12 +462,26 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const onHardwareBackPress = React.useCallback(() => {
+      if (
+        visible &&
+        enableRouterBackNavigation &&
+        routerRef.current?.canGoBack()
+      ) {
+        routerRef.current?.goBack();
+        return true;
+      }
       if (visible && closable && closeOnPressBack) {
         hideSheet();
         return true;
       }
       return false;
-    }, [closable, closeOnPressBack, hideSheet, visible]);
+    }, [
+      closable,
+      closeOnPressBack,
+      hideSheet,
+      enableRouterBackNavigation,
+      visible,
+    ]);
 
     /**
      * Snap towards the top
@@ -556,7 +569,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           ? {panHandlers: {}}
           : PanResponder.create({
               onMoveShouldSetPanResponder: (event, gesture) => {
-                if (props.id && !isRenderedOnTop(props.id, currentContext))
+                if (sheetId && !isRenderedOnTop(sheetId, currentContext))
                   return false;
                 let vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
                 let vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
@@ -564,8 +577,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   return false;
                 }
                 let gestures = true;
-                for (let id in gestureBoundaries.current) {
-                  const gestureBoundary = gestureBoundaries.current[id];
+                for (let _id in gestureBoundaries.current) {
+                  const gestureBoundary = gestureBoundaries.current[_id];
                   if (getCurrentPosition() > 0 || !gestureBoundary) {
                     gestures = true;
                     break;
@@ -599,13 +612,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 return gestures;
               },
               onStartShouldSetPanResponder: (event, _gesture) => {
-                if (props.id && !isRenderedOnTop(props.id, currentContext))
+                if (sheetId && !isRenderedOnTop(sheetId, currentContext))
                   return false;
 
                 if (Platform.OS === 'web') {
                   let gestures = true;
-                  for (let id in gestureBoundaries.current) {
-                    const gestureBoundary = gestureBoundaries.current[id];
+                  for (let _id in gestureBoundaries.current) {
+                    const gestureBoundary = gestureBoundaries.current[_id];
                     if (getCurrentPosition() > 3 || !gestureBoundary) {
                       gestures = true;
                     }
@@ -672,7 +685,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             }),
       [
         gestureEnabled,
-        props.id,
+        sheetId,
         currentContext,
         getCurrentPosition,
         overdrawFactor,
@@ -687,6 +700,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const onTouch = () => {
+      if (enableRouterBackNavigation && router.canGoBack()) {
+        router.goBack();
+        return;
+      }
       if (closeOnTouchBackdrop && closable) {
         hideSheet();
       }
@@ -701,11 +718,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             : StatusBar.currentHeight || 0;
         const windowDimensions = Dimensions.get('window');
         const height = windowDimensions.height - safeMarginFromTop;
+
         const orientationChanged =
           dimensions.portrait !==
           windowDimensions.width < windowDimensions.height;
         if (orientationChanged) isOrientationChanging.current = true;
-        setStyleHeight(windowDimensions.height);
+
+        setStyleHeight(Dimensions.get('screen').height - safeMarginFromTop);
+
         setDimensions(dim => {
           return {
             ...dim,
@@ -742,9 +762,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           keyboardWasVisible.current = false;
         }
         opacityAnimation(1);
-        if (!orientationChanged) {
-          returnAnimation();
-        } else {
+        returnAnimation();
+
+        if (isOrientationChanging.current) {
           setTimeout(() => {
             isOrientationChanging.current = false;
           }, 300);
@@ -775,6 +795,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const getRef = useCallback(
       (): ActionSheetRef => ({
         show: () => {
+          onBeforeShow?.();
           routerRef.current?.initialNavigation();
           setVisible(true);
         },
@@ -833,9 +854,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             'handleChildScrollEnd has been removed. Please use `useScrollHandlers` hook to enable scrolling in ActionSheet',
           );
         },
-        modifyGesturesForLayout: (id, layout, scrollOffset) => {
+        modifyGesturesForLayout: (_id, layout, scrollOffset) => {
           //@ts-ignore
-          gestureBoundaries.current[id] = {
+          gestureBoundaries.current[_id] = {
             ...layout,
             scrollOffset: scrollOffset,
           };
@@ -854,22 +875,27 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         getNextPosition,
         gestureEnabled,
         visible,
+        onBeforeShow,
       ],
     );
 
     useImperativeHandle(ref, getRef, [getRef]);
 
     useEffect(() => {
-      if (props.id) {
-        SheetManager.registerRef(props.id, currentContext, {
+      if (sheetId) {
+        SheetManager.registerRef(sheetId, currentContext, {
           current: getRef(),
         } as RefObject<ActionSheetRef>);
       }
-    }, [currentContext, getRef, props.id]);
+    }, [currentContext, getRef, sheetId]);
 
     const onRequestClose = React.useCallback(() => {
+      if (enableRouterBackNavigation && routerRef.current?.canGoBack()) {
+        routerRef.current?.goBack();
+        return;
+      }
       hideSheet();
-    }, [hideSheet]);
+    }, [hideSheet, enableRouterBackNavigation]);
     const rootProps = React.useMemo(
       () =>
         isModal && !props.backgroundInteractionEnabled
@@ -899,8 +925,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 position: 'absolute',
                 zIndex: zIndex
                   ? zIndex
-                  : props.id
-                  ? getZIndexFromStack(props.id, currentContext)
+                  : sheetId
+                  ? getZIndexFromStack(sheetId, currentContext)
                   : 999,
                 width: '100%',
                 height: initialWindowHeight.current,
@@ -916,18 +942,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         onRequestClose,
         props,
         zIndex,
+        sheetId,
       ],
     );
 
     const getPaddingBottom = () => {
-      let topPadding =
-        Platform.OS === 'android'
-          ? StatusBar.currentHeight && StatusBar.currentHeight > 35
-            ? 35
-            : StatusBar.currentHeight
-          : (safeAreaPaddingTop.current || 0) > 30
-          ? 30
-          : safeAreaPaddingTop.current;
+      if (!props.useBottomSafeAreaPadding && !props.containerStyle) return 0;
+
+      let topPadding = !props.useBottomSafeAreaPadding
+        ? 0
+        : Platform.OS === 'android'
+        ? StatusBar.currentHeight && StatusBar.currentHeight > 35
+          ? 35
+          : StatusBar.currentHeight
+        : (safeAreaPaddingTop.current || 0) > 30
+        ? 30
+        : safeAreaPaddingTop.current;
 
       if (!props.useBottomSafeAreaPadding && props.containerStyle) {
         return (
@@ -1005,7 +1035,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   ],
                 },
                 {
-                  height: styleHeigh,
+                  height: styleHeight,
                 },
               ]}>
               {!props?.backgroundInteractionEnabled ? (
@@ -1119,13 +1149,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         {router?.stack.map(route => {
                           const RouteComponent = route.component as any;
                           return (
-                            <View
+                            <Animated.View
                               key={route.name}
                               style={{
                                 display:
                                   route.name !== router.currentRoute?.name
                                     ? 'none'
                                     : 'flex',
+                                opacity: animations.routeOpacity,
                               }}>
                               <RouterParamsContext.Provider
                                 value={route?.params}>
@@ -1135,7 +1166,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                   payload={payloadRef.current}
                                 />
                               </RouterParamsContext.Provider>
-                            </View>
+                            </Animated.View>
                           );
                         })}
                       </RouterContext.Provider>
@@ -1159,9 +1190,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               </Animated.View>
               {ExtraOverlayComponent}
               {props.withNestedSheetProvider}
-              {props.id ? (
+              {sheetId ? (
                 <SheetProvider
-                  context={`$$-auto-${props.id}-${currentContext}-provider`}
+                  context={`$$-auto-${sheetId}-${currentContext}-provider`}
                 />
               ) : null}
             </Animated.View>

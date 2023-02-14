@@ -1,0 +1,68 @@
+# Using ActionSheet router
+
+ActionSheet comes with a tiny router for navigation between different routes in an ActionSheet. This is useful for making different flows in your app without the need to open/close different ActionSheets.
+
+You can say that using a router is like having one Sheet that can replace multiple Sheets in your app with routes.
+
+Router works like any navigation router in your app.
+
+```tsx
+import ActionSheet, {
+  Route,
+  RouteScreenProps,
+  useRouter,
+  useSheetRouteParams,
+} from 'react-native-actions-sheet';
+
+const RouteA = ({router}: RouteScreenProps) => {
+  return (
+    <View>
+      <Button
+        title="Go to Route B"
+        onPress={() => {
+          router.navigate('route-b', {data: 'test'});
+        }}
+      />
+    </View>
+  );
+};
+
+const RouteB = () => {
+  const router = useRouter();
+  const params = useSheetRouteParams();
+
+  return (
+    <View>
+      <Button
+        title="Go Back to Route A"
+        onPress={() => {
+          router.goBack();
+        }}
+      />
+    </View>
+  );
+};
+
+const routes: Route[] = [
+  {
+    name: 'route-a',
+    component: RouteA,
+  },
+  {
+    name: 'route-b',
+    component: RouteB,
+  },
+];
+
+function Sheet(props: SheetProps) {
+  return (
+    <ActionSheet
+      enableRouterBackNavigation={true}
+      routes={routes}
+      initialRoute="route-a"
+    />
+  );
+}
+
+export default Sheet;
+```

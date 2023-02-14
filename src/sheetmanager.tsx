@@ -22,13 +22,15 @@ export function getSheetStack() {
 }
 
 /**
- * A function that checks whether the action sheet is rendered on top or not.
+ * A function that checks whether the action sheet with the given id is rendered on top or not.
  * @param id
  * @param context
  * @returns
  */
-export function isRenderedOnTop(id: string, context: string) {
-  return ids[ids.length - 1] === `${id}:${context}`;
+export function isRenderedOnTop(id: string, context?: string) {
+  return context
+    ? ids[ids.length - 1] === `${id}:${context}`
+    : ids[ids.length - 1].startsWith(id);
 }
 
 /**
@@ -57,7 +59,7 @@ export function getZIndexFromStack(id: string, context: string) {
   return baseZindex;
 }
 
-class SM {
+class _SheetManager {
   /**
    * Show the ActionSheet with a given id.
    *
@@ -122,7 +124,7 @@ class SM {
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
         options?.payload,
-        currentContext,
+        currentContext || 'global',
       );
     });
   }
@@ -139,15 +141,28 @@ class SM {
       /**
        * Return some data to the caller on closing the Sheet.
        */
-      payload?: unknown;
+      payload?: ReturnPayload;
       /**
        * Provide `context` of the `SheetProvider` to hide the action sheet.
        */
       context?: string;
     },
   ): Promise<ReturnPayload> {
-    const currentContext = this.context(options);
+    let currentContext = this.context(options);
     return new Promise(resolve => {
+      let isRegisteredWithSheetProvider = false;
+      // Check if the sheet is registered with any `SheetProviders`
+      // and select the nearest context where sheet is registered.
+      for (let ctx of providerRegistryStack.reverse()) {
+        for (let _id in sheetsRegistry[ctx]) {
+          if (_id === id && ids.includes(`${id}:${ctx}`)) {
+            isRegisteredWithSheetProvider = true;
+            currentContext = ctx;
+            break;
+          }
+        }
+      }
+
       const hideHandler = (data: ReturnPayload, context = 'global') => {
         if (
           context !== 'global' &&
@@ -159,32 +174,23 @@ class SM {
         resolve(data);
       };
       var sub = actionSheetEventManager.subscribe(`onclose_${id}`, hideHandler);
-
-      let isRegisteredWithSheetProvider = false;
-
-      // Check if the sheet is registered with any `SheetProviders`.
-      for (let ctx in sheetsRegistry) {
-        for (let _id in sheetsRegistry[ctx]) {
-          if (_id === id) {
-            isRegisteredWithSheetProvider = true;
-          }
-        }
-      }
-
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `hide_wrap_${id}` : `hide_${id}`,
         options?.payload,
-        currentContext,
+        !isRegisteredWithSheetProvider ? 'global' : currentContext,
       );
     });
   }
 
   /**
    * Hide all the opened ActionSheets.
+   *
+   * @param id Hide all sheets for the specific id.
    */
-  hideAll() {
-    ids.forEach(id => {
-      actionSheetEventManager.publish(`hide_${id.split(':')?.[0]}`);
+  hideAll(id?: string) {
+    ids.forEach(_id => {
+      if (id && !_id.startsWith(id)) return;
+      actionSheetEventManager.publish(`hide_${_id.split(':')?.[0]}`);
     });
   }
 
@@ -199,9 +205,21 @@ class SM {
   /**
    *
    * Get internal ref of a sheet by the given id.
-   * @returns
+   *
+   * @param id Id of the sheet
+   * @param context Context in which the sheet is rendered. Normally this function returns the top most rendered sheet ref automatically.
    */
-  get = (id: string, context = 'global') => {
+  get = (id: string, context?: string) => {
+    if (!context) {
+      for (let ctx of providerRegistryStack.reverse()) {
+        for (let _id in sheetsRegistry[ctx]) {
+          if (_id === id) {
+            context = ctx;
+            break;
+          }
+        }
+      }
+    }
     return refs[`${id}:${context}`];
   };
 
@@ -222,4 +240,4 @@ class SM {
  * SheetManager is used to imperitively show/hide any ActionSheet with a
  * unique id prop.
  */
-export const SheetManager = new SM();
+export const SheetManager = new _SheetManager();

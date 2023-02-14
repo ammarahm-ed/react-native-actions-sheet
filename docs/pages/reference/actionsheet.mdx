@@ -346,11 +346,58 @@ A function called just before the action sheet is ready to be shown.
 | -------- | -------- |
 | function | no       |
 
+## `onBeforeClose(data:any)`
+
+A function called just before the action sheet is closing.
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |
+
+## `routes`
+
+A list of routes for this actions sheet if any.
+
+| Type                        | Required |
+| --------------------------- | -------- |
+| [`Route[]`](/reference/route) | no       |
+
+## `onNavigate(route: string)`
+
+An event called when navigating to a route in stack
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |
+
+## `onNavigateBack(route: string)`
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |
+
+An event called when navigating back in stack.
+
+## `initialRoute`
+
+Initial route to navigate to when the sheet opens.
+
+| Type   | Required |
+| ------ | -------- |
+| string | no       |
+
+## `enableRouterBackNavigation`
+
+Enable back navigation for router when pressing hardware back button or touching the back drop. Remember that swiping down the sheet will still close the sheet regardless of the route in stack.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
 
 ## `backdropProps`
 
 An object containing props for the backdrop layer. Used to provide accessibility props.
 
-| Type     | Required |
-| -------- | -------- |
-| object   | no       |
+| Type   | Required |
+| ------ | -------- |
+| object | no       |

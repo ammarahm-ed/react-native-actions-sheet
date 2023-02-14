@@ -1,6 +1,11 @@
 import React from 'react';
 import {Button, Text, View} from 'react-native';
-import ActionSheet, {Route, RouteScreenProps, SheetProps} from '../../';
+import ActionSheet, {
+  Route,
+  RouteScreenProps,
+  SheetManager,
+  SheetProps,
+} from '../../';
 
 const RouteA = ({router}: RouteScreenProps) => {
   return (
@@ -16,7 +21,7 @@ const RouteA = ({router}: RouteScreenProps) => {
       <Button
         title="No"
         onPress={() => {
-          router?.navigate('route-b', undefined, 1);
+          SheetManager.hide('confirm-sheet');
         }}
       />
     </View>
@@ -65,9 +70,7 @@ function ConfirmSheet(props: SheetProps) {
       containerStyle={{
         paddingHorizontal: 12,
       }}
-      onClose={data => {
-        console.log(data, 'called');
-      }}
+      enableRouterBackNavigation={true}
       routes={routes}
       initialRoute="route-a"
       springOffset={50}

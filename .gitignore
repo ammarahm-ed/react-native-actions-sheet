@@ -6,3 +6,4 @@ node_modules/
 
 # Jest Test Coverage
 coverage/
+dist/

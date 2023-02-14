@@ -5,7 +5,6 @@ import React, {
   useContext,
   useEffect,
   useReducer,
-  useRef,
   useState,
 } from 'react';
 import {actionSheetEventManager} from './eventmanager';
@@ -69,7 +68,6 @@ export function SheetProvider({
   context?: string;
   children?: ReactNode;
 }) {
-  const providerRegistryIndexRef = useRef(0);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
   const sheetIds = Object.keys(
     sheetsRegistry[context] || sheetsRegistry['global'] || {},
@@ -80,16 +78,15 @@ export function SheetProvider({
   }, [forceUpdate]);
 
   useEffect(() => {
-    providerRegistryIndexRef.current =
-      providerRegistryStack.indexOf(context) > -1
-        ? providerRegistryStack.indexOf(context)
-        : providerRegistryStack.push(context) - 1;
+    providerRegistryStack.indexOf(context) > -1
+      ? providerRegistryStack.indexOf(context)
+      : providerRegistryStack.push(context) - 1;
     const unsub = actionSheetEventManager.subscribe(
       `${context}-on-register`,
       onRegister,
     );
     return () => {
-      providerRegistryStack.splice(providerRegistryIndexRef.current, 1);
+      providerRegistryStack.splice(providerRegistryStack.indexOf(context), 1);
       unsub?.unsubscribe();
     };
   }, [context, onRegister]);
@@ -106,13 +103,21 @@ export function SheetProvider({
   );
 }
 const ProviderContext = createContext('global');
+const SheetIDContext = createContext<string | undefined>(undefined);
+/**
+ * Get id of the current context.
+ */
 export const useProviderContext = () => useContext(ProviderContext);
+/**
+ * Get id of the current sheet
+ */
+export const useSheetIDContext = () => useContext(SheetIDContext);
 
 const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [payload, setPayload] = useState();
   const [visible, setVisible] = useState(false);
   const Sheet = context.startsWith('$$-auto-')
-    ? sheetsRegistry['global']?.[id]
+    ? sheetsRegistry?.global?.[id]
     : sheetsRegistry[context]
     ? sheetsRegistry[context]?.[id]
     : undefined;
@@ -129,8 +134,10 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const onClose = React.useCallback(
     (_data: any, ctx = 'global') => {
       if (context !== ctx) return;
-      setPayload(undefined);
       setVisible(false);
+      setTimeout(() => {
+        setPayload(undefined);
+      }, 1);
     },
     [context],
   );
@@ -163,7 +170,9 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
 
   return !visible ? null : (
     <ProviderContext.Provider value={context}>
-      <Sheet sheetId={id} payload={payload} />
+      <SheetIDContext.Provider value={id}>
+        <Sheet sheetId={id} payload={payload} />
+      </SheetIDContext.Provider>
     </ProviderContext.Provider>
   );
 };

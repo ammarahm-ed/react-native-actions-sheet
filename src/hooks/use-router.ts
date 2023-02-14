@@ -1,4 +1,5 @@
 import {createContext, useCallback, useContext, useState} from 'react';
+import {Animated} from 'react-native';
 import {ActionSheetRef} from './../index';
 export type Route = {
   /**
@@ -17,13 +18,18 @@ export type Route = {
 
 export type Router = {
   currentRoute: Route;
+
   /**
+   * Navigate to a route
+   *
    * @param name  Name of the route to navigate to
-   * @param params Params to pass to the route upon navigation
+   * @param params Params to pass to the route upon navigation. These can be accessed in the route using `useSheetRouteParams` hook.
    * @param snap Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
    */
   navigate: (name: string, params?: any, snap?: number) => void;
   /**
+   * Navigate back from a route.
+   *
    * @param name  Name of the route to navigate back to.
    * @param snap Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
    */
@@ -45,9 +51,10 @@ export type Router = {
    */
   stack: Route[];
   /**
-   * An internal function called by sheet to navigation to initial route.
+   * An internal function called by sheet to navigate to initial route.
    */
   initialNavigation: () => void;
+  canGoBack: () => boolean;
 };
 
 export const useRouter = ({
@@ -56,23 +63,39 @@ export const useRouter = ({
   initialRoute,
   routes,
   getRef,
+  routeOpacity,
 }: {
   initialRoute?: string;
   routes?: Route[];
   getRef?: () => ActionSheetRef;
   onNavigate?: (route: string) => void;
   onNavigateBack?: (route: string) => void;
+  routeOpacity: Animated.Value;
 }): Router => {
   const [stack, setStack] = useState<Route[]>([]);
   const currentRoute: Route | undefined = stack?.[stack.length - 1];
 
+  const animate = useCallback(
+    (snap = 0, opacity = 0, delay = 0) => {
+      getRef?.().snapToRelativeOffset(snap);
+      Animated.timing(routeOpacity, {
+        toValue: opacity,
+        duration: 150,
+        useNativeDriver: true,
+        delay: delay,
+      }).start();
+    },
+    [getRef, routeOpacity],
+  );
+
   const navigate = useCallback(
     (name: string, params?: any, snap?: number) => {
-      getRef?.().snapToRelativeOffset(snap || 20);
+      animate(snap || 20, 0);
       setTimeout(() => {
         setStack(state => {
           const next = routes?.find(route => route.name === name);
           if (!next) {
+            animate(0, 1);
             return state;
           }
           const currentIndex = state.findIndex(
@@ -84,14 +107,12 @@ export const useRouter = ({
             return [...nextStack, {...next, params: params || next.params}];
           }
           onNavigate?.(next.name);
-          setTimeout(() => {
-            getRef?.().snapToRelativeOffset(0);
-          }, 1);
+          animate(0, 1, 150);
           return [...state, next];
         });
-      }, 300);
+      }, 100);
     },
-    [getRef, onNavigate, routes],
+    [animate, routes, onNavigate],
   );
 
   const initialNavigation = () => {
@@ -104,15 +125,22 @@ export const useRouter = ({
     } else {
       setStack([routes[0]]);
     }
+    Animated.timing(routeOpacity, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
   };
 
   const goBack = (name?: string, snap?: number) => {
     getRef?.().snapToRelativeOffset(snap || -10);
+    animate(snap || -10, 0);
     setTimeout(() => {
       setStack(state => {
         const next = routes?.find(route => route.name === name);
         if (state.length === 1) {
           close();
+          animate(0, 1);
           return state;
         }
 
@@ -120,8 +148,8 @@ export const useRouter = ({
           const nextStack = [...state];
           nextStack.pop();
           if (currentRoute) {
-            getRef?.()?.snapToRelativeOffset(0);
             onNavigateBack?.(nextStack[nextStack.length - 1]?.name);
+            animate(0, 1, 150);
           }
           return nextStack;
         }
@@ -129,12 +157,15 @@ export const useRouter = ({
         if (currentIndex > -1) {
           const nextStack = [...state];
           nextStack.splice(currentIndex);
+          onNavigateBack?.(nextStack[nextStack.length - 1]?.name);
+          animate(0, 1, 150);
           return [...nextStack, next];
         }
+        animate(0, 1, 150);
         onNavigateBack?.(next.name);
         return [...stack, next];
       });
-    }, 150);
+    }, 100);
   };
 
   const close = () => {
@@ -147,6 +178,11 @@ export const useRouter = ({
     }
     goBack(stack[0].name);
   };
+
+  const canGoBack = () => {
+    return stack && stack.length > 1;
+  };
+
   return {
     currentRoute: currentRoute as unknown as Route,
     navigate,
@@ -156,12 +192,13 @@ export const useRouter = ({
     hasRoutes: () => routes && routes.length > 0,
     stack,
     initialNavigation,
+    canGoBack,
   };
 };
 
 export const RouterContext = createContext<Router | undefined>(undefined);
 /**
- * A simple router to navigate between routes in a Sheet.
+ * A hook that you can use to control the router.
  */
 export const useSheetRouter = () => useContext(RouterContext);
 

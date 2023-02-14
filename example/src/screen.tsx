@@ -38,7 +38,7 @@ const ExampleScreen = () => {
           <Text style={styles.btnTitle}>Open ActionSheet</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={async () => {
             let confirmed = await SheetManager.show('confirm-sheet');
             console.log('confirmation status:', confirmed);
@@ -50,7 +50,7 @@ const ExampleScreen = () => {
             },
           ]}>
           <Text style={styles.btnTitle}>Open Confirm Sheet</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </SafeAreaView>
     </>
   );
