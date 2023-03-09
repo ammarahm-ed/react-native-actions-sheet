@@ -1115,7 +1115,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       translateY: animations.translateY,
                     },
                   ],
-                  overflow: 'hidden',
                 }}>
                 {dimensions.height === 0 ? null : (
                   <Animated.View
@@ -1139,6 +1138,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         maxHeight: keyboard.keyboardShown
                           ? dimensions.height - keyboard.keyboardHeight
                           : dimensions.height,
+                      },
+                      {
+                        overflow: 'hidden',
                       },
                     ]}>
                     {drawUnderStatusBar ? (
