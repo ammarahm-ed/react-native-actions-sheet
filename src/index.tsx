@@ -26,6 +26,7 @@ import {
 } from 'react-native';
 import EventManager, {actionSheetEventManager} from './eventmanager';
 import {
+  Route,
   RouterContext,
   RouterParamsContext,
   useRouter,
@@ -294,7 +295,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const getCurrentPosition = React.useCallback(() => {
       //@ts-ignore
-      return animations.translateY._value <= minTranslateValue.current
+      return animations.translateY._value <= minTranslateValue.current + 5
         ? 0
         : //@ts-ignore
           (animations.translateY._value as number);
@@ -579,20 +580,23 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 let gestures = true;
                 for (let _id in gestureBoundaries.current) {
                   const gestureBoundary = gestureBoundaries.current[_id];
-                  if (getCurrentPosition() > 0 || !gestureBoundary) {
+                  if (getCurrentPosition() > 3 || !gestureBoundary) {
                     gestures = true;
                     break;
                   }
                   const scrollOffset = gestureBoundary?.scrollOffset || 0;
                   if (
-                    event.nativeEvent.pageY < gestureBoundary?.y ||
+                    event.nativeEvent.locationY < gestureBoundary?.y ||
                     (gesture.vy > 0 && scrollOffset <= 0) ||
                     getCurrentPosition() !== 0
                   ) {
-                    if (event.nativeEvent.pageY > gestureBoundary?.y)
-                      gestures = false;
-
-                    if (Platform.OS === 'web') {
+                    if (
+                      !props.enableGesturesInScrollView &&
+                      Platform.OS !== 'web' &&
+                      event.nativeEvent.locationY > gestureBoundary?.y
+                    ) {
+                      return false;
+                    } else {
                       gestures = true;
                     }
                   } else {
@@ -614,29 +618,27 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               onStartShouldSetPanResponder: (event, _gesture) => {
                 if (sheetId && !isRenderedOnTop(sheetId, currentContext))
                   return false;
-
-                if (Platform.OS === 'web') {
-                  let gestures = true;
-                  for (let _id in gestureBoundaries.current) {
-                    const gestureBoundary = gestureBoundaries.current[_id];
-                    if (getCurrentPosition() > 3 || !gestureBoundary) {
-                      gestures = true;
-                    }
-                    const scrollOffset = gestureBoundary?.scrollOffset || 0;
-                    if (
-                      event.nativeEvent.pageY < gestureBoundary?.y ||
-                      scrollOffset <= 0 ||
-                      getCurrentPosition() !== 0
-                    ) {
-                      gestures = true;
-                    } else {
-                      gestures = false;
-                    }
+                let gestures = true;
+                for (let _id in gestureBoundaries.current) {
+                  const gestureBoundary = gestureBoundaries.current[_id];
+                  if (getCurrentPosition() > 3 || !gestureBoundary) {
+                    gestures = true;
                   }
-
-                  return gestures;
+                  const scrollOffset = gestureBoundary?.scrollOffset || 0;
+                  if (
+                    event.nativeEvent.locationY < gestureBoundary?.y ||
+                    (scrollOffset <= 0 && getCurrentPosition() !== 0)
+                  ) {
+                    if (Platform.OS !== 'web') {
+                      return false;
+                    } else {
+                      gestures = true;
+                    }
+                  } else {
+                    gestures = false;
+                  }
                 }
-                return true;
+                return gestures;
               },
               onPanResponderMove: (_event, gesture) => {
                 const value = initialValue.current + gesture.dy;
@@ -688,6 +690,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         sheetId,
         currentContext,
         getCurrentPosition,
+        props.enableGesturesInScrollView,
         overdrawFactor,
         overdrawSize,
         animations.translateY,
@@ -950,6 +953,30 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       ],
     );
 
+    const renderRoute = useCallback(
+      (route: Route) => {
+        const RouteComponent = route.component as any;
+        return (
+          <Animated.View
+            key={route.name}
+            style={{
+              display:
+                route.name !== router.currentRoute?.name ? 'none' : 'flex',
+              opacity: animations.routeOpacity,
+            }}>
+            <RouterParamsContext.Provider value={route?.params}>
+              <RouteComponent
+                router={router}
+                params={route?.params}
+                payload={payloadRef.current}
+              />
+            </RouterParamsContext.Provider>
+          </Animated.View>
+        );
+      },
+      [animations.routeOpacity, router],
+    );
+
     const getPaddingBottom = () => {
       if (!props.useBottomSafeAreaPadding && !props.containerStyle) return 0;
 
@@ -1147,29 +1174,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
                     {router?.hasRoutes() ? (
                       <RouterContext.Provider value={router}>
-                        {router?.stack.map(route => {
-                          const RouteComponent = route.component as any;
-                          return (
-                            <Animated.View
-                              key={route.name}
-                              style={{
-                                display:
-                                  route.name !== router.currentRoute?.name
-                                    ? 'none'
-                                    : 'flex',
-                                opacity: animations.routeOpacity,
-                              }}>
-                              <RouterParamsContext.Provider
-                                value={route?.params}>
-                                <RouteComponent
-                                  router={router}
-                                  params={route?.params}
-                                  payload={payloadRef.current}
-                                />
-                              </RouterParamsContext.Provider>
-                            </Animated.View>
-                          );
-                        })}
+                        {router?.stack.map(renderRoute)}
                       </RouterContext.Provider>
                     ) : (
                       props?.children

@@ -296,4 +296,9 @@ export type ActionSheetProps = {
    * the sheet regardless of the route in stack.
    */
   enableRouterBackNavigation?: boolean;
+  /**
+   * Enable swipe gestures inside ScrollView/FlatList. Use this with caution. It
+   * might be a little buggy and conflict with ScrollView touch events.
+   */
+  enableGesturesInScrollView?: boolean;
 };

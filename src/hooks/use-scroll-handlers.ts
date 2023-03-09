@@ -15,13 +15,14 @@ import {ActionSheetRef} from '../index';
  * with it to enable vertical scrolling. For horizontal ScrollViews, you should not use this hook.
  * @param id Id for the handler. Could be any string value.
  * @param ref ref of the ActionSheet in which the ScrollView is present.
+ * @param minGesutureBoundary The minimum area of scrollView from top, where swipe gestures are allowed always.
  * @returns
  */
 export function useScrollHandlers<T>(
   id: string,
   ref: RefObject<ActionSheetRef>,
+  minGesutureBoundary: number = 50,
 ) {
-  //const [enabled,setEnabled] = useState(false);
   const scrollRef = useRef<T>(null);
   const scrollLayout = useRef<LayoutRectangle>();
   const scrollOffset = useRef(0);
@@ -37,10 +38,6 @@ export function useScrollHandlers<T>(
   };
 
   const disableScrolling = React.useCallback(() => {
-    //@ts-ignore
-    // scrollRef.current?.setNativeProps?.({
-    //   scrollEnabled: false,
-    // });
     if (Platform.OS === 'web') {
       //@ts-ignore
       scrollRef.current.style.touchAction = 'none';
@@ -50,10 +47,6 @@ export function useScrollHandlers<T>(
   }, [scrollRef]);
 
   const enableScrolling = React.useCallback(() => {
-    //@ts-ignore
-    // scrollRef.current?.setNativeProps?.({
-    //   scrollEnabled: true,
-    // });
     if (Platform.OS === 'web') {
       //@ts-ignore
       scrollRef.current.style.overflowY = 'scroll';
@@ -69,7 +62,10 @@ export function useScrollHandlers<T>(
   }, [id, ref, disableScrolling, enableScrolling]);
 
   const onLayout = (event: LayoutChangeEvent) => {
-    scrollLayout.current = event.nativeEvent.layout;
+    scrollLayout.current = {
+      ...event.nativeEvent.layout,
+      y: event.nativeEvent.layout.y || minGesutureBoundary,
+    };
     subscription.current = ref.current?.ev.subscribe(
       'onoffsetchange',
       (offset: number) => {
@@ -91,7 +87,10 @@ export function useScrollHandlers<T>(
     );
     ref.current?.modifyGesturesForLayout(
       id,
-      scrollLayout.current,
+      {
+        ...scrollLayout.current,
+        y: scrollLayout.current.y || minGesutureBoundary,
+      },
       scrollOffset.current,
     );
   };
