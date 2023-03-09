@@ -108,7 +108,7 @@ export const useRouter = ({
           }
           onNavigate?.(next.name);
           animate(0, 1, 150);
-          return [...state, next];
+          return [...state, {...next, params: params || next.params}];
         });
       }, 100);
     },
