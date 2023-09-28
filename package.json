@@ -66,8 +66,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "docs": "typedoc --plugin typedoc-plugin-markdown --out docs ./index.tsx",
-    "postinstall": "tsc"
+    "docs": "typedoc --plugin typedoc-plugin-markdown --out docs ./index.tsx"
   },
   "dependencies": {
     "@shopify/flash-list": "^1.6.1"
