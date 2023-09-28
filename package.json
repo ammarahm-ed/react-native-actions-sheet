@@ -41,8 +41,6 @@
     "react-native": "*"
   },
   "devDependencies": {
-    "react": "18.0.0",
-    "react-native": "0.69.4",
     "@babel/core": "^7.12.9",
     "@babel/runtime": "^7.12.5",
     "@react-native-community/eslint-config": "^2.0.0",
@@ -55,10 +53,12 @@
     "eslint": "^7.32.0",
     "jest": "^26.6.3",
     "metro-react-native-babel-preset": "^0.70.3",
+    "react": "18.0.0",
+    "react-native": "0.69.4",
     "react-test-renderer": "18.0.0",
-    "typescript": "^4.4.4",
     "typedoc": "^0.23.10",
-    "typedoc-plugin-markdown": "^3.13.4"
+    "typedoc-plugin-markdown": "^3.13.4",
+    "typescript": "^4.4.4"
   },
   "directories": {
     "example": "example"
@@ -67,5 +67,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "docs": "typedoc --plugin typedoc-plugin-markdown --out docs ./index.tsx"
+  },
+  "dependencies": {
+    "@shopify/flash-list": "^1.6.1"
   }
 }
