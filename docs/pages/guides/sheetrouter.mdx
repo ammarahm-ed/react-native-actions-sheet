@@ -10,7 +10,7 @@ Router works like any navigation router in your app.
 import ActionSheet, {
   Route,
   RouteScreenProps,
-  useRouter,
+  useSheetRouter,
   useSheetRouteParams,
 } from 'react-native-actions-sheet';
 
@@ -28,7 +28,7 @@ const RouteA = ({router}: RouteScreenProps) => {
 };
 
 const RouteB = () => {
-  const router = useRouter();
+  const router = useSheetRouter();
   const params = useSheetRouteParams();
 
   return (
