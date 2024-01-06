@@ -1,24 +1,25 @@
-/* eslint-disable import/no-anonymous-default-export */
+import type { DocsThemeConfig } from 'nextra-theme-docs'
 
-export default {
-  projectLink: 'https://github.com/ammarahm-ed/react-native-actions-sheet', // GitHub link in the navbar
+const config: DocsThemeConfig = {
+  project: {
+    link: 'https://github.com/ammarahm-ed/react-native-actions-sheet', // GitHub link in the navbar
+  },
   docsRepositoryBase:
     'https://github.com/ammarahm-ed/react-native-actions-sheet', // base URL for the docs repository
-  nextLinks: true,
-  prevLinks: true,
-  search: true,
-  customSearch: null, // customizable, you can use algolia for example
   darkMode: true,
-  footer: true,
-  footerText: `MIT ${new Date().getFullYear()} © Ammar Ahmed.`,
-  footerEditLink: `Edit this page on GitHub`,
+  footer: {
+    text: `MIT ${new Date().getFullYear()} © Ammar Ahmed.`
+  },
+  editLink: {
+    text: `Edit this page on GitHub`
+  },
   logo: (
     <>
       <img
         src="/logo.svg"
         width="20"
         alt="ActionSheet for React Native"
-        style={{marginRight: '10px'}}
+        style={{ marginRight: '10px' }}
       />
       <span>ActionSheet for React Native</span>
     </>
@@ -34,3 +35,5 @@ export default {
     </>
   ),
 };
+
+export default config;
