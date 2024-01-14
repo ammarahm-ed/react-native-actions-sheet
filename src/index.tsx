@@ -729,7 +729,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
         deviceContainerRef.current?.setNativeProps({
           style: {
-            height: Dimensions.get('screen').height - safeMarginFromTop,
+            height: Dimensions.get('screen').height,
           },
         });
 
