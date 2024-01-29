@@ -13,6 +13,7 @@ import {
   BackHandler,
   Dimensions,
   Easing,
+  GestureResponderEvent,
   LayoutChangeEvent,
   LayoutRectangle,
   Modal,
@@ -101,6 +102,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       overlayColor = 'black',
       closable = true,
       closeOnTouchBackdrop = true,
+      onTouchBackdrop,
       drawUnderStatusBar = false,
       gestureEnabled = false,
       isModal = true,
@@ -702,7 +704,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       ],
     );
 
-    const onTouch = () => {
+    const onTouch = (event: GestureResponderEvent) => {
+      onTouchBackdrop?.(event);
       if (enableRouterBackNavigation && router.canGoBack()) {
         router.goBack();
         return;

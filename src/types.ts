@@ -1,6 +1,11 @@
 import {Route} from './hooks/use-router';
 import React from 'react';
-import {Animated, TouchableOpacityProps, ViewStyle} from 'react-native';
+import {
+  Animated,
+  GestureResponderEvent,
+  TouchableOpacityProps,
+  ViewStyle,
+} from 'react-native';
 
 export type ActionSheetProps = {
   children?: React.ReactNode;
@@ -132,6 +137,13 @@ export type ActionSheetProps = {
    * Default: `true`
    */
   closeOnTouchBackdrop?: boolean;
+
+  /**
+   * Callback when user touches the backdrop. Includes the GestureResponderEvent.
+   *
+   * Default: undefined
+   */
+  onTouchBackdrop?: (event: GestureResponderEvent) => void;
 
   /**
    * Render a component over the ActionSheet. Useful for rendering
