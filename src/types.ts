@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Animated,
   GestureResponderEvent,
+
   LayoutRectangle,
   TouchableOpacityProps,
   ViewStyle,
@@ -55,6 +56,7 @@ export type ActionSheetRef<SheetId extends keyof Sheets = never> = {
    * Get the current snap index of the sheet.
    */
   currentSnapIndex: () => number;
+
 
   /**
    * Used internally for scrollable views.
@@ -207,6 +209,13 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * Default: `true`
    */
   closeOnTouchBackdrop?: boolean;
+
+  /**
+   * Callback when user touches the backdrop. Includes the GestureResponderEvent.
+   *
+   * Default: undefined
+   */
+  onTouchBackdrop?: (event: GestureResponderEvent) => void;
 
   /**
    * Render a component over the ActionSheet. Useful for rendering

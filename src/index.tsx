@@ -79,6 +79,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       overlayColor = 'black',
       closable = true,
       closeOnTouchBackdrop = true,
+      onTouchBackdrop,
       drawUnderStatusBar = false,
       gestureEnabled = false,
       isModal = true,
@@ -1125,6 +1126,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const onTouch = (event: GestureResponderEvent) => {
       props.onTouchBackdrop?.(event);
+      onTouchBackdrop?.(event);
       if (enableRouterBackNavigation && router.canGoBack()) {
         router.goBack();
         return;
@@ -1145,6 +1147,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           windowDimensions.width < windowDimensions.height;
 
         if (orientationChanged) isOrientationChanging.current = true;
+
 
         actionSheetHeight.current =
           event.nativeEvent.layout.height > dimensionsRef.current.height
