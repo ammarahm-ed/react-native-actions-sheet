@@ -5,15 +5,15 @@
 Import `ActionSheet`.
 
 ```tsx
-import ActionSheet, { SheetProps } from "react-native-actions-sheet";
+import ActionSheet from 'react-native-actions-sheet';
 ```
 
 Create your ActionSheet component and export it.
 
 ```tsx
-function ExampleSheet(props: SheetProps) {
+function ExampleSheet() {
   return (
-    <ActionSheet id={props.sheetId}>
+    <ActionSheet>
       <View>
         <Text>Hello World</Text>
       </View>
@@ -27,10 +27,18 @@ export default ExampleSheet;
 Create a `sheets.tsx` file and import your sheet then register it.
 
 ```ts
-import { registerSheet } from 'react-native-actions-sheet';
-import ExampleSheet from "example-sheet.tsx";
+import {registerSheet} from 'react-native-actions-sheet';
+import ExampleSheet from 'example-sheet.tsx';
 
-registerSheet("example-sheet", ExampleSheet);
+registerSheet('example-sheet', ExampleSheet);
+
+// We extend some of the types here to give us great intellisense
+// across the app for all registered sheets.
+declare module 'react-native-actions-sheet' {
+  interface Sheets {
+    'example-sheet': SheetDefinition;
+  }
+}
 
 export {};
 ```
@@ -38,8 +46,8 @@ export {};
 In `App.js` import `sheets.tsx` and wrap your app in `SheetProvider`.
 
 ```tsx
-import { SheetProvider } from "react-native-actions-sheet";
-import "sheets.tsx";
+import {SheetProvider} from 'react-native-actions-sheet';
+import 'sheets.tsx';
 
 function App() {
   return (
@@ -55,11 +63,11 @@ function App() {
 Open the ActionSheet from anywhere in the app.
 
 ```jsx
-SheetManager.show("example-sheet");
+SheetManager.show('example-sheet');
 ```
 
 Hide the ActionSheet
 
 ```jsx
-SheetManager.hide("example-sheet");
+SheetManager.hide('example-sheet');
 ```

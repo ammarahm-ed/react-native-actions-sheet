@@ -1,0 +1,37 @@
+# `Scrolling`
+
+Using `ScrollView` or `FlatList` inside a action sheet can become tricky because you have to handle gestures along with scrolling at the same time. You can import `ScrollView` and `FlatList` from the library to have scrolling and gestures work nicely together.
+
+```tsx
+import ActionSheet, {ScrollView, FlatList} from 'react-native-actions-sheet';
+
+const ExampleSheet = () => {
+  return (
+    <ActionSheet>
+      <ScrollView />
+    </ActionSheet>
+  );
+};
+```
+
+## Scrolling with other Scrollable components
+
+If you have a scrollable component such as WebView or a DatePicker, you can use the `useScrollHandlers` hook and `NativeViewGestureHandler` to enable scrolling inside the View.
+
+```tsx
+import {ScrollView} from 'react-native';
+import ActionSheet, {useScrollHandlers} from 'react-native-actions-sheet';
+import {NativeViewGestureHandler} from 'react-native-gesture-handler';
+
+const Sheet = () => {
+  const handlers = useScrollHandlers();
+  return (
+    <ActionSheet>
+      <NativeViewGestureHandler
+        simultaneousHandlers={handlers.simultaneousHandlers}>
+        <ScrollView {...handlers}></ScrollView>
+      </NativeViewGestureHandler>
+    </ActionSheet>
+  );
+};
+```

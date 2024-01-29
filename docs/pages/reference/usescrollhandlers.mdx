@@ -1,44 +1,32 @@
-import { Callout } from "nextra-theme-docs";
+import {Callout} from 'nextra-theme-docs';
 
 # useScrollHandlers
 
-A hook that helps the action sheet behave correctly when a scrollable view is rendered inside it. It takes two parameters, an id for the `ScrollView` or `FlatList` and the action sheet ref.
+Create a custom scrollable view inside the action sheet. The scrollable view must implement `onScroll`, and `onLayout` props.
 
 Parameters:
 
-`id`
+`options`
 
 A unique id for the `ScrollView` or `FlatList`. This id has to be unique per action sheet component.
 
-| Type   | Required |
-| ------ | -------- |
-| string | true     |
-
-`ref`
-
-A ref of the action sheet that wraps the `ScrollView` component.
-
-| Type                                                     | Required |
-| -------------------------------------------------------- | -------- |
-| [`RefObject<ActionSheetRef>`](/reference/actionsheetref) | true     |
+| Type                                           | Required |
+| ---------------------------------------------- | -------- |
+| [DraggableNodeOptions](./draggablenodeoptions) | false    |
 
 ```tsx
-import ActionSheet, {
-  useScrollHandlers,
-  ActionSheetRef,
-  SheetProps,
-} from "react-native-actions-sheet";
+import {ScrollView} from 'react-native';
+import ActionSheet, {useScrollHandlers} from 'react-native-actions-sheet';
+import {NativeViewGestureHandler} from 'react-native-gesture-handler';
 
-const ExampleSheet = (props: SheetProps) => {
-  const actionSheetRef = useRef<ActionSheetRef>(null);
-  const scrollHandlers = useScrollHandlers<ScrollView>(
-    "scrollview-1",
-    actionSheetRef
-  );
-
+const ExampleSheet = () => {
+  const handlers = useScrollHandlers();
   return (
-    <ActionSheet ref={actionSheetRef}>
-      <ScrollView {...scrollHandlers}></ScrollView>
+    <ActionSheet>
+      <NativeViewGestureHandler
+        simultaneousHandlers={handlers.simultaneousHandlers}>
+        <ScrollView {...handlers}></ScrollView>
+      </NativeViewGestureHandler>
     </ActionSheet>
   );
 };

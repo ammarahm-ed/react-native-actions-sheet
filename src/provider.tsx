@@ -1,13 +1,17 @@
 /* eslint-disable curly */
 import React, {
   createContext,
+  MutableRefObject,
   ReactNode,
+  RefObject,
   useContext,
   useEffect,
   useReducer,
+  useRef,
   useState,
 } from 'react';
 import {actionSheetEventManager} from './eventmanager';
+import {ActionSheetRef, Sheets} from './types';
 
 export const providerRegistryStack: string[] = [];
 
@@ -20,14 +24,14 @@ export const sheetsRegistry: {
   global: {},
 };
 
-export interface SheetProps<BeforeShowPayload = any> {
-  sheetId: string;
-  payload?: BeforeShowPayload;
+export interface SheetProps<SheetId extends keyof Sheets = never> {
+  sheetId: SheetId | (string & {});
+  payload?: Sheets[SheetId]['payload'];
 }
 
 // Registers your Sheet with the SheetProvider.
-export function registerSheet(
-  id: string,
+export function registerSheet<SheetId extends keyof Sheets = never>(
+  id: SheetId | (string & {}),
   Sheet: React.ElementType,
   ...contexts: string[]
 ) {
@@ -104,6 +108,13 @@ export function SheetProvider({
 }
 const ProviderContext = createContext('global');
 const SheetIDContext = createContext<string | undefined>(undefined);
+
+export const SheetRefContext = createContext<RefObject<ActionSheetRef | null>>(
+  {} as any,
+);
+
+const SheetPayloadContext = createContext<any>(undefined);
+
 /**
  * Get id of the current context.
  */
@@ -112,10 +123,40 @@ export const useProviderContext = () => useContext(ProviderContext);
  * Get id of the current sheet
  */
 export const useSheetIDContext = () => useContext(SheetIDContext);
+/**
+ * Get the current Sheet's internal ref.
+ * @returns
+ */
+// export const useSheetRef = <SheetId extends keyof Sheets = never>(): RefObject<
+//   ActionSheetRef<SheetId>
+// > => useContext(SheetRefContext) as RefObject<
+// ActionSheetRef<SheetId>
+// >;
+
+export function useSheetRef<SheetId extends keyof Sheets = never>(
+  //@ts-ignore
+  id?: SheetId | (string & {}),
+) {
+  return useContext(SheetRefContext) as MutableRefObject<
+    ActionSheetRef<SheetId>
+  >;
+}
+
+/**
+ * Get the payload this sheet was opened with.
+ * @returns
+ */
+export function useSheetPayload<SheetId extends keyof Sheets = never>(
+  //@ts-ignore
+  id?: SheetId | (string & {}),
+) {
+  return useContext(SheetPayloadContext) as Sheets[SheetId]['payload'];
+}
 
 const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [payload, setPayload] = useState();
   const [visible, setVisible] = useState(false);
+  const ref = useRef<ActionSheetRef | null>(null);
   const Sheet = context.startsWith('$$-auto-')
     ? sheetsRegistry?.global?.[id]
     : sheetsRegistry[context]
@@ -171,7 +212,11 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   return !visible ? null : (
     <ProviderContext.Provider value={context}>
       <SheetIDContext.Provider value={id}>
-        <Sheet sheetId={id} payload={payload} />
+        <SheetRefContext.Provider value={ref}>
+          <SheetPayloadContext.Provider value={payload}>
+            <Sheet sheetId={id} payload={payload} />
+          </SheetPayloadContext.Provider>
+        </SheetRefContext.Provider>
       </SheetIDContext.Provider>
     </ProviderContext.Provider>
   );

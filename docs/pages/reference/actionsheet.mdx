@@ -358,8 +358,8 @@ A function called just before the action sheet is closing.
 
 A list of routes for this actions sheet if any.
 
-| Type                        | Required |
-| --------------------------- | -------- |
+| Type                          | Required |
+| ----------------------------- | -------- |
 | [`Route[]`](/reference/route) | no       |
 
 ## `onNavigate(route: string)`
@@ -401,3 +401,35 @@ An object containing props for the backdrop layer. Used to provide accessibility
 | Type   | Required |
 | ------ | -------- |
 | object | no       |
+
+## `onTouchBackdrop`
+
+A callback that gets invoked when user taps on the backdrop area.
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |
+
+## `safeAreaInsets`
+
+Default safeArea insets provided through a library such as `react-native-safe-area-insets`. This also helps in giving a tiny boost in performance as the sheet does not have to calculate insets anymore.
+
+| Type   | Required |
+| ------ | -------- |
+| object | no       |
+
+## `enableGesturesInScrollView`
+
+Enable swipe gestures inside ScrollView/FlatList. Enabled by default.
+
+| Type    | Required |
+| ------- | -------- |
+| boolean | no       |
+
+## `onSnapIndexChange`
+
+Callback invoked when the snap position of the sheet changes.
+
+| Type     | Required |
+| -------- | -------- |
+| function | no       |

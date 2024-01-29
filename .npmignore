@@ -7,11 +7,13 @@ node_modules/
 # assets/
 assets/
 
+# docs
+docs/
 
 # Example
 example/
-docs/
 expo-example/
+app/
 #gifs
 gifs/
 index.tsx

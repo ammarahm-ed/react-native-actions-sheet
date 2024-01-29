@@ -1,0 +1,11 @@
+# useSheetRef
+
+Returns the current sheet's [ref](./actionsheetref.mdx).
+
+```ts
+// Some where in your sheet's component tree.
+const ref = useSheetRef("example-sheet");
+
+// Use methods on the current sheet.
+ref.hide();
+```
