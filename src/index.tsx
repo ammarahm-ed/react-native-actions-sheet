@@ -936,7 +936,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   ? getZIndexFromStack(sheetId, currentContext)
                   : 999,
                 width: '100%',
-                height: initialWindowHeight.current,
+                height: '100%',
               },
               pointerEvents: props?.backgroundInteractionEnabled
                 ? 'box-none'
