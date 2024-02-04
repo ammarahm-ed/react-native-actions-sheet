@@ -376,8 +376,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const onRootViewLayout = React.useCallback(
       (event: LayoutChangeEvent) => {
-        const windowDimensions = Dimensions.get('window');
-        let isPortraitMode = windowDimensions.height > windowDimensions.width;
         if (isOrientationChanging.current) return;
         if (keyboard.keyboardShown && !isModal) {
           return;
@@ -385,8 +383,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
         let rootViewHeight = event.nativeEvent.layout.height;
         let rootViewWidth = event.nativeEvent.layout.width;
-
-        isPortraitMode = rootViewHeight > rootViewWidth;
 
         rootViewLayoutEventValues.current.sub?.unsubscribe();
         rootViewLayoutEventValues.current.sub = internalEventManager.subscribe(
@@ -404,9 +400,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             let width = rootViewWidth;
 
             dimensionsRef.current = {
-              width: isPortraitMode ? width : height,
-              height: isPortraitMode ? height : width,
-              portrait: isPortraitMode,
+              width: width,
+              height: height,
+              portrait: width > height,
             };
             setDimensions(dimensionsRef.current);
           },
