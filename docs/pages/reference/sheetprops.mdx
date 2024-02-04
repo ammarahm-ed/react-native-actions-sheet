@@ -13,7 +13,7 @@ Id of the current action sheet.
 Any data that has been passed to the action sheet when calling `SheetManager.show` can be accessed from here.
 
 ```tsx
-function ExampleSheet(props: SheetProps<{ title: string }>) {
+function ExampleSheet(props: SheetProps<"example-sheet">) {
   return (
     <ActionSheet id={props.sheetId}>
       <View>

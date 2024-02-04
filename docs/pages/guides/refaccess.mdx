@@ -3,11 +3,21 @@
 You can access the [`ActionSheetRef`](/reference/actionsheetref) from anywhere in the app using [`SheetManager`](/reference/sheetmanager).
 
 ```ts
-SheetManager.get("example-sheet").snapToOffset(50);
+SheetManager.get('example-sheet').snapToOffset(50);
 ```
 
 You can also get ref of an action sheet in a specific `SheetProvider`.
 
 ```ts
-SheetManager.get("example-sheet", "local-context").snapToOffset(50);
+SheetManager.get('example-sheet', 'local-context').snapToOffset(50);
+```
+
+# Ref access in components
+
+In components, ref can be accessed with [`useSheetRef`](/reference/usesheetref) hook or the `ref` prop on the `ActionSheet`.
+
+```ts
+const ref = useSheetRef();
+
+ref.snapToOffset(50);
 ```

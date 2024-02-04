@@ -1,11 +1,17 @@
 import {createContext, useCallback, useContext, useState} from 'react';
 import {Animated} from 'react-native';
-import {ActionSheetRef} from './../index';
-export type Route = {
+import {Sheets, ActionSheetRef} from '../types';
+
+export type RouteDefinition<T extends {} = {}> = T;
+
+export type Route<
+  Key extends keyof Sheets = never,
+  K extends keyof Sheets[Key]['routes'] = never,
+> = {
   /**
    * Name of the route.
    */
-  name: string;
+  name: K | (string & {});
   /**
    * A react component that will render when this route is navigated to.
    */
@@ -13,11 +19,11 @@ export type Route = {
   /**
    * Initial params for the route.
    */
-  params?: any;
+  params?: Sheets[Key]['routes'][K];
 };
 
-export type Router = {
-  currentRoute: Route;
+export type Router<Key extends keyof Sheets = never> = {
+  currentRoute: Route<Key>;
 
   /**
    * Navigate to a route
@@ -26,14 +32,21 @@ export type Router = {
    * @param params Params to pass to the route upon navigation. These can be accessed in the route using `useSheetRouteParams` hook.
    * @param snap Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
    */
-  navigate: (name: string, params?: any, snap?: number) => void;
+  navigate: <RouteKey extends keyof Sheets[Key]['routes']>(
+    name: RouteKey | (string & {}),
+    params?: Sheets[Key]['routes'][RouteKey] | any,
+    snap?: number,
+  ) => void;
   /**
    * Navigate back from a route.
    *
    * @param name  Name of the route to navigate back to.
    * @param snap Snap value for navigation animation. Between -100 to 100. A positive value snaps inwards, while a negative value snaps outwards.
    */
-  goBack: (name?: string, snap?: number) => void;
+  goBack: <RouteKey extends keyof Sheets[Key]['routes']>(
+    name?: RouteKey | (string & {}),
+    snap?: number,
+  ) => void;
   /**
    * Close the action sheet.
    */
@@ -49,7 +62,7 @@ export type Router = {
   /**
    * Get the currently rendered stack.
    */
-  stack: Route[];
+  stack: Route<Key>[];
   /**
    * An internal function called by sheet to navigate to initial route.
    */
@@ -92,7 +105,7 @@ export const useRouter = ({
     (name: string, params?: any, snap?: number) => {
       animate(snap || 20, 0);
       setTimeout(() => {
-        setStack(state => {
+        setStack((state: any) => {
           const next = routes?.find(route => route.name === name);
           if (!next) {
             animate(0, 1);
@@ -185,8 +198,8 @@ export const useRouter = ({
 
   return {
     currentRoute: currentRoute as unknown as Route,
-    navigate,
-    goBack,
+    navigate: navigate as any,
+    goBack: goBack as any,
     close,
     popToTop,
     hasRoutes: () => routes && routes.length > 0,
@@ -200,19 +213,34 @@ export const RouterContext = createContext<Router | undefined>(undefined);
 /**
  * A hook that you can use to control the router.
  */
-export const useSheetRouter = () => useContext(RouterContext);
+export function useSheetRouter<SheetId extends keyof Sheets>(
+  //@ts-ignore
+  id?: SheetId | (string & {}),
+): Router<SheetId> | undefined {
+  return useContext(RouterContext);
+}
 
 export const RouterParamsContext = createContext<any>(undefined);
 /**
  * A hook that returns the params for current navigation route.
  */
-export const useSheetRouteParams = () => {
+export function useSheetRouteParams<
+  SheetId extends keyof Sheets = never,
+  RouteKey extends keyof Sheets[SheetId]['routes'] = never,
+  //@ts-ignore
+>(id?: SheetId | (string & {}), routeKey?: RouteKey | (string & {})): Sheets[SheetId]['routes'][RouteKey] {
   const context = useContext(RouterParamsContext);
   return context;
-};
+}
 
-export type RouteScreenProps<T = {}> = {
-  router: Router;
-  params: any;
-  payload: any;
-} & T;
+export type RouteScreenProps<
+  SheetId extends keyof Sheets = never,
+  RouteKey extends keyof Sheets[SheetId]['routes'] = never,
+> = {
+  router: Router<SheetId>;
+  params: Sheets[SheetId]['routes'][RouteKey];
+  /**
+   * @deprecated use `useSheetPayload` hook.
+   */
+  payload: Sheets[SheetId]['beforeShowPayload'];
+};

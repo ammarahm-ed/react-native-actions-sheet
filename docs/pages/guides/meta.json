@@ -2,11 +2,13 @@
   "sheetmanager": "Usage with SheetManager",
   "passingdata": "Passing data to ActionSheet",
   "sheetrouter": "Using ActionSheet Router",
-  "getdata": "Returning results from ActionSheet",
+  "getdata": "Awaiting result from ActionSheet",
   "refaccess": "Ref access from anywhere",
-  "scrollview": "Using ScrollView",
+  "scrolling": "Scrolling",
+  "flashlist": "FlashList",
   "background": "Background Interaction",
   "position": "Position tracking",
   "safearea": "Handling SafeArea",
+  "navigationbar": "Navigation bar colors",
   "migrate": "Migrating to v0.8.0"
 }

@@ -4,6 +4,24 @@ When using `SheetProvider` & `SheetManager` to show ActionSheet it becomes diffi
 
 ActionSheet for React Native provides a very easy way to do this by passing the data in your `show` function and getting it via prop in your ActionSheet component automatically.
 
+Define the Sheet payload data when registering your Sheet.
+
+```ts
+import {SheetDefinition, registerSheet} from 'react-native-actions-sheet';
+
+registerSheet("example-sheet", ExampleSheet);
+
+declare module 'react-native-actions-sheet' {
+  interface Sheets {
+    'example-sheet': SheetDefinition<{
+      payload: {
+        value: string;
+      };
+    }>;
+  }
+}
+```
+
 ```ts
 SheetManager.show("example-sheet", {
   payload: { value: "Hello World" },
@@ -13,7 +31,7 @@ SheetManager.show("example-sheet", {
 And then in your `ExampleSheet` component.
 
 ```tsx
-function ExampleSheet(props: SheetProps<{ value: string }>) {
+function ExampleSheet(props: SheetProps<"example-sheet">) {
   return (
     <ActionSheet id={props.sheetId}>
       <View>

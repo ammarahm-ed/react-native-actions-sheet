@@ -18,7 +18,8 @@ const useSheetManager = ({
   const currentContext = useProviderContext();
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) return undefined;
+
     const subscriptions = [
       actionSheetEventManager.subscribe(
         `show_${id}`,

@@ -1,11 +1,17 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   EmitterSubscription,
   Keyboard,
   KeyboardEventListener,
   Platform,
-  ScreenRect,
 } from 'react-native';
+
+type ScreenRect = {
+  screenX: number;
+  screenY: number;
+  width: number;
+  height: number;
+};
 
 const emptyCoordinates = Object.freeze({
   screenX: 0,
@@ -18,69 +24,47 @@ const initialValue = {
   end: emptyCoordinates,
 };
 
-export function useKeyboard(
-  enabled: boolean,
-  isModal: boolean,
-  onKeyboardShow: (height: number) => void,
-  onKeyboardHide: () => void,
-) {
+export function useKeyboard(enabled: boolean) {
+  const pauseKeyboardHandler = useRef(false);
   const [shown, setShown] = useState(false);
   const [coordinates, setCoordinates] = useState<{
     start: undefined | ScreenRect;
     end: ScreenRect;
   }>(initialValue);
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
-
-  const withTimeout = React.useCallback(
-    (callback: () => void, timeout = 1) => {
-      if (isModal || Platform.OS === 'ios') return callback();
-      setTimeout(callback, timeout);
-    },
-    [isModal],
-  );
-
-  const handleKeyboardWillShow: KeyboardEventListener = e => {
+  const handleKeyboardDidShow: KeyboardEventListener = React.useCallback(e => {
+    if (pauseKeyboardHandler.current) return;
+    setShown(true);
     setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
-  };
-  const handleKeyboardDidShow: KeyboardEventListener = React.useCallback(
-    e => {
-      onKeyboardShow?.(e.endCoordinates.height);
-      withTimeout(() => {
-        setShown(true);
-        setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
-        setKeyboardHeight(e.endCoordinates.height);
-      });
-    },
-    [onKeyboardShow, withTimeout],
-  );
-  const handleKeyboardWillHide: KeyboardEventListener = e => {
-    setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
-  };
-  const handleKeyboardDidHide: KeyboardEventListener = React.useCallback(
-    e => {
-      onKeyboardHide?.();
-      withTimeout(() => {
-        setShown(false);
-        if (e) {
-          setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
-        } else {
-          setCoordinates(initialValue);
-          setKeyboardHeight(0);
-        }
-      }, 1);
-    },
-    [onKeyboardHide, withTimeout],
-  );
+    setKeyboardHeight(e.endCoordinates.height);
+  }, []);
+  const handleKeyboardDidHide: KeyboardEventListener = React.useCallback(e => {
+    setShown(false);
+    if (e) {
+      setCoordinates({start: e.startCoordinates, end: e.endCoordinates});
+    } else {
+      setCoordinates(initialValue);
+      setKeyboardHeight(0);
+    }
+  }, []);
 
   useEffect(() => {
     let subscriptions: EmitterSubscription[] = [];
     if (enabled) {
       subscriptions = [
-        Keyboard.addListener('keyboardWillShow', handleKeyboardWillShow),
-        Keyboard.addListener('keyboardDidShow', handleKeyboardDidShow),
-        Keyboard.addListener('keyboardWillHide', handleKeyboardWillHide),
+        Keyboard.addListener('keyboardDidChangeFrame', handleKeyboardDidShow),
         Keyboard.addListener('keyboardDidHide', handleKeyboardDidHide),
       ];
+      if (Platform.OS == 'android') {
+        subscriptions.push(
+          Keyboard.addListener('keyboardDidShow', handleKeyboardDidShow),
+        );
+      } else {
+        subscriptions.push(
+          Keyboard.addListener('keyboardWillShow', handleKeyboardDidShow),
+          Keyboard.addListener('keyboardWillHide', handleKeyboardDidHide),
+        );
+      }
     }
 
     return () => {
@@ -91,5 +75,6 @@ export function useKeyboard(
     keyboardShown: !enabled ? false : shown,
     coordinates: !enabled || !shown ? emptyCoordinates : coordinates,
     keyboardHeight: !enabled || !shown ? 0 : keyboardHeight,
+    pauseKeyboardHandler,
   };
 }

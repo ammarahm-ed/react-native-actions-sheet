@@ -1,14 +1,26 @@
 import React from 'react';
-import {SheetProvider} from 'react-native-actions-sheet';
-import ExampleScreen from './src/screen';
-import './src/sheets';
+// Must import this here.
+import '../app/sheets';
+import {SheetProvider} from "react-native-actions-sheet";
+import MainScreen from '../app/examples';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const App = () => {
   return (
     <>
-      <SheetProvider>
-        <ExampleScreen />
-      </SheetProvider>
+    <SafeAreaProvider>
+
+  
+      <GestureHandlerRootView
+        style={{
+          flex: 1,
+        }}>
+        <SheetProvider context="global">
+          <MainScreen />
+        </SheetProvider>
+      </GestureHandlerRootView>
+      </SafeAreaProvider>
     </>
   );
 };

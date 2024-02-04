@@ -1,20 +1,87 @@
-import {Route} from './hooks/use-router';
 import React from 'react';
 import {
   Animated,
   GestureResponderEvent,
+  LayoutRectangle,
   TouchableOpacityProps,
   ViewStyle,
 } from 'react-native';
+import EventManager from './eventmanager';
+import {Route} from './hooks/use-router';
 
-export type ActionSheetProps = {
+export interface Sheets {}
+
+type DefaultSheetDefinition = {
+  payload?: any;
+  returnValue?: any;
+  routes?: any;
+};
+
+export type SheetDefinition<T extends DefaultSheetDefinition = any> = T;
+
+export type ActionSheetRef<SheetId extends keyof Sheets = never> = {
+  /**
+   * Show the ActionSheet.
+   */
+  show: (snapIndex?: number) => void;
+
+  /**
+   * Hide the ActionSheet.
+   */
+  hide: (data?: Sheets[SheetId]['returnValue']) => void;
+  /**
+   * @removed Use `show` or `hide` functions or SheetManager to open/close ActionSheet.
+   */
+  setModalVisible: (visible?: boolean) => void;
+
+  /**
+   * Provide a value between 0 to 100 for the action sheet to snap to.
+   */
+  snapToOffset: (offset: number) => void;
+  /**
+   * @removed Use `useScrollHandlers` hook to enable scrolling in ActionSheet.
+   */
+  /**
+   * When multiple snap points aret on the action sheet, use this to snap it to different
+   * position.
+   */
+  snapToIndex: (index: number) => void;
+  /**
+   * @removed Use `useScrollHandlers` hook to enable scrolling in ActionSheet.
+   */
+  handleChildScrollEnd: () => void;
+  snapToRelativeOffset: (offset: number) => void;
+  /**
+   * Get the current snap index of the sheet.
+   */
+  currentSnapIndex: () => number;
+
+  /**
+   * Used internally for scrollable views.
+   */
+  modifyGesturesForLayout: (
+    id: string,
+    layout: LayoutRectangle | undefined,
+    scrollOffset: number,
+  ) => void;
+
+  isGestureEnabled: () => boolean;
+  isOpen: () => boolean;
+  ev: EventManager;
+  /**
+   * Disable or enable sheet keyboard handler.
+   */
+  keyboardHandler: (enabled?: boolean) => void;
+};
+
+export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   children?: React.ReactNode;
   /**
    * A unique id for the ActionSheet. Defining this is optional. Usually when you register
    * a sheet with `registerSheet()` it's id get automatically assigned.
    *
    */
-  id?: string;
+  id?: SheetId | (string & {});
   /**
    * Animate the opening and closing of ActionSheet.
    *
@@ -99,8 +166,11 @@ export type ActionSheetProps = {
    * Since `SheetManager.show` is now awaitable. You can return some data
    * to the caller by setting this prop. When the Sheet closes
    * the promise will resolve with the data.
+   *
+   * Note: It is however recommended to pass desired data via `SheetManager.hide` or `ref.hide`
+   * functions intead to avoid unnecessary rerenders when closing the sheet.
    */
-  payload?: unknown;
+  payload?: Sheets[SheetId]['returnValue'];
 
   /**
    * Style the top indicator bar in ActionSheet.
@@ -255,14 +325,14 @@ export type ActionSheetProps = {
    *
    * */
 
-  onClose?: (data?: unknown) => void;
+  onClose?: (data?: Sheets[SheetId]['returnValue']) => void;
 
   /**
    * Event called before ActionSheet opens. This is called only when using `SheetManager`.
    */
-  onBeforeShow?: (data?: unknown) => void;
+  onBeforeShow?: (data?: Sheets[SheetId]['payload']) => void;
 
-  onBeforeClose?: (data?: unknown) => void;
+  onBeforeClose?: (data?: Sheets[SheetId]['returnValue']) => void;
 
   /**
    * An event called when the ActionSheet Opens.
@@ -301,7 +371,7 @@ export type ActionSheetProps = {
   /**
    * Initial route to navigate to when the sheet opens.
    */
-  initialRoute?: string;
+  initialRoute?: keyof Sheets[SheetId]['routes'] | (string & {});
   /**
    * Enable back navigation for router when pressing hardware back button or
    * touching the back drop. Remember that swiping down the sheet will still close
@@ -309,8 +379,15 @@ export type ActionSheetProps = {
    */
   enableRouterBackNavigation?: boolean;
   /**
-   * Enable swipe gestures inside ScrollView/FlatList. Use this with caution. It
-   * might be a little buggy and conflict with ScrollView touch events.
+   * Enable swipe gestures inside ScrollView/FlatList. Enabled by default.
    */
   enableGesturesInScrollView?: boolean;
+
+  onSnapIndexChange?: (index: number) => void;
+
+  /**
+   * When `closable=false`, set this to true to not allow
+   * sheet to go beyond minimum snap point position with drag.
+   */
+  disableDragBeyondMinimumSnapPoint?: boolean;
 };

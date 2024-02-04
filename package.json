@@ -1,8 +1,9 @@
 {
   "name": "react-native-actions-sheet",
-  "version": "0.8.23",
+  "version": "0.9.0",
   "description": "A Cross Platform(Android & iOS) ActionSheet with a robust and flexible api, native performance and zero dependency code for react native. Create anything you want inside ActionSheet.",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ammarahm-ed/react-native-actions-sheet.git"
@@ -38,16 +39,16 @@
   },
   "homepage": "https://github.com/ammarahm-ed/react-native-actions-sheet",
   "peerDependencies": {
-    "react-native": "*"
+    "react-native": "*",
+    "react-native-gesture-handler": "*"
   },
   "devDependencies": {
-    "react": "18.0.0",
-    "react-native": "0.69.4",
     "@babel/core": "^7.12.9",
     "@babel/runtime": "^7.12.5",
     "@react-native-community/eslint-config": "^2.0.0",
+    "@shopify/flash-list": "^1.6.3",
     "@types/jest": "^26.0.23",
-    "@types/react-native": "^0.69.0",
+    "@types/react": "^18.2.48",
     "@types/react-test-renderer": "^18.0.0",
     "@typescript-eslint/eslint-plugin": "^5.29.0",
     "@typescript-eslint/parser": "^5.29.0",
@@ -55,10 +56,13 @@
     "eslint": "^7.32.0",
     "jest": "^26.6.3",
     "metro-react-native-babel-preset": "^0.70.3",
+    "react": "18.2.0",
+    "react-native": "0.73.2",
+    "react-native-gesture-handler": "^2.14.1",
     "react-test-renderer": "18.0.0",
-    "typescript": "^4.4.4",
     "typedoc": "^0.23.10",
-    "typedoc-plugin-markdown": "^3.13.4"
+    "typedoc-plugin-markdown": "^3.13.4",
+    "typescript": "5.0.4"
   },
   "directories": {
     "example": "example"
@@ -66,6 +70,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "docs": "typedoc --plugin typedoc-plugin-markdown --out docs ./index.tsx"
+    "docs": "typedoc --plugin typedoc-plugin-markdown --out docs ./index.tsx",
+    "watch": "yarn tsc --watch"
+  },
+  "dependencies": {
+    "react-native-safe-area-context": "^4.8.2"
   }
 }

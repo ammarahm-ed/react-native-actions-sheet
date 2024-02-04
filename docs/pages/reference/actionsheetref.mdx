@@ -3,7 +3,7 @@
 A reference for all the methods that can be invoked on the action sheet ref.
 
 ```tsx
-import { ActionSheetRef } from "react-native-actions-sheet";
+import {ActionSheetRef} from 'react-native-actions-sheet';
 
 const ref = useRef<ActionSheetRef>(null);
 ```
@@ -35,7 +35,7 @@ The hide function takes an optional `data` parameter which can be used to return
 | any  | true     |
 
 ```ts
-ref.current?.hide({ confirmed: true });
+ref.current?.hide({confirmed: true});
 ```
 
 ## `snapToOffset`
@@ -81,3 +81,11 @@ Check if the action sheet is open or closed.
 ## `isGestureEnabled`
 
 Check if the action sheet has gestures enabled or disabled.
+
+## `keyboardHandler`
+
+Disable or enable sheet keyboard handler.
+
+```ts
+ref.current?.keyboardHandler(false);
+```

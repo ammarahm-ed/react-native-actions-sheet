@@ -1,8 +1,8 @@
 /* eslint-disable curly */
 import {RefObject} from 'react';
-import {ActionSheetRef} from '.';
 import {actionSheetEventManager} from './eventmanager';
 import {providerRegistryStack, sheetsRegistry} from './provider';
+import {ActionSheetRef, Sheets} from './types';
 let baseZindex = 999;
 // Array of all the ids of ActionSheets currently rendered in the app.
 const ids: string[] = [];
@@ -60,45 +60,56 @@ export function getZIndexFromStack(id: string, context: string) {
 }
 
 class _SheetManager {
-  /**
-   * Show the ActionSheet with a given id.
-   *
-   * @param id id of the ActionSheet to show
-   * @param options
-   */
-
-  context(options?: {context?: string}) {
+  context(options?: {context?: string; id?: string}) {
     if (!options) options = {};
     if (!options?.context) {
       // If no context is provided, use to current top most context
       // to render the sheet.
-      options.context = providerRegistryStack[providerRegistryStack.length - 1];
+      for (const context of providerRegistryStack.slice().reverse()) {
+        // We only automatically select nested sheet providers.
+        if (
+          context.startsWith('$$-auto') &&
+          !context.includes(options?.id as string)
+        ) {
+          options.context = context;
+          break;
+        }
+      }
     }
     return options.context;
   }
 
-  async show<BeforeShowPayload extends any, ReturnPayload extends any>(
-    id: string,
+  /**
+   * Show the ActionSheet with an id.
+   *
+   * @param id id of the ActionSheet to show
+   * @param options
+   */
+  async show<SheetId extends keyof Sheets>(
+    id: SheetId | (string & {}),
     options?: {
       /**
        * Any data to pass to the ActionSheet. Will be available from the component `props` or in `onBeforeShow` prop on the action sheet.
        */
-      payload?: BeforeShowPayload;
+      payload?: Sheets[SheetId]['payload'];
 
       /**
        * Recieve payload from the Sheet when it closes
        */
-      onClose?: (data: ReturnPayload | undefined) => void;
+      onClose?: (data: Sheets[SheetId]['returnValue'] | undefined) => void;
 
       /**
        * Provide `context` of the `SheetProvider` where you want to show the action sheet.
        */
       context?: string;
     },
-  ): Promise<ReturnPayload> {
+  ): Promise<Sheets[SheetId]['returnValue']> {
     return new Promise(resolve => {
-      const currentContext = this.context(options);
-      const handler = (data: ReturnPayload, context = 'global') => {
+      let currentContext = this.context({
+        ...options,
+        id: id,
+      });
+      const handler = (data: any, context = 'global') => {
         if (
           context !== 'global' &&
           currentContext &&
@@ -135,35 +146,36 @@ class _SheetManager {
    * @param id id of the ActionSheet to show
    * @param data
    */
-  async hide<ReturnPayload extends any>(
-    id: string,
+  async hide<SheetId extends keyof Sheets>(
+    id: SheetId | (string & {}),
     options?: {
       /**
        * Return some data to the caller on closing the Sheet.
        */
-      payload?: ReturnPayload;
+      payload?: Sheets[SheetId]['returnValue'];
       /**
        * Provide `context` of the `SheetProvider` to hide the action sheet.
        */
       context?: string;
     },
-  ): Promise<ReturnPayload> {
-    let currentContext = this.context(options);
+  ): Promise<Sheets[SheetId]['returnValue']> {
+    let currentContext = this.context({
+      ...options,
+      id: id,
+    });
     return new Promise(resolve => {
       let isRegisteredWithSheetProvider = false;
       // Check if the sheet is registered with any `SheetProviders`
       // and select the nearest context where sheet is registered.
-      for (let ctx of providerRegistryStack.reverse()) {
-        for (let _id in sheetsRegistry[ctx]) {
-          if (_id === id && ids.includes(`${id}:${ctx}`)) {
-            isRegisteredWithSheetProvider = true;
-            currentContext = ctx;
-            break;
-          }
+
+      for (const _id of ids) {
+        if (_id === `${id}:${currentContext}`) {
+          isRegisteredWithSheetProvider = true;
+          break;
         }
       }
 
-      const hideHandler = (data: ReturnPayload, context = 'global') => {
+      const hideHandler = (data: any, context = 'global') => {
         if (
           context !== 'global' &&
           currentContext &&
@@ -187,7 +199,7 @@ class _SheetManager {
    *
    * @param id Hide all sheets for the specific id.
    */
-  hideAll(id?: string) {
+  hideAll<SheetId extends keyof Sheets>(id?: SheetId | (string & {})) {
     ids.forEach(_id => {
       if (id && !_id.startsWith(id)) return;
       actionSheetEventManager.publish(`hide_${_id.split(':')?.[0]}`);
@@ -209,9 +221,12 @@ class _SheetManager {
    * @param id Id of the sheet
    * @param context Context in which the sheet is rendered. Normally this function returns the top most rendered sheet ref automatically.
    */
-  get = (id: string, context?: string) => {
+  get = <SheetId extends keyof Sheets>(
+    id: SheetId | (string & {}),
+    context?: string,
+  ): RefObject<ActionSheetRef<SheetId>> => {
     if (!context) {
-      for (let ctx of providerRegistryStack.reverse()) {
+      for (let ctx of providerRegistryStack.slice().reverse()) {
         for (let _id in sheetsRegistry[ctx]) {
           if (_id === id) {
             context = ctx;
@@ -220,7 +235,7 @@ class _SheetManager {
         }
       }
     }
-    return refs[`${id}:${context}`];
+    return refs[`${id}:${context}`] as RefObject<ActionSheetRef<SheetId>>;
   };
 
   add = (id: string, context: string) => {

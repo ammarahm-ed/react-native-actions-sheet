@@ -1,105 +1,181 @@
-/* eslint-disable curly */
-import React, {RefObject, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {NativeScrollEvent, NativeSyntheticEvent, Platform} from 'react-native';
 import {
-  LayoutChangeEvent,
-  LayoutRectangle,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  Platform,
-} from 'react-native';
+  DraggableNodeOptions,
+  LayoutRect,
+  useDraggableNodesContext,
+  usePanGestureContext,
+} from '../context';
 import {EventHandlerSubscription} from '../eventmanager';
-import {ActionSheetRef} from '../index';
 
-/**
- * If you are using a `ScrollView` or `FlatList` in ActionSheet. You must attach `scrollHandlers`
- * with it to enable vertical scrolling. For horizontal ScrollViews, you should not use this hook.
- * @param id Id for the handler. Could be any string value.
- * @param ref ref of the ActionSheet in which the ScrollView is present.
- * @param minGesutureBoundary The minimum area of scrollView from top, where swipe gestures are allowed always.
- * @returns
- */
-export function useScrollHandlers<T>(
-  id: string,
-  ref: RefObject<ActionSheetRef>,
-  minGesutureBoundary: number = 50,
-) {
-  const scrollRef = useRef<T>(null);
-  const scrollLayout = useRef<LayoutRectangle>();
-  const scrollOffset = useRef(0);
-  const prevState = useRef(false);
-  const subscription = useRef<EventHandlerSubscription>();
-  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollOffset.current = event.nativeEvent.contentOffset.y;
-    ref.current?.modifyGesturesForLayout(
-      id,
-      scrollLayout.current,
-      scrollOffset.current,
-    );
-  };
+export const ScrollState = {
+  END: -1,
+};
 
-  const disableScrolling = React.useCallback(() => {
-    if (Platform.OS === 'web') {
-      //@ts-ignore
-      scrollRef.current.style.touchAction = 'none';
-      //@ts-ignore
-      scrollRef.current.style.overflowY = 'hidden';
-    }
-  }, [scrollRef]);
+const InitialLayoutRect = {
+  w: 0,
+  h: 0,
+  x: 0,
+  y: 0,
+  px: 0,
+  py: 0,
+};
 
-  const enableScrolling = React.useCallback(() => {
-    if (Platform.OS === 'web') {
-      //@ts-ignore
-      scrollRef.current.style.overflowY = 'scroll';
-      //@ts-ignore
-      scrollRef.current.style.touchAction = 'auto';
-    }
-  }, [scrollRef]);
+export function resolveScrollRef(ref: any) {
+  // FlatList
+  if (ref.current?._listRef) {
+    return ref.current._listRef?._scrollRef;
+  }
+  // FlashList
+  if (ref.current?.rlvRef) {
+    return ref.current?.rlvRef?._scrollComponent?._scrollViewRef;
+  }
+  // ScrollView
+  return ref.current;
+}
 
+export function useDraggable<T>(options?: DraggableNodeOptions) {
+  const gestureContext = usePanGestureContext();
+  const draggableNodes = useDraggableNodesContext();
+  const nodeRef = useRef<T>(null);
+  const offset = useRef({x: 0, y: 0});
+  const layout = useRef<LayoutRect>(InitialLayoutRect);
   useEffect(() => {
-    return () => {
-      subscription.current?.unsubscribe();
+    const pushNode = () => {
+      const index = draggableNodes.nodes.current?.findIndex(
+        node => node.ref === nodeRef,
+      );
+      if (index === undefined || index === -1) {
+        draggableNodes.nodes.current?.push({
+          ref: nodeRef,
+          offset: offset,
+          rect: layout,
+          handlerConfig: options,
+        });
+      }
     };
-  }, [id, ref, disableScrolling, enableScrolling]);
 
-  const onLayout = (event: LayoutChangeEvent) => {
-    scrollLayout.current = {
-      ...event.nativeEvent.layout,
-      y: event.nativeEvent.layout.y || minGesutureBoundary,
+    const popNode = () => {
+      const index = draggableNodes.nodes.current?.findIndex(
+        node => node.ref === nodeRef,
+      );
+
+      if (index === undefined || index > -1) {
+        draggableNodes.nodes.current?.splice(index as number, 1);
+      }
     };
-    subscription.current = ref.current?.ev.subscribe(
-      'onoffsetchange',
-      (offset: number) => {
-        ref.current?.modifyGesturesForLayout(
-          id,
-          scrollLayout.current,
-          scrollOffset.current,
-        );
-        if (offset < 3) {
-          if (prevState.current) return;
-          prevState.current = true;
-          enableScrolling();
-        } else {
-          if (!prevState.current) return;
-          prevState.current = false;
-          disableScrolling();
-        }
-      },
-    );
-    ref.current?.modifyGesturesForLayout(
-      id,
-      {
-        ...scrollLayout.current,
-        y: scrollLayout.current.y || minGesutureBoundary,
-      },
-      scrollOffset.current,
-    );
-  };
+    pushNode();
+    return () => {
+      popNode();
+    };
+  }, [draggableNodes.nodes, options]);
 
   return {
-    scrollEnabled: true,
-    onScroll,
-    ref: scrollRef,
-    onLayout: onLayout,
-    scrollEventThrottle: 50,
+    nodeRef,
+    offset,
+    draggableNodes,
+    layout,
+    gestureContext,
   };
+}
+
+/**
+ * Create a custom scrollable view inside the action sheet. 
+ * The scrollable view must implement `onScroll`, and `onLayout` props.
+ * @example
+ * ```tsx
+  const handlers = useScrollHandlers<RNScrollView>();
+  return <NativeViewGestureHandler
+    simultaneousHandlers={handlers.simultaneousHandlers}
+  >
+  <ScrollableView
+    {...handlers}
+  >
+  </ScrollableView>
+  
+  </NativeViewGestureHandler>
+ * ```
+ */
+export function useScrollHandlers<T>(options?: DraggableNodeOptions) {
+  const [_render, setRender] = useState(false);
+  const {nodeRef, gestureContext, offset, layout} = useDraggable<T>(options);
+  const timer = useRef<NodeJS.Timeout>();
+  const subscription = useRef<EventHandlerSubscription>();
+  const onMeasure = useCallback(
+    (x: number, y: number, w: number, h: number, px: number, py: number) => {
+      layout.current = {
+        x,
+        y,
+        w,
+        h: h + 10,
+        px,
+        py,
+      };
+    },
+    [layout],
+  );
+
+  const measureAndLayout = React.useCallback(() => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      const ref = resolveScrollRef(nodeRef);
+      if (Platform.OS == 'web') {
+        const rect = (ref as HTMLDivElement).getBoundingClientRect();
+        (ref as HTMLDivElement).style.overflow = "auto";
+        onMeasure(rect.x, rect.y, rect.width, rect.height, rect.left, rect.top);
+      } else {
+        ref?.measure?.(onMeasure);
+      }
+    }, 300);
+  }, [nodeRef, onMeasure]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || !gestureContext.ref) return;
+    const interval = setInterval(() => {
+      // Trigger a rerender when gestureContext gets populated.
+      if (gestureContext.ref.current) {
+        clearInterval(interval);
+        setRender(true);
+      }
+    }, 10);
+  }, [gestureContext.ref]);
+
+  const memoizedProps = React.useMemo(() => {
+    return {
+      ref: nodeRef,
+      simultaneousHandlers: gestureContext.ref,
+      onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const {x, y} = event.nativeEvent.contentOffset;
+        const maxOffsetX =
+          event.nativeEvent.contentSize.width - layout.current.w;
+        const maxOffsetY =
+          event.nativeEvent.contentSize.height - layout.current.h;
+
+        offset.current = {
+          x: x === maxOffsetX || x > maxOffsetX - 5 ? ScrollState.END : x,
+          y: y === maxOffsetY || y > maxOffsetY - 5 ? ScrollState.END : y,
+        };
+      },
+      scrollEventThrottle: 1,
+      onLayout: () => {
+        measureAndLayout();
+        subscription.current?.unsubscribe();
+        subscription.current = gestureContext.eventManager.subscribe(
+          'onoffsetchange',
+          () => {
+            measureAndLayout();
+          },
+        );
+      },
+    };
+  }, [
+    gestureContext.eventManager,
+    gestureContext.ref,
+    layout,
+    measureAndLayout,
+    nodeRef,
+    offset,
+  ]);
+
+  return memoizedProps;
 }

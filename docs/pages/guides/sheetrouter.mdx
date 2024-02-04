@@ -14,7 +14,7 @@ import ActionSheet, {
   useSheetRouteParams,
 } from 'react-native-actions-sheet';
 
-const RouteA = ({router}: RouteScreenProps) => {
+const RouteA = ({router}: RouteScreenProps<"sheet-with-router", "route-a">) => {
   return (
     <View>
       <Button
@@ -28,8 +28,8 @@ const RouteA = ({router}: RouteScreenProps) => {
 };
 
 const RouteB = () => {
-  const router = useSheetRouter();
-  const params = useSheetRouteParams();
+  const router = useSheetRouter("sheet-with-router");
+  const params = useSheetRouteParams("sheet-with-router", "route-b");
 
   return (
     <View>
@@ -54,7 +54,7 @@ const routes: Route[] = [
   },
 ];
 
-function Sheet(props: SheetProps) {
+function SheetWithRouter(props: SheetProps) {
   return (
     <ActionSheet
       enableRouterBackNavigation={true}
@@ -64,5 +64,28 @@ function Sheet(props: SheetProps) {
   );
 }
 
-export default Sheet;
+export default SheetWithRouter;
+```
+
+Finally register the sheet along with routes in `sheets.tsx` file.
+
+```ts
+import {registerSheet} from 'react-native-actions-sheet';
+import {SheetWithRouter} from './sheet-with-router';
+
+registerSheet('sheet-with-router', Sheet);
+
+declare module 'react-native-actions-sheet' {
+  interface Sheets {
+    'sheet-with-router': SheetDefinition<{
+      routes: {
+        'route-a': RouteDefinition;
+        // Route B with params.
+        'route-b': RouteDefinition<{
+          data: string
+        }>;
+      };
+    }>;
+  }
+}
 ```

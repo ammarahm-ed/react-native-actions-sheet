@@ -1,3 +1,81 @@
+# Migrating from v0.8.x
+
+v0.9.0 does not include any huge breaking changes to the API however there are some changes introduced to improve the overall DX of the library and ease of use.
+
+## Dependencies
+
+The library now depends on `react-native-gesture-handlers` library which is usually already installed in almost every React Native project.
+
+```
+npm install react-native-gesture-handlers
+```
+
+## `Registering sheets`
+
+Registering sheets works the same way, however to get better type intellisense across your code base, it is recommended that you extend some internal interfaces and define your sheets as follows:
+
+```ts
+import {SheetDefinition} from 'react-native-actions-sheet';
+
+declare module 'react-native-actions-sheet' {
+  interface Sheets {
+    'example-sheet': SheetDefinition<{
+      payload: {
+        userId: string;
+      };
+      returnValue: boolean;
+    }>;
+    'awesome-sheet': SheetDefinition;
+  }
+}
+```
+
+Now you will get complete intellisense automatically in most functions.
+
+## SheetProps
+
+The `SheetProps` type is a bit changed.
+
+Before:
+
+```ts
+const ExampleSheet = (props: SheetProps<{message: string}>) => {
+
+  return ...
+}
+```
+
+After:
+
+```ts
+const ExampleSheet = (props: SheetProps<'example-sheet'>) => {
+  return ...
+};
+```
+
+## `id={props.sheetId} not required
+
+Previously you had to do this for every `ActionSheet`.
+
+```ts
+<ActionSheet id={props.sheetId}/>
+```
+Now it's not needed anymore. You can however define the exact sheet id directly to get intellisense for payload/returnValue etc like below:
+
+```ts
+<ActionSheet id="example-sheet" onClose={data => {
+  // data is fully typed based on SheetDefinition of example-sheet.
+}}/>
+```
+
+## Scrolling
+
+See [Scrolling guide](./scrolling.mdx) to learn how to migrate away from `useScrollHandlers` and use dedicated scrolling views provided by `react-native-actions-sheet`.
+
+## Safe Area Insets
+
+It is recommended to set insets from `react-native-safe-area-context` library on the `<ActionSheet/>` component via the `safeAreaInsets` prop.
+
 # Migrating to v0.8.0
 
 v0.8.0 introduces some breaking changes. I tried to minimize them as much as possible but since this is a complete rewrite some of the features of this library have changed.

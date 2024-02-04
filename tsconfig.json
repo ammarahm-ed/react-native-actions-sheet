@@ -1,5 +1,5 @@
 {
-  "include": ["index.tsx"],
+  "include": ["index.ts"],
   "compilerOptions": {
     "baseUrl": "./",
     "jsx": "react-native",
@@ -8,7 +8,7 @@
     "lib": ["es2017", "DOM"],
     "declaration": true,
     "declarationMap": true,
-    "outDir": "dist",
+    "outDir": "./dist",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -19,7 +19,9 @@
     "pretty": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "strict": true,
-    "allowJs": true
-  }
+    "strict": false,
+    "allowJs": true,
+    
+  },
+  "exclude": ["./example","./expo-example","./dist", "./docs", "./assets",]
 }
