@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Animated,
   GestureResponderEvent,
-
   LayoutRectangle,
   TouchableOpacityProps,
   ViewStyle,
@@ -57,7 +56,6 @@ export type ActionSheetRef<SheetId extends keyof Sheets = never> = {
    */
   currentSnapIndex: () => number;
 
-
   /**
    * Used internally for scrollable views.
    */
@@ -73,7 +71,7 @@ export type ActionSheetRef<SheetId extends keyof Sheets = never> = {
   /**
    * Disable or enable sheet keyboard handler.
    */
-  keyboardHandler: (enabled?: boolean) => void
+  keyboardHandler: (enabled?: boolean) => void;
 };
 
 export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
@@ -386,8 +384,6 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   enableGesturesInScrollView?: boolean;
 
   onSnapIndexChange?: (index: number) => void;
-
-  onTouchBackdrop?: (event: GestureResponderEvent) => void;
 
   /**
    * When `closable=false`, set this to true to not allow

@@ -273,36 +273,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [animated, props.openAnimationConfig],
     );
 
-    // const keyboardAnimation = React.useCallback(
-    //   (shown = true) => {
-    //     const position = initialValue.current + actionSheetHeight.current;
-    //     const value =
-    //       position -
-    //       ((dimensionsRef.current?.height || 0) - keyboard.keyboardHeight);
-    //     if (!shown) {
-    //       animations.translateY.setValue(initialValue.current);
-    //       Animated.spring(animations.keyboardTranslate, {
-    //         toValue: 0,
-    //         friction: 10,
-    //         useNativeDriver: true,
-    //       }).start();
-    //     } else {
-    //       // animations.translateY.setValue(initialValue.current - value);
-    //       Animated.spring(animations.keyboardTranslate, {
-    //         toValue: -keyboard.keyboardHeight,
-    //         friction: 10,
-    //         useNativeDriver: true,
-    //       }).start(() => {
-    //         setTimeout(() => {
-    //           animations.translateY.setValue(initialValue.current);
-    //         }, 1);
-    //       });
-    //     }
-    //   },
-    //   // eslint-disable-next-line react-hooks/exhaustive-deps
-    //   [animated, props.openAnimationConfig, keyboard],
-    // );
-
     const opacityAnimation = React.useCallback(
       (opacity: number) => {
         Animated.timing(animations.opacity, {
@@ -365,43 +335,41 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       isModal && !props?.backgroundInteractionEnabled ? Modal : Animated.View;
 
     useEffect(() => {
+      let animationListener;
       if (drawUnderStatusBar || props.onChange) {
-        animationListeners.current.translateY =
-          animations.translateY.addListener(value => {
-            const correctedValue =
-              value.value > minTranslateValue.current ? value.value : 0;
-            props?.onChange?.(correctedValue, actionSheetHeight.current);
-            if (drawUnderStatusBar) {
-              if (lock.current) return;
-              const correctedHeight = keyboard.keyboardShown
-                ? dimensionsRef.current.height -
-                  (keyboard.keyboardHeight + safeAreaPaddings.current.bottom)
-                : dimensionsRef.current.height -
-                  safeAreaPaddings.current.bottom;
-              const correctedOffset = keyboard.keyboardShown
-                ? value.value - keyboard.keyboardHeight
-                : value.value;
+        animationListener = animations.translateY.addListener(value => {
+          const correctedValue =
+            value.value > minTranslateValue.current ? value.value : 0;
+          props?.onChange?.(correctedValue, actionSheetHeight.current);
+          if (drawUnderStatusBar) {
+            if (lock.current) return;
+            const correctedHeight = keyboard.keyboardShown
+              ? dimensionsRef.current.height -
+                (keyboard.keyboardHeight + safeAreaPaddings.current.bottom)
+              : dimensionsRef.current.height - safeAreaPaddings.current.bottom;
+            const correctedOffset = keyboard.keyboardShown
+              ? value.value - keyboard.keyboardHeight
+              : value.value;
 
-              if (actionSheetHeight.current > correctedHeight - 1) {
-                if (correctedOffset < 100) {
-                  animations.underlayTranslateY.setValue(
-                    Math.max(correctedOffset - 20, -20),
-                  );
-                } else {
-                  //@ts-ignore
-                  if (animations.underlayTranslateY._value < 100) {
-                    animations.underlayTranslateY.setValue(100);
-                  }
+            if (actionSheetHeight.current > correctedHeight - 1) {
+              if (correctedOffset < 100) {
+                animations.underlayTranslateY.setValue(
+                  Math.max(correctedOffset - 20, -20),
+                );
+              } else {
+                //@ts-ignore
+                if (animations.underlayTranslateY._value < 100) {
+                  animations.underlayTranslateY.setValue(100);
                 }
               }
             }
-          });
+          }
+        });
       }
+      animationListeners.current.translateY = animationListener;
       return () => {
-        animationListeners.current.translateY &&
-          animations.translateY.removeListener(
-            animationListeners.current.translateY,
-          );
+        animationListener &&
+          animations.translateY.removeListener(animationListener);
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props?.id, keyboard.keyboardShown, keyboard.keyboardHeight]);
@@ -1125,7 +1093,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     ]);
 
     const onTouch = (event: GestureResponderEvent) => {
-      props.onTouchBackdrop?.(event);
       onTouchBackdrop?.(event);
       if (enableRouterBackNavigation && router.canGoBack()) {
         router.goBack();
@@ -1147,7 +1114,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           windowDimensions.width < windowDimensions.height;
 
         if (orientationChanged) isOrientationChanging.current = true;
-
 
         actionSheetHeight.current =
           event.nativeEvent.layout.height > dimensionsRef.current.height
