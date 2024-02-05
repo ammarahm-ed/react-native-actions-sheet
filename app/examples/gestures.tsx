@@ -12,7 +12,7 @@ function Gestures() {
       <View
         style={{
           paddingHorizontal: 12,
-          height: 400,
+          height: 200,
           alignItems: 'center',
           justifyContent: 'center',
         }}>

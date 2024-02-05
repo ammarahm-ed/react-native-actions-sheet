@@ -15,6 +15,7 @@ import {
   Dimensions,
   Easing,
   GestureResponderEvent,
+  Keyboard,
   LayoutChangeEvent,
   LayoutRectangle,
   Modal,
@@ -146,7 +147,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const lock = useRef(false);
     const panViewRef = useRef<View>(null);
     const rootViewContainerRef = useRef<View>(null);
-    const isOrientationChanging = useRef(false);
     const gestureBoundaries = useRef<{
       [name: string]: LayoutRectangle & {
         scrollOffset?: number;
@@ -155,9 +155,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const hiding = useRef(false);
     const payloadRef = useRef(payload);
     const sheetPayload = useSheetPayload();
-    // const initialWindowHeight = useRef(Dimensions.get('screen').height);
     const panHandlerRef = useRef();
+    const closing = useRef(false);
     const draggableNodes = useRef<NodesRef>([]);
+    const sheetLayoutRef = useRef<LayoutRectangle>();
     const [dimensions, setDimensions] = useState<{
       width: number;
       height: number;
@@ -174,6 +175,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       sub?: {unsubscribe: () => void};
       firstEventFired?: boolean;
       layouTimer?: NodeJS.Timeout;
+      resizing?: boolean;
     }>({});
 
     if (safeAreaInsets) {
@@ -223,10 +225,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const routerRef = useRef(router);
     payloadRef.current = payload;
     routerRef.current = router;
-
-    const keyboard = useKeyboard(
-      keyboardHandlerEnabled && visible && dimensions.height !== 0,
-    );
+    const keyboard = useKeyboard(keyboardHandlerEnabled);
     const prevSnapIndex = useRef<number>(initialSnapIndex);
     const draggableNodesContext: DraggableNodes = React.useMemo(
       () => ({
@@ -374,12 +373,93 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props?.id, keyboard.keyboardShown, keyboard.keyboardHeight]);
 
+    const onSheetLayout = React.useCallback(
+      (event: LayoutChangeEvent) => {
+        sheetLayoutRef.current = {...event.nativeEvent.layout};
+        if (rootViewLayoutEventValues.current.resizing) return;
+        if (closing.current) return;
+        const rootViewHeight = dimensionsRef.current?.height;
+
+        actionSheetHeight.current =
+          event.nativeEvent.layout.height > dimensionsRef.current.height
+            ? dimensionsRef.current.height
+            : event.nativeEvent.layout.height;
+        minTranslateValue.current =
+          rootViewHeight -
+          (actionSheetHeight.current + safeAreaPaddings.current.bottom);
+
+        if (initialValue.current < 0) {
+          animations.translateY.setValue(rootViewHeight * 1.1);
+        }
+        const nextInitialValue =
+          actionSheetHeight.current +
+          minTranslateValue.current -
+          (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
+            100;
+
+        initialValue.current =
+          (keyboard.keyboardShown || keyboardWasVisible.current) &&
+          initialValue.current <= nextInitialValue &&
+          initialValue.current >= minTranslateValue.current
+            ? initialValue.current
+            : nextInitialValue;
+
+        const sheetBottomEdgePosition =
+          initialValue.current +
+          (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
+            100;
+
+        const sheetPositionWithKeyboard =
+          sheetBottomEdgePosition -
+          (dimensionsRef.current?.height - keyboard.keyboardHeight);
+
+        initialValue.current =
+          sheetPositionWithKeyboard > 0
+            ? initialValue.current - sheetPositionWithKeyboard
+            : initialValue.current;
+
+        if (keyboard.keyboardShown) {
+          minTranslateValue.current =
+            minTranslateValue.current -
+            (keyboard.keyboardHeight + safeAreaPaddings.current.bottom);
+
+          keyboardWasVisible.current = true;
+          prevKeyboardHeight.current = keyboard.keyboardHeight;
+        } else {
+          keyboardWasVisible.current = false;
+        }
+        opacityAnimation(1);
+        setTimeout(() => {
+          returnAnimation();
+        }, 1);
+
+        if (initialValue.current > 100) {
+          if (lock.current) return;
+          animations.underlayTranslateY.setValue(100);
+        }
+        if (Platform.OS === 'web') {
+          document.body.style.overflowY = 'hidden';
+          document.documentElement.style.overflowY = 'hidden';
+        }
+      },
+      [
+        snapPoints,
+        keyboard.keyboardShown,
+        keyboard.keyboardHeight,
+        opacityAnimation,
+        animations.translateY,
+        animations.underlayTranslateY,
+        returnAnimation,
+      ],
+    );
+
     const onRootViewLayout = React.useCallback(
       (event: LayoutChangeEvent) => {
-        if (isOrientationChanging.current) return;
         if (keyboard.keyboardShown && !isModal) {
           return;
         }
+
+        rootViewLayoutEventValues.current.resizing = true;
 
         let rootViewHeight = event.nativeEvent.layout.height;
         let rootViewWidth = event.nativeEvent.layout.width;
@@ -402,9 +482,19 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             dimensionsRef.current = {
               width: width,
               height: height,
-              portrait: width > height,
+              portrait: width < height,
             };
-            setDimensions(dimensionsRef.current);
+
+            setDimensions({...dimensionsRef.current});
+            rootViewLayoutEventValues.current.resizing = false;
+
+            if (sheetLayoutRef.current) {
+              onSheetLayout({
+                nativeEvent: {
+                  layout: sheetLayoutRef.current,
+                },
+              } as any);
+            }
           },
         );
 
@@ -430,7 +520,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           rootViewLayoutEventValues.current.firstEventFired = true;
         }
       },
-      [keyboard.keyboardShown, isModal, internalEventManager],
+      [keyboard.keyboardShown, isModal, internalEventManager, onSheetLayout],
     );
 
     const hideSheet = React.useCallback(
@@ -444,6 +534,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         onBeforeClose?.((data || payloadRef.current || data) as never);
         setTimeout(() => {
           if (closable) {
+            closing.current = true;
+            Keyboard.dismiss();
             animationListeners.current.translateY &&
               animations.translateY.removeListener(
                 animationListeners.current.translateY,
@@ -473,6 +565,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   hiding.current = false;
                 }
                 currentSnapIndex.current = initialSnapIndex;
+                closing.current = false;
+                setTimeout(() => {
+                  keyboard.reset();
+                });
               } else {
                 animations.opacity.setValue(1);
                 returnAnimation();
@@ -486,7 +582,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [closable, hideAnimation, props.onClose, returnAnimation, setVisible],
+      [
+        closable,
+        hideAnimation,
+        props.onClose,
+        returnAnimation,
+        setVisible,
+        keyboard,
+      ],
     );
 
     const onHardwareBackPress = React.useCallback(() => {
@@ -1098,97 +1201,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         hideSheet();
       }
     };
-
-    const onSheetLayout = React.useCallback(
-      (event: LayoutChangeEvent) => {
-        if (isOrientationChanging.current) return;
-
-        const rootViewHeight = dimensionsRef.current?.height;
-        const windowDimensions = Dimensions.get('window');
-        const orientationChanged =
-          dimensionsRef.current.portrait !==
-          windowDimensions.width < windowDimensions.height;
-
-        if (orientationChanged) isOrientationChanging.current = true;
-
-        actionSheetHeight.current =
-          event.nativeEvent.layout.height > dimensionsRef.current.height
-            ? dimensionsRef.current.height
-            : event.nativeEvent.layout.height;
-        minTranslateValue.current =
-          rootViewHeight -
-          (actionSheetHeight.current + safeAreaPaddings.current.bottom);
-
-        if (initialValue.current < 0) {
-          animations.translateY.setValue(rootViewHeight * 1.1);
-        }
-        const nextInitialValue =
-          actionSheetHeight.current +
-          minTranslateValue.current -
-          (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-            100;
-
-        initialValue.current =
-          (keyboard.keyboardShown || keyboardWasVisible.current) &&
-          initialValue.current <= nextInitialValue &&
-          initialValue.current >= minTranslateValue.current
-            ? initialValue.current
-            : nextInitialValue;
-
-        const sheetBottomEdgePosition =
-          initialValue.current +
-          (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-            100;
-
-        const sheetPositionWithKeyboard =
-          sheetBottomEdgePosition -
-          (dimensionsRef.current?.height - keyboard.keyboardHeight);
-
-        initialValue.current =
-          sheetPositionWithKeyboard > 0
-            ? initialValue.current - sheetPositionWithKeyboard
-            : initialValue.current;
-
-        if (keyboard.keyboardShown) {
-          minTranslateValue.current =
-            minTranslateValue.current -
-            (keyboard.keyboardHeight + safeAreaPaddings.current.bottom);
-
-          keyboardWasVisible.current = true;
-          prevKeyboardHeight.current = keyboard.keyboardHeight;
-        } else {
-          keyboardWasVisible.current = false;
-        }
-        opacityAnimation(1);
-        setTimeout(() => {
-          returnAnimation();
-        }, 1);
-
-        if (isOrientationChanging.current) {
-          setTimeout(() => {
-            isOrientationChanging.current = false;
-          }, 300);
-        }
-
-        if (initialValue.current > 100) {
-          if (lock.current) return;
-          animations.underlayTranslateY.setValue(100);
-        }
-        if (Platform.OS === 'web') {
-          document.body.style.overflowY = 'hidden';
-          document.documentElement.style.overflowY = 'hidden';
-        }
-      },
-      [
-        snapPoints,
-        keyboard.keyboardShown,
-        keyboard.keyboardHeight,
-        opacityAnimation,
-        animations.translateY,
-        animations.underlayTranslateY,
-        returnAnimation,
-      ],
-    );
 
     const getRef = useCallback(
       (): ActionSheetRef => ({
