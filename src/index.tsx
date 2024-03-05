@@ -346,20 +346,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               ? dimensionsRef.current.height -
                 (keyboard.keyboardHeight + safeAreaPaddings.current.bottom)
               : dimensionsRef.current.height - safeAreaPaddings.current.bottom;
-            const correctedOffset = keyboard.keyboardShown
-              ? value.value - keyboard.keyboardHeight
-              : value.value;
 
-            if (actionSheetHeight.current > correctedHeight - 1) {
-              if (correctedOffset < 100) {
+            if (actionSheetHeight.current >= correctedHeight - 1) {
+              if (value.value < 100) {
                 animations.underlayTranslateY.setValue(
-                  Math.max(correctedOffset - 20, -20),
+                  Math.max(value.value - 20, -20),
                 );
               } else {
                 //@ts-ignore
-                if (animations.underlayTranslateY._value < 100) {
+                if (animations.underlayTranslateY._value !== 100) {
                   animations.underlayTranslateY.setValue(100);
                 }
+              }
+            } else {
+              //@ts-ignore
+              if (animations.underlayTranslateY._value !== 100) {
+                animations.underlayTranslateY.setValue(100);
               }
             }
           }
