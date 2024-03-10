@@ -1,8 +1,10 @@
-# Migrating from v0.8.x
+# Migrating Guide
+
+## Migrating to v0.9.0
 
 v0.9.0 does not include any huge breaking changes to the API however there are some changes introduced to improve the overall DX of the library and ease of use.
 
-## Dependencies
+### Dependencies
 
 The library now depends on `react-native-gesture-handlers` library which is usually already installed in almost every React Native project.
 
@@ -10,7 +12,7 @@ The library now depends on `react-native-gesture-handlers` library which is usua
 npm install react-native-gesture-handlers
 ```
 
-## `Registering sheets`
+### `Registering sheets`
 
 Registering sheets works the same way, however to get better type intellisense across your code base, it is recommended that you extend some internal interfaces and define your sheets as follows:
 
@@ -32,7 +34,7 @@ declare module 'react-native-actions-sheet' {
 
 Now you will get complete intellisense automatically in most functions.
 
-## SheetProps
+### SheetProps
 
 The `SheetProps` type is a bit changed.
 
@@ -53,34 +55,38 @@ const ExampleSheet = (props: SheetProps<'example-sheet'>) => {
 };
 ```
 
-## `id={props.sheetId} not required
+### `id={props.sheetId} not required
 
 Previously you had to do this for every `ActionSheet`.
 
 ```ts
-<ActionSheet id={props.sheetId}/>
+<ActionSheet id={props.sheetId} />
 ```
+
 Now it's not needed anymore. You can however define the exact sheet id directly to get intellisense for payload/returnValue etc like below:
 
 ```ts
-<ActionSheet id="example-sheet" onClose={data => {
-  // data is fully typed based on SheetDefinition of example-sheet.
-}}/>
+<ActionSheet
+  id="example-sheet"
+  onClose={data => {
+    // data is fully typed based on SheetDefinition of example-sheet.
+  }}
+/>
 ```
 
-## Scrolling
+### Scrolling
 
 See [Scrolling guide](./scrolling.mdx) to learn how to migrate away from `useScrollHandlers` and use dedicated scrolling views provided by `react-native-actions-sheet`.
 
-## Safe Area Insets
+### Safe Area Insets
 
 It is recommended to set insets from `react-native-safe-area-context` library on the `<ActionSheet/>` component via the `safeAreaInsets` prop.
 
-# Migrating to v0.8.0
+## Migrating to v0.8.0
 
 v0.8.0 introduces some breaking changes. I tried to minimize them as much as possible but since this is a complete rewrite some of the features of this library have changed.
 
-## Some props have been removed
+### Some props have been removed
 
 `keyboardShouldPersistTaps` & `keyboardDismissMode`: Since we don't use `ScrollView` internally anymore, these props have been removed.
 
@@ -98,7 +104,7 @@ v0.8.0 introduces some breaking changes. I tried to minimize them as much as pos
 
 `bottomOffset` & `initialOffsetFromBottom`: You can use `snapPoints` & `initialSnapIndex` which is much simpler way to control action sheet.
 
-## `ActionSheetRef`
+### `ActionSheetRef`
 
 We now have a `ActionSheetRef` type that should be used in `useRef` hooks:
 
@@ -117,7 +123,7 @@ const actionSheetRef = useRef<ActionSheetRef>(null);
 ...
 ```
 
-## `SheetManager` changes
+### `SheetManager` changes
 
 `SheetManager.show` & `SheetManager.hide` functions have changed:
 
@@ -149,7 +155,7 @@ SheetManager.hide('sheet-id', {
 });
 ```
 
-## `registerSheet` changes
+### `registerSheet` changes
 
 The `registerSheet` function now takes multiple contexts so a sheet with same id can be opened in multiple contexts.
 
@@ -163,7 +169,7 @@ SheetManager.show('sheet-id', {
 });
 ```
 
-## `ScrollView` behaviour changes
+### `ScrollView` behaviour changes
 
 `ScrollView` previously required `handleChildScrollEnd` to be attached to it. Now you have to use `useScrollHandlers` hook.
 
