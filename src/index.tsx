@@ -259,13 +259,24 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             : 0;
 
         notifyOffsetChange(correctedValue as number);
-        Animated.spring(animations.translateY, {
-          toValue: initialValue.current,
-          useNativeDriver: true,
-          friction: 8,
-          ...config,
-          velocity: typeof velocity !== 'number' ? undefined : velocity,
-        }).start();
+
+        if (!config) {
+          Animated.spring(animations.translateY, {
+            toValue: initialValue.current,
+            useNativeDriver: true,
+            friction: 8,
+            ...config,
+            velocity: typeof velocity !== 'number' ? undefined : velocity,
+          }).start();
+        }else {
+          Animated.spring(animations.translateY, {
+            toValue: initialValue.current,
+            useNativeDriver: true,
+            ...config,
+            velocity: typeof velocity !== 'number' ? undefined : velocity,
+          }).start();
+        }
+      
         notifySnapIndexChanged();
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
