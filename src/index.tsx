@@ -338,7 +338,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       if (drawUnderStatusBar || props.onChange) {
         animationListener = animations.translateY.addListener(value => {
           const correctedValue =
-            value.value > minTranslateValue.current ? value.value : 0;
+            value.value > minTranslateValue.current ? value.value - minTranslateValue.current : 0;
           props?.onChange?.(correctedValue, actionSheetHeight.current);
           if (drawUnderStatusBar) {
             if (lock.current) return;
