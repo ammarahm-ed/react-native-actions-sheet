@@ -746,7 +746,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         for (let i = 0; i < draggableNodes.current.length; i++) {
           const node = draggableNodes.current[i];
           const scrollRef = resolveScrollRef(node.ref);
-          scrollRef.setNativeProps({
+          scrollRef?.setNativeProps({
             scrollEnabled: value,
           });
         }

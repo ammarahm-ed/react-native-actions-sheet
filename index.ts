@@ -14,7 +14,12 @@ export {
   useSheetRef,
   useSheetPayload,
 } from './src/provider';
-export {ActionSheetProps, SheetDefinition, Sheets, ActionSheetRef} from './src/types';
+export {
+  ActionSheetProps,
+  SheetDefinition,
+  Sheets,
+  ActionSheetRef,
+} from './src/types';
 export {useScrollHandlers} from './src/hooks/use-scroll-handlers';
 export {
   useSheetRouter,

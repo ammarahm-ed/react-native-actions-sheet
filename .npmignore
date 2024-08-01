@@ -18,6 +18,7 @@ app/
 gifs/
 index.tsx
 src/
+!dist/src
 README.md
 tsconfig.json
 .github/
