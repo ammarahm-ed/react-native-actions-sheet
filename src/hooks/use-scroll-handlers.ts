@@ -120,6 +120,7 @@ export function useScrollHandlers<T>(options?: DraggableNodeOptions) {
     timer.current = setTimeout(() => {
       const ref = resolveScrollRef(nodeRef);
       if (Platform.OS == 'web') {
+        if (!ref) return;
         const rect = (ref as HTMLDivElement).getBoundingClientRect();
         (ref as HTMLDivElement).style.overflow = "auto";
         onMeasure(rect.x, rect.y, rect.width, rect.height, rect.left, rect.top);
