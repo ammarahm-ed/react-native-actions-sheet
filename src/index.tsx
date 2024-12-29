@@ -268,7 +268,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             ...config,
             velocity: typeof velocity !== 'number' ? undefined : velocity,
           }).start();
-        }else {
+        } else {
           Animated.spring(animations.translateY, {
             toValue: initialValue.current,
             useNativeDriver: true,
@@ -276,7 +276,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             velocity: typeof velocity !== 'number' ? undefined : velocity,
           }).start();
         }
-      
+
         notifySnapIndexChanged();
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -349,7 +349,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       if (drawUnderStatusBar || props.onChange) {
         animationListener = animations.translateY.addListener(value => {
           const correctedValue =
-            value.value > minTranslateValue.current ? value.value - minTranslateValue.current : 0;
+            value.value > minTranslateValue.current
+              ? value.value - minTranslateValue.current
+              : 0;
           props?.onChange?.(correctedValue, actionSheetHeight.current);
           if (drawUnderStatusBar) {
             if (lock.current) return;
@@ -767,9 +769,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         ? {enabled: false}
         : ({
             onBegan: () => {
-              if (Platform.OS === 'android') {
-                scrollable(false);
-              }
+              // if (Platform.OS === 'android') {
+              //   scrollable(false);
+              // }
             },
             onGestureEvent(event) {
               if (sheetId && !isRenderedOnTop(sheetId, currentContext)) return;
