@@ -156,6 +156,13 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   keyboardHandlerEnabled?: boolean;
 
   /**
+   * Enable elevation. This will add a shadow to the ActionSheet.
+   *
+   * Default: `true`
+   */
+  enableElevation?: boolean;
+
+  /**
    * Add elevation to the ActionSheet container.
    *
    * Default: `5`
