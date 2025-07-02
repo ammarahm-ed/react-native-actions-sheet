@@ -30,6 +30,10 @@ export function resolveScrollRef(ref: any) {
   if (ref.current?.rlvRef) {
     return ref.current?.rlvRef?._scrollComponent?._scrollViewRef;
   }
+  // SectionList
+  if (ref.current?._wrapperListRef) {
+    return ref.current?._wrapperListRef?._listRef?._scrollRef
+  }
   // ScrollView
   return ref.current;
 }
