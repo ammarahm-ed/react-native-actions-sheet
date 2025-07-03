@@ -143,7 +143,7 @@ class _SheetManager {
   /**
    * An async hide function. This is useful when you want to show one ActionSheet after closing another.
    *
-   * @param id id of the ActionSheet to show
+   * @param id id of the ActionSheet to hide
    * @param data
    */
   async hide<SheetId extends keyof Sheets>(

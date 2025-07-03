@@ -3,7 +3,7 @@
 export default {
   projectLink: 'https://github.com/ammarahm-ed/react-native-actions-sheet', // GitHub link in the navbar
   docsRepositoryBase:
-    'https://github.com/ammarahm-ed/react-native-actions-sheet', // base URL for the docs repository
+    'https://github.com/ammarahm-ed/react-native-actions-sheet/tree/master/docs/pages', // base URL for the docs repository
   nextLinks: true,
   prevLinks: true,
   search: true,
