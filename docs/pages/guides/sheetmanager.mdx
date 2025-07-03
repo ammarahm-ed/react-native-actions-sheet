@@ -27,7 +27,7 @@ export default ExampleSheet;
 Create a `sheets.tsx` file and import your sheet then register it.
 
 ```ts
-import {registerSheet} from 'react-native-actions-sheet';
+import {registerSheet, SheetDefinition} from 'react-native-actions-sheet';
 import ExampleSheet from 'example-sheet.tsx';
 
 registerSheet('example-sheet', ExampleSheet);
@@ -39,8 +39,6 @@ declare module 'react-native-actions-sheet' {
     'example-sheet': SheetDefinition;
   }
 }
-
-export {};
 ```
 
 In `App.js` import `sheets.tsx` and wrap your app in `SheetProvider`.
