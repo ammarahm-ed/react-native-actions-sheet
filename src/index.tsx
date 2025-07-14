@@ -268,7 +268,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             ...config,
             velocity: typeof velocity !== 'number' ? undefined : velocity,
           }).start();
-        }else {
+        } else {
           Animated.spring(animations.translateY, {
             toValue: initialValue.current,
             useNativeDriver: true,
@@ -276,7 +276,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             velocity: typeof velocity !== 'number' ? undefined : velocity,
           }).start();
         }
-      
+
         notifySnapIndexChanged();
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -349,7 +349,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       if (drawUnderStatusBar || props.onChange) {
         animationListener = animations.translateY.addListener(value => {
           const correctedValue =
-            value.value > minTranslateValue.current ? value.value - minTranslateValue.current : 0;
+            value.value > minTranslateValue.current
+              ? value.value - minTranslateValue.current
+              : 0;
           props?.onChange?.(correctedValue, actionSheetHeight.current);
           if (drawUnderStatusBar) {
             if (lock.current) return;
@@ -772,7 +774,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               }
             },
             onGestureEvent(event) {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext)) return;
+              if (
+                sheetId &&
+                id === sheetId &&
+                !isRenderedOnTop(sheetId, currentContext)
+              )
+                return;
 
               const gesture = event.nativeEvent;
               let deltaY = gesture.translationY;
@@ -1004,7 +1011,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         ? {panHandlers: {}}
         : PanResponder.create({
             onMoveShouldSetPanResponder: (_event, gesture) => {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext))
+              if (
+                sheetId &&
+                id === sheetId &&
+                !isRenderedOnTop(sheetId, currentContext)
+              )
                 return false;
               let vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
               let vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
@@ -1023,7 +1034,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               return true;
             },
             onStartShouldSetPanResponder: (_event, _gesture) => {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext))
+              if (
+                sheetId &&
+                id === sheetId &&
+                !isRenderedOnTop(sheetId, currentContext)
+              )
                 return false;
               const activeDraggableNodes = getActiveDraggableNodes(
                 _event.nativeEvent.pageX,
