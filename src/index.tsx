@@ -24,6 +24,7 @@ import {
   Platform,
   SafeAreaView,
   StatusBar,
+  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -178,6 +179,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       resizing?: boolean;
     }>({});
 
+    const containerStyle = StyleSheet.flatten(props.containerStyle);
+
     if (safeAreaInsets) {
       safeAreaPaddings.current = safeAreaInsets;
     }
@@ -268,7 +271,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             ...config,
             velocity: typeof velocity !== 'number' ? undefined : velocity,
           }).start();
-        }else {
+        } else {
           Animated.spring(animations.translateY, {
             toValue: initialValue.current,
             useNativeDriver: true,
@@ -276,7 +279,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             velocity: typeof velocity !== 'number' ? undefined : velocity,
           }).start();
         }
-      
+
         notifySnapIndexChanged();
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -349,7 +352,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       if (drawUnderStatusBar || props.onChange) {
         animationListener = animations.translateY.addListener(value => {
           const correctedValue =
-            value.value > minTranslateValue.current ? value.value - minTranslateValue.current : 0;
+            value.value > minTranslateValue.current
+              ? value.value - minTranslateValue.current
+              : 0;
           props?.onChange?.(correctedValue, actionSheetHeight.current);
           if (drawUnderStatusBar) {
             if (lock.current) return;
@@ -1517,20 +1522,17 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       pointerEvents="box-none"
                       style={{
                         borderTopRightRadius:
-                          props.containerStyle?.borderTopRightRadius || 10,
+                          containerStyle?.borderTopRightRadius || 10,
                         borderTopLeftRadius:
-                          props.containerStyle?.borderTopLeftRadius || 10,
+                          containerStyle?.borderTopLeftRadius || 10,
                         backgroundColor:
-                          props.containerStyle?.backgroundColor || 'white',
+                          containerStyle?.backgroundColor || 'white',
                         borderBottomLeftRadius:
-                          props.containerStyle?.borderBottomLeftRadius ||
-                          undefined,
+                          containerStyle?.borderBottomLeftRadius || undefined,
                         borderBottomRightRadius:
-                          props.containerStyle?.borderBottomRightRadius ||
-                          undefined,
-                        borderRadius:
-                          props.containerStyle?.borderRadius || undefined,
-                        width: props.containerStyle?.width || '100%',
+                          containerStyle?.borderBottomRightRadius || undefined,
+                        borderRadius: containerStyle?.borderRadius || undefined,
+                        width: containerStyle?.width || '100%',
                         ...getElevation(
                           typeof elevation === 'number' ? elevation : 5,
                         ),
@@ -1575,13 +1577,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                   position: 'absolute',
                                   top: -50,
                                   backgroundColor:
-                                    props.containerStyle?.backgroundColor ||
-                                    'white',
+                                    containerStyle?.backgroundColor || 'white',
                                   width: '100%',
                                   borderTopRightRadius:
-                                    props.containerStyle?.borderRadius || 10,
+                                    containerStyle?.borderRadius || 10,
                                   borderTopLeftRadius:
-                                    props.containerStyle?.borderRadius || 10,
+                                    containerStyle?.borderRadius || 10,
                                   transform: [
                                     {
                                       translateY: animations.underlayTranslateY,
@@ -1626,9 +1627,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             height: overdrawSize,
                             bottom: -overdrawSize,
                             backgroundColor:
-                              props.containerStyle?.backgroundColor || 'white',
-                            width:
-                              props.containerStyle?.width || dimensions.width,
+                              containerStyle?.backgroundColor || 'white',
+                            width: containerStyle?.width || dimensions.width,
                           }}
                         />
                       ) : null}
