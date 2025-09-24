@@ -134,8 +134,7 @@ export const useSheetIDContext = () => useContext(SheetIDContext);
 // >;
 
 export function useSheetRef<SheetId extends keyof Sheets = never>(
-  //@ts-ignore
-  id?: SheetId | (string & {}),
+  _id?: SheetId | (string & {}),
 ) {
   return useContext(SheetRefContext) as MutableRefObject<
     ActionSheetRef<SheetId>
@@ -147,8 +146,7 @@ export function useSheetRef<SheetId extends keyof Sheets = never>(
  * @returns
  */
 export function useSheetPayload<SheetId extends keyof Sheets = never>(
-  //@ts-ignore
-  id?: SheetId | (string & {}),
+  _id?: SheetId | (string & {}),
 ) {
   return useContext(SheetPayloadContext) as Sheets[SheetId]['payload'];
 }
