@@ -1,10 +1,10 @@
 import React from 'react';
-import {SheetProvider} from 'react-native-actions-sheet';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import { SheetProvider } from 'react-native-actions-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import changeNavigationBarColor from 'react-native-navigation-bar-color';
 import MainScreen from '../app/examples';
 import '../app/sheets';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const App = () => {
   // To match the style of action sheet navigation bar, we use react-native-navigation-bar-color on android and the app.
@@ -18,7 +18,8 @@ const App = () => {
         <GestureHandlerRootView
           style={{
             flex: 1,
-          }}>
+          }}
+        >
           <SheetProvider context="global">
             <MainScreen />
           </SheetProvider>

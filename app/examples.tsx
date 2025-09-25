@@ -2,7 +2,6 @@
 import React from 'react';
 import {
   Linking,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {SheetManager} from 'react-native-actions-sheet';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 const MainScreen = () => {
   const examples: {

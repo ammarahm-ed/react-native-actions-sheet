@@ -156,10 +156,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const hiding = useRef(false);
     const payloadRef = useRef(payload);
     const sheetPayload = useSheetPayload();
-    const panHandlerRef = useRef();
+    const panHandlerRef = useRef(null);
     const closing = useRef(false);
     const draggableNodes = useRef<NodesRef>([]);
-    const sheetLayoutRef = useRef<LayoutRectangle>();
+    const sheetLayoutRef = useRef<LayoutRectangle>(null);
     const [dimensions, setDimensions] = useState<{
       width: number;
       height: number;
@@ -343,7 +343,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [snapPoints],
     );
 
-    const hardwareBackPressEvent = useRef<NativeEventSubscription>();
+    const hardwareBackPressEvent = useRef<NativeEventSubscription>(null);
     const Root: React.ElementType =
       isModal && !props?.backgroundInteractionEnabled ? Modal : Animated.View;
 

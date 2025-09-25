@@ -155,7 +155,7 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [payload, setPayload] = useState();
   const [visible, setVisible] = useState(false);
   const ref = useRef<ActionSheetRef | null>(null);
-  const clearPayloadTimeoutRef = useRef<NodeJS.Timeout>();
+  const clearPayloadTimeoutRef = useRef<NodeJS.Timeout>(null);
   const Sheet = context.startsWith('$$-auto-')
     ? sheetsRegistry?.global?.[id]
     : sheetsRegistry[context]

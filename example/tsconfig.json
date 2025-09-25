@@ -1,9 +1,10 @@
 {
+  "extends": "@react-native/typescript-config",
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["**/node_modules", "**/Pods"],
   "compilerOptions": {
-    "baseUrl": "./",
-    "jsx": "react-native",
-    "esModuleInterop": true,
-    "paths": {
+     "esModuleInterop": true,
+     "paths": {
       "react-native-actions-sheet": ["../"],
       "react-native-actions-sheet/dist/src/views/FlashList": ["../dist/src/views/FlashList"]
     }
