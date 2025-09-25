@@ -1,9 +1,8 @@
 /* eslint-disable curly */
 import {
   FlashList as SPFlashList,
+  FlashListRef,
   FlashListProps,
-  MasonryFlashList as SPMasonaryFlashList,
-  MasonryFlashListProps,
 } from '@shopify/flash-list';
 import React from 'react';
 import {ScrollView as RNScrollView} from 'react-native';
@@ -22,7 +21,7 @@ type Props<T = any> = FlashListProps<T> &
 
 function $FlashList<T = any>(
   props: Props<T>,
-  ref: React.ForwardedRef<SPFlashList<T>>,
+  ref: React.ForwardedRef<FlashListRef<T>>,
 ) {
   return (
     <SPFlashList
@@ -38,7 +37,7 @@ export const FlashList = React.forwardRef(
   $FlashList,
 ) as unknown as typeof SPFlashList;
 
-type MasonaryProps<T = any> = MasonryFlashListProps<T> &
+type MasonaryProps<T = any> = FlashListProps<T> &
   Partial<NativeViewGestureHandlerProps> &
   React.RefAttributes<RNScrollView> & {
     /**
@@ -54,7 +53,7 @@ function $MasonaryFlashList<T = any>(
   ref: React.ForwardedRef<any>,
 ) {
   return (
-    <SPMasonaryFlashList
+    <SPFlashList
       {...props}
       ref={ref as any}
       bounces={false}
@@ -65,4 +64,4 @@ function $MasonaryFlashList<T = any>(
 
 export const MasonaryFlashList = React.forwardRef(
   $MasonaryFlashList,
-) as unknown as typeof SPMasonaryFlashList;
+) as unknown as typeof SPFlashList;
