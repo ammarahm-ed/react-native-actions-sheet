@@ -1,17 +1,16 @@
 /* eslint-disable curly */
 import React, {
   createContext,
-  MutableRefObject,
   ReactNode,
   RefObject,
   useContext,
   useEffect,
   useReducer,
   useRef,
-  useState,
+  useState
 } from 'react';
-import {actionSheetEventManager} from './eventmanager';
-import {ActionSheetRef, Sheets} from './types';
+import { actionSheetEventManager } from './eventmanager';
+import { ActionSheetRef, Sheets } from './types';
 
 export const providerRegistryStack: string[] = [];
 
@@ -136,7 +135,7 @@ export const useSheetIDContext = () => useContext(SheetIDContext);
 export function useSheetRef<SheetId extends keyof Sheets = never>(
   _id?: SheetId | (string & {}),
 ) {
-  return useContext(SheetRefContext) as MutableRefObject<
+  return useContext(SheetRefContext) as RefObject<
     ActionSheetRef<SheetId>
   >;
 }
