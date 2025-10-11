@@ -7,12 +7,10 @@ import React, {
   useImperativeHandle,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 import {
   Animated,
   BackHandler,
-  Dimensions,
   Easing,
   GestureResponderEvent,
   Keyboard,
@@ -22,10 +20,9 @@ import {
   NativeEventSubscription,
   PanResponder,
   Platform,
-  SafeAreaView,
-  StatusBar,
   StyleSheet,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import {
@@ -33,6 +30,7 @@ import {
   PanGestureHandler,
   PanGestureHandlerProps,
 } from 'react-native-gesture-handler';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   DraggableNodes,
   DraggableNodesContext,
@@ -66,10 +64,6 @@ import {styles} from './styles';
 import type {ActionSheetProps, ActionSheetRef} from './types';
 import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
-const EVENTS_INTERNAL = {
-  safeAreaLayout: 'safeAreaLayout',
-};
-
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
     {
@@ -94,7 +88,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       keyboardHandlerEnabled = true,
       ExtraOverlayComponent,
       payload,
-      safeAreaInsets,
       routes,
       initialRoute,
       onBeforeShow,
@@ -102,6 +95,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       onBeforeClose,
       enableGesturesInScrollView = true,
       disableDragBeyondMinimumSnapPoint,
+      useBottomSafeAreaPadding = true,
       ...props
     },
     ref,
@@ -112,34 +106,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         : snapPoints;
     const initialValue = useRef(-1);
     const actionSheetHeight = useRef(0);
-    const safeAreaPaddings = useRef<{
-      top: number;
-      left: number;
-      right: number;
-      bottom: number;
-    }>(
-      safeAreaInsets || {
-        top: 0,
-        left: 0,
-        bottom: 0,
-        right: 0,
-      },
-    );
-
+    const insets = useSafeAreaInsets();
     const internalEventManager = React.useMemo(() => new EventManager(), []);
     const currentContext = useProviderContext();
     const currentSnapIndex = useRef(initialSnapIndex);
     const sheetRef = useSheetRef();
-    const dimensionsRef = useRef<{
-      width: number;
-      height: number;
-      portrait: boolean;
-      paddingBottom?: number;
-    }>({
-      width: 0,
-      height: 0,
-      portrait: true,
-    });
     const minTranslateValue = useRef(0);
     const keyboardWasVisible = useRef(false);
     const prevKeyboardHeight = useRef(0);
@@ -160,30 +131,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const closing = useRef(false);
     const draggableNodes = useRef<NodesRef>([]);
     const sheetLayoutRef = useRef<LayoutRectangle>(null);
-    const [dimensions, setDimensions] = useState<{
-      width: number;
-      height: number;
-      portrait: boolean;
-      paddingBottom?: number;
-    }>({
-      width: Dimensions.get('window').width,
-      height: 0,
-      portrait: true,
-      paddingBottom: props?.useBottomSafeAreaPadding ? 25 : 0,
-    });
-    const rootViewLayoutEventValues = useRef<{
-      timer?: NodeJS.Timeout;
-      sub?: {unsubscribe: () => void};
-      firstEventFired?: boolean;
-      layouTimer?: NodeJS.Timeout;
-      resizing?: boolean;
-    }>({});
-
+    const dimensions = useWindowDimensions();
+    const dimensionsRef = useRef(dimensions);
+    dimensionsRef.current = dimensions;
     const containerStyle = StyleSheet.flatten(props.containerStyle);
-
-    if (safeAreaInsets) {
-      safeAreaPaddings.current = safeAreaInsets;
-    }
 
     const {visible, setVisible} = useSheetManager({
       id: sheetId,
@@ -360,8 +311,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             if (lock.current) return;
             const correctedHeight = keyboard.keyboardShown
               ? dimensionsRef.current.height -
-                (keyboard.keyboardHeight + safeAreaPaddings.current.bottom)
-              : dimensionsRef.current.height - safeAreaPaddings.current.bottom;
+                (keyboard.keyboardHeight + insets.bottom)
+              : dimensionsRef.current.height - insets.bottom;
 
             if (actionSheetHeight.current >= correctedHeight - 1) {
               if (value.value < 100) {
@@ -394,7 +345,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const onSheetLayout = React.useCallback(
       (event: LayoutChangeEvent) => {
         sheetLayoutRef.current = {...event.nativeEvent.layout};
-        if (rootViewLayoutEventValues.current.resizing) return;
         if (closing.current) return;
         const rootViewHeight = dimensionsRef.current?.height;
 
@@ -403,8 +353,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             ? dimensionsRef.current.height
             : event.nativeEvent.layout.height;
         minTranslateValue.current =
-          rootViewHeight -
-          (actionSheetHeight.current + safeAreaPaddings.current.bottom);
+          rootViewHeight - (actionSheetHeight.current + insets.bottom);
 
         if (initialValue.current < 0) {
           animations.translateY.setValue(rootViewHeight * 1.1);
@@ -439,7 +388,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (keyboard.keyboardShown) {
           minTranslateValue.current =
             minTranslateValue.current -
-            (keyboard.keyboardHeight + safeAreaPaddings.current.bottom);
+            (keyboard.keyboardHeight + insets.bottom);
 
           keyboardWasVisible.current = true;
           prevKeyboardHeight.current = keyboard.keyboardHeight;
@@ -469,76 +418,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         animations.underlayTranslateY,
         returnAnimation,
       ],
-    );
-
-    const onRootViewLayout = React.useCallback(
-      (event: LayoutChangeEvent) => {
-        if (keyboard.keyboardShown && !isModal) {
-          return;
-        }
-
-        rootViewLayoutEventValues.current.resizing = true;
-
-        let rootViewHeight = event.nativeEvent.layout.height;
-        let rootViewWidth = event.nativeEvent.layout.width;
-
-        rootViewLayoutEventValues.current.sub?.unsubscribe();
-        rootViewLayoutEventValues.current.sub = internalEventManager.subscribe(
-          EVENTS_INTERNAL.safeAreaLayout,
-          () => {
-            rootViewLayoutEventValues.current.sub?.unsubscribe();
-            const safeMarginFromTop =
-              Platform.OS === 'ios'
-                ? safeAreaPaddings.current.top < 20
-                  ? 20
-                  : safeAreaPaddings.current.top
-                : StatusBar.currentHeight || 0;
-
-            let height = rootViewHeight - safeMarginFromTop;
-            let width = rootViewWidth;
-
-            dimensionsRef.current = {
-              width: width,
-              height: height,
-              portrait: width < height,
-            };
-
-            setDimensions({...dimensionsRef.current});
-            rootViewLayoutEventValues.current.resizing = false;
-
-            if (sheetLayoutRef.current) {
-              onSheetLayout({
-                nativeEvent: {
-                  layout: sheetLayoutRef.current,
-                },
-              } as any);
-            }
-          },
-        );
-
-        clearTimeout(rootViewLayoutEventValues.current.timer);
-        clearTimeout(rootViewLayoutEventValues.current.layouTimer);
-
-        if (
-          safeAreaPaddings.current.top !== undefined ||
-          Platform.OS !== 'ios'
-        ) {
-          rootViewLayoutEventValues.current.layouTimer = setTimeout(
-            () => {
-              internalEventManager.publish(EVENTS_INTERNAL.safeAreaLayout);
-            },
-            Platform.OS === 'ios' ||
-              rootViewLayoutEventValues.current.firstEventFired
-              ? 0
-              : 300,
-          );
-        }
-
-        if (!rootViewLayoutEventValues.current?.firstEventFired) {
-          rootViewLayoutEventValues.current.firstEventFired = true;
-        }
-      },
-      [keyboard.keyboardShown, isModal, internalEventManager, onSheetLayout],
     );
 
     const hideSheet = React.useCallback(
@@ -1368,8 +1247,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 zIndex: zIndex
                   ? zIndex
                   : sheetId
-                  ? getZIndexFromStack(sheetId, currentContext)
-                  : 999,
+                    ? getZIndexFromStack(sheetId, currentContext)
+                    : 999,
                 width: '100%',
                 height: '100%',
               },
@@ -1419,60 +1298,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     return (
       <>
-        {Platform.OS === 'ios' && !safeAreaInsets ? (
-          <SafeAreaView
-            pointerEvents="none"
-            collapsable={false}
-            onLayout={event => {
-              let height = event.nativeEvent.layout.height;
-
-              if (height !== undefined) {
-                safeAreaPaddings.current.top = height;
-                clearTimeout(rootViewLayoutEventValues.current.timer);
-                rootViewLayoutEventValues.current.timer = setTimeout(() => {
-                  internalEventManager.publish(EVENTS_INTERNAL.safeAreaLayout);
-                }, 0);
-              }
-            }}
-            style={{
-              position: 'absolute',
-              width: 1,
-              height: 0,
-              top: 0,
-              left: 0,
-              backgroundColor: 'transparent',
-            }}>
-            <View />
-          </SafeAreaView>
-        ) : null}
-
-        {Platform.OS === 'ios' && !safeAreaInsets ? (
-          <SafeAreaView
-            pointerEvents="none"
-            collapsable={false}
-            onLayout={event => {
-              let height = event.nativeEvent.layout.height;
-
-              if (height !== undefined) {
-                safeAreaPaddings.current.bottom = height;
-                clearTimeout(rootViewLayoutEventValues.current.timer);
-                rootViewLayoutEventValues.current.timer = setTimeout(() => {
-                  internalEventManager.publish(EVENTS_INTERNAL.safeAreaLayout);
-                }, 0);
-              }
-            }}
-            style={{
-              position: 'absolute',
-              width: 1,
-              height: 1,
-              bottom: 0,
-              left: 0,
-              backgroundColor: 'transparent',
-            }}>
-            <View />
-          </SafeAreaView>
-        ) : null}
-
         {visible ? (
           <Root {...rootProps}>
             <GestureHandlerRoot
@@ -1481,7 +1306,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               <PanGestureRefContext.Provider value={context}>
                 <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
-                    onLayout={onRootViewLayout}
                     ref={rootViewContainerRef}
                     pointerEvents={
                       props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
@@ -1505,10 +1329,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         activeOpacity={defaultOverlayOpacity}
                         testID={props.testIDs?.backdrop}
                         style={{
-                          height:
-                            dimensions.height +
-                            (safeAreaPaddings.current.top || 0) +
-                            100,
+                          height: dimensions.height + insets.top + 100,
                           width: '100%',
                           position: 'absolute',
                           backgroundColor: overlayColor,
@@ -1541,8 +1362,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         maxHeight: dimensions.height,
                         paddingBottom: keyboard.keyboardShown
                           ? keyboard.keyboardHeight || 0
-                          : safeAreaPaddings.current.bottom,
-                        //zIndex: 10,
+                          : useBottomSafeAreaPadding
+                            ? insets.bottom
+                            : 0,
                         transform: [
                           {
                             translateY: animations.translateY,
