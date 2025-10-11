@@ -318,6 +318,8 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
 
   /**
    * Apply padding to bottom based on device safe area insets.
+   * 
+   * @default true
    */
   useBottomSafeAreaPadding?: boolean;
 
@@ -355,6 +357,8 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * Default safeArea insets provided through a library such as
    * react-native-safe-area-insets. This also helps in giving a tiny boost
    * in performance as the sheet does not have to calculate insets anymore.
+   * 
+   * @deprecated Insets are used internally by default through react-native-safe-area-insets. This prop is no-op.
    */
   safeAreaInsets?: {top: number; left: number; right: number; bottom: number};
   /**
