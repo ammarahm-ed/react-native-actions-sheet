@@ -396,9 +396,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           keyboardWasVisible.current = false;
         }
         opacityAnimation(1);
-        setTimeout(() => {
-          returnAnimation();
-        }, 1);
+        returnAnimation();
 
         if (initialValue.current > 100) {
           if (lock.current) return;
@@ -429,50 +427,44 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
         hiding.current = true;
         onBeforeClose?.((data || payloadRef.current || data) as never);
-        setTimeout(() => {
-          if (closable) {
-            closing.current = true;
-            Keyboard.dismiss();
-            animationListeners.current.translateY &&
-              animations.translateY.removeListener(
-                animationListeners.current.translateY,
-              );
-            animationListeners.current.translateY = undefined;
-          }
-          hideAnimation(vy, ({finished}) => {
-            if (finished) {
-              if (closable || isSheetManagerOrRef) {
-                setVisible(false);
-                if (props.onClose) {
-                  props.onClose?.(
-                    (data || payloadRef.current || data) as never,
-                  );
-                  hiding.current = false;
-                }
-                hardwareBackPressEvent.current?.remove();
-                if (sheetId) {
-                  SheetManager.remove(sheetId, currentContext);
-                  hiding.current = false;
-                  actionSheetEventManager.publish(
-                    `onclose_${sheetId}`,
-                    data || payloadRef.current || data,
-                    currentContext,
-                  );
-                } else {
-                  hiding.current = false;
-                }
-                currentSnapIndex.current = initialSnapIndex;
-                closing.current = false;
-                setTimeout(() => {
-                  keyboard.reset();
-                });
-              } else {
-                animations.opacity.setValue(1);
-                returnAnimation();
+        if (closable) {
+          closing.current = true;
+          Keyboard.dismiss();
+          animationListeners.current.translateY &&
+            animations.translateY.removeListener(
+              animationListeners.current.translateY,
+            );
+          animationListeners.current.translateY = undefined;
+        }
+        hideAnimation(vy, ({finished}) => {
+          if (finished) {
+            if (closable || isSheetManagerOrRef) {
+              setVisible(false);
+              if (props.onClose) {
+                props.onClose?.((data || payloadRef.current || data) as never);
+                hiding.current = false;
               }
+              hardwareBackPressEvent.current?.remove();
+              if (sheetId) {
+                SheetManager.remove(sheetId, currentContext);
+                hiding.current = false;
+                actionSheetEventManager.publish(
+                  `onclose_${sheetId}`,
+                  data || payloadRef.current || data,
+                  currentContext,
+                );
+              } else {
+                hiding.current = false;
+              }
+              currentSnapIndex.current = initialSnapIndex;
+              closing.current = false;
+              keyboard.reset();
+            } else {
+              animations.opacity.setValue(1);
+              returnAnimation();
             }
-          });
-        }, 1);
+          }
+        });
         if (Platform.OS === 'web') {
           document.body.style.overflowY = 'auto';
           document.documentElement.style.overflowY = 'auto';
