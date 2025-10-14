@@ -1,8 +1,5 @@
 /* eslint-disable curly */
-import React, {
-  RefObject,
-  useImperativeHandle
-} from 'react';
+import React, {RefObject, useImperativeHandle} from 'react';
 import {
   Platform,
   ScrollView as RNScrollView,
@@ -12,7 +9,7 @@ import {
   NativeViewGestureHandlerProps,
   ScrollView as RNGHScrollView,
 } from 'react-native-gesture-handler';
-import { useScrollHandlers } from '../hooks/use-scroll-handlers';
+import {useScrollHandlers} from '../hooks/use-scroll-handlers';
 type Props = ScrollViewProps &
   Partial<NativeViewGestureHandlerProps> &
   React.RefAttributes<RNScrollView> & {
@@ -24,6 +21,8 @@ type Props = ScrollViewProps &
     refreshControlGestureArea?: number;
   };
 
+const ScrollComponent = Platform.OS === 'web' ? RNScrollView : RNGHScrollView;
+
 function $ScrollView(
   props: Props,
   ref: React.ForwardedRef<RefObject<RNScrollView>>,
@@ -34,11 +33,12 @@ function $ScrollView(
   });
   useImperativeHandle(ref, () => handlers.ref);
 
-  const ScrollComponent = Platform.OS === 'web' ? RNScrollView : RNGHScrollView;
   return (
     <ScrollComponent
       {...props}
-      {...handlers}
+      ref={handlers.ref}
+      simultaneousHandlers={handlers.simultaneousHandlers}
+      scrollEventThrottle={handlers.scrollEventThrottle}
       onScroll={event => {
         handlers.onScroll(event);
         props.onScroll?.(event);
@@ -48,12 +48,9 @@ function $ScrollView(
         props.onLayout?.(event);
       }}
       bounces={false}
-      scrollEventThrottle={1}
     />
   );
 }
-
-
 
 export const ScrollView = React.forwardRef(
   $ScrollView,
