@@ -307,9 +307,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             if (lock.current) return;
             const correctedHeight = keyboard.keyboardShown
               ? dimensionsRef.current.height -
-                (keyboard.keyboardHeight + insets.bottom)
-              : dimensionsRef.current.height - insets.bottom;
-
+                (keyboard.keyboardHeight + insets.bottom + insets.top)
+              : dimensionsRef.current.height - (insets.bottom + insets.top);
             if (actionSheetHeight.current >= correctedHeight - 1) {
               if (value.value < 100) {
                 animations.underlayTranslateY.setValue(
@@ -349,7 +348,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             ? dimensionsRef.current.height
             : event.nativeEvent.layout.height;
         minTranslateValue.current =
-          rootViewHeight - (actionSheetHeight.current + insets.bottom);
+          rootViewHeight -
+          (actionSheetHeight.current + insets.bottom + insets.top);
 
         if (initialValue.current < 0) {
           animations.translateY.setValue(rootViewHeight * 1.1);
@@ -384,7 +384,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (keyboard.keyboardShown) {
           minTranslateValue.current =
             minTranslateValue.current -
-            (keyboard.keyboardHeight + insets.bottom);
+            (keyboard.keyboardHeight + insets.bottom + insets.bottom);
 
           keyboardWasVisible.current = true;
           prevKeyboardHeight.current = keyboard.keyboardHeight;
@@ -1044,6 +1044,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       eventManager: internalEventManager,
     };
 
+    console.log(insets);
+
     return (
       <>
         {visible ? (
@@ -1067,6 +1069,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         opacity: animations.opacity,
                         width: '100%',
                         justifyContent: 'flex-end',
+                        height: dimensions.height,
                         transform: [
                           {
                             translateY: animations.keyboardTranslate,
@@ -1109,8 +1112,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                           typeof elevation === 'number' ? elevation : 5,
                         ),
                         flex: undefined,
-                        height: dimensions.height,
-                        maxHeight: dimensions.height,
+                        height: dimensions.height - insets.top,
+                        maxHeight: dimensions.height - insets.top,
                         paddingBottom: keyboard.keyboardShown
                           ? keyboard.keyboardHeight || 0
                           : useBottomSafeAreaPadding
@@ -1175,6 +1178,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                           <View
                             style={{
                               flexShrink: 1,
+                              borderWidth: 3,
+                              borderColor: 'red',
                             }}>
                             {router?.hasRoutes() ? (
                               <RouterContext.Provider value={router}>
