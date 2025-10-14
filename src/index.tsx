@@ -18,7 +18,6 @@ import {
   LayoutRectangle,
   Modal,
   NativeEventSubscription,
-  PanResponder,
   Platform,
   StyleSheet,
   TouchableOpacity,
@@ -26,9 +25,10 @@ import {
   View,
 } from 'react-native';
 import {
+  Gesture,
+  GestureDetector,
   GestureHandlerRootView,
-  PanGestureHandler,
-  PanGestureHandlerProps,
+  GestureType,
 } from 'react-native-gesture-handler';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
@@ -45,7 +45,7 @@ import {
   RouterParamsContext,
   useRouter,
 } from './hooks/use-router';
-import {resolveScrollRef, ScrollState} from './hooks/use-scroll-handlers';
+import {resolveScrollRef} from './hooks/use-scroll-handlers';
 import useSheetManager from './hooks/use-sheet-manager';
 import {useKeyboard} from './hooks/useKeyboard';
 import {
@@ -55,14 +55,10 @@ import {
   useSheetPayload,
   useSheetRef,
 } from './provider';
-import {
-  getZIndexFromStack,
-  isRenderedOnTop,
-  SheetManager,
-} from './sheetmanager';
+import {getZIndexFromStack, SheetManager} from './sheetmanager';
 import {styles} from './styles';
 import type {ActionSheetProps, ActionSheetRef} from './types';
-import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
+import {debug, getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
@@ -127,7 +123,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const hiding = useRef(false);
     const payloadRef = useRef(payload);
     const sheetPayload = useSheetPayload();
-    const panHandlerRef = useRef(null);
+    const panGestureRef = useRef<GestureType>(undefined);
     const closing = useRef(false);
     const draggableNodes = useRef<NodesRef>([]);
     const sheetLayoutRef = useRef<LayoutRectangle>(null);
@@ -561,6 +557,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             nextSnapPoint = snapPoints[(nextSnapIndex = i)];
             break;
           }
+
+          if (i === 0 && getCurrentPosition() > getNextPosition(i)) {
+            if (closable) {
+              initialValue.current = dimensionsRef.current.height * 1.3;
+              hideSheet(vy);
+              return;
+            }
+          }
         }
 
         if (nextSnapPoint < 0) {
@@ -568,6 +572,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           returnAnimation(vy);
           return;
         }
+        console.log('snap backk...', nextSnapIndex);
         currentSnapIndex.current = nextSnapIndex;
         initialValue.current = getNextPosition(currentSnapIndex.current);
         returnAnimation(vy);
@@ -592,20 +597,28 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     }
 
     const getActiveDraggableNodes = React.useCallback(
-      (absoluteX: number, absoluteY: number) => {
+      (absoluteX: number, absoluteY: number, returnAllNodes?: boolean) => {
         if (draggableNodes.current?.length === 0) return [];
-        const activeNodes = [];
+        const activeNodes: {
+          rectWithBoundary: LayoutRect;
+          node: NodesRef['0'];
+        }[] = [];
         for (let node of draggableNodes.current) {
           const rect = getRectBoundary(node.rect.current);
           if (rect.boundryX === 0 && rect.boundryY === 0) continue;
-          if (
+          if (returnAllNodes) {
+            activeNodes.push({
+              rectWithBoundary: rect,
+              node: node,
+            });
+          } else if (
             absoluteX > rect.px &&
             absoluteY > rect.py &&
             absoluteX < rect.boundryX &&
             absoluteY < rect.boundryY
           ) {
             activeNodes.push({
-              rectWithBoundry: rect,
+              rectWithBoundary: rect,
               node: node,
             });
           }
@@ -615,470 +628,213 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [],
     );
 
-    const panHandlers: PanGestureHandlerProps = React.useMemo(() => {
-      let velocity = 0;
+    function scrollable(value: boolean) {
+      if (Platform.OS === 'ios') return;
+      for (let i = 0; i < draggableNodes.current.length; i++) {
+        const node = draggableNodes.current[i];
+        const scrollRef = resolveScrollRef(node.ref);
+        scrollRef?.setNativeProps({
+          scrollEnabled: value,
+          pointerEvents: value ? 'auto' : 'none',
+        });
+      }
+    }
+
+    const panGesture = React.useMemo(() => {
       let prevDeltaY = 0;
-      let offsets: number[] = [];
-      let lockGesture = false;
-      let gestureEventCounter = 0;
-      let isScrollingGesture = false;
       let deltaYOnGestureStart = 0;
+      let velocity = 0;
       let start: {
         x: number;
         y: number;
       };
+      let oldValue = 0;
+      let isRefreshing = false;
+      return Gesture.Pan()
+        .withRef(panGestureRef)
+        .onChange(event => {
+          if (!gestureEnabled) return;
+          let blockPan = false;
+          let deltaY = event.translationY;
+          let isSwipingDown = prevDeltaY < deltaY;
 
-      function scrollable(value: boolean) {
-        if (Platform.OS === 'ios') return;
-        for (let i = 0; i < draggableNodes.current.length; i++) {
-          const node = draggableNodes.current[i];
-          const scrollRef = resolveScrollRef(node.ref);
-          scrollRef?.setNativeProps({
-            scrollEnabled: value,
-          });
-        }
-      }
+          debug('is swiping down', {isSwipingDown, prevDeltaY, deltaY});
 
-      return Platform.OS === 'web'
-        ? {enabled: false}
-        : ({
-            onBegan: () => {
-              if (Platform.OS === 'android') {
-                scrollable(false);
-              }
-            },
-            onGestureEvent(event) {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext)) return;
+          prevDeltaY = deltaY;
 
-              const gesture = event.nativeEvent;
-              let deltaY = gesture.translationY;
-              const swipingDown = prevDeltaY < deltaY;
+          if (!start) {
+            start = {
+              x: event.absoluteX,
+              y: event.absoluteY,
+            };
+          }
 
-              prevDeltaY = deltaY;
+          const isFullOpen = getCurrentPosition() === 0;
 
-              if (!start) {
-                start = {
-                  x: event.nativeEvent.absoluteX,
-                  y: event.nativeEvent.absoluteY,
-                };
-              }
-              const activeDraggableNodes = getActiveDraggableNodes(
-                start.x,
-                start.y,
-              );
-              const isFullOpen = getCurrentPosition() === 0;
-              let blockSwipeGesture = false;
+          const activeDraggableNodes = getActiveDraggableNodes(
+            start.x,
+            start.y,
+            !isFullOpen || (isFullOpen && !isSwipingDown),
+          );
 
-              if (activeDraggableNodes.length > 0) {
-                if (isFullOpen) {
-                  if (swipingDown) {
-                    for (const node of activeDraggableNodes) {
-                      if (!node.node.offset.current) continue;
-                      const {y} = node.node.offset.current;
-                      if (y === ScrollState.END) {
-                        blockSwipeGesture = true;
-                        continue;
-                      }
-                      if (y < 1 && node.node.handlerConfig.hasRefreshControl) {
-                        // Refresh Control will work in to 15% area of the DraggableNode.
-                        const refreshControlBounds =
-                          node.rectWithBoundry.py +
-                          node.rectWithBoundry.h *
-                            node.node.handlerConfig.refreshControlBoundary;
-                        if (!refreshControlBounds) continue;
-                        if (
-                          event.nativeEvent.absoluteY < refreshControlBounds
-                        ) {
-                          lockGesture = true;
-                          blockSwipeGesture = false;
-                          continue;
-                        } else {
-                          blockSwipeGesture = false;
-                          continue;
-                        }
-                      }
+          debug('swipe direction', isSwipingDown ? 'down' : 'up');
+          debug('active nodes', activeDraggableNodes.length);
+          //@ts-ignore
+          if (activeDraggableNodes.length > 0 && !isRefreshing) {
+            const nodeIsScrolling = activeDraggableNodes.some(
+              node => node.node.offset.current.y !== 0,
+            );
 
-                      if (y > 1) {
-                        blockSwipeGesture = true;
-                        continue;
-                      }
-                    }
-                  } else {
-                    for (const node of activeDraggableNodes) {
-                      if (!node.node.offset.current) continue;
-                      const {y} = node.node.offset.current;
+            /**
+             * Draggable nodes handling cases:
+             *
+             * 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
+             * 2. Sheet fully open, swiping up, scrolling: true, panning: false
+             * 3. Sheet not fully open, swiping down, scrolling: false, panning: true
+             * 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
+             * 5. Add support for pull to refresh
+             */
 
-                      // Swiping up
-                      // 1. Scroll if the scroll container has not reached end
-                      // 2. Don't scroll if sheet has not reached the top
-                      if (
-                        // Scroll has not reached end
-                        y !== ScrollState.END
-                      ) {
-                        blockSwipeGesture = true;
-                        continue;
-                      }
-                    }
-                  }
-                }
-              }
+            // 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
 
-              gestureEventCounter++;
-              if (isFullOpen && (blockSwipeGesture || lockGesture)) {
-                isScrollingGesture = true;
+            if (!isFullOpen && !isSwipingDown) {
+              scrollable(false);
+              debug('not full open, swiping up, scroll', false);
+              blockPan = false;
+            }
+
+            // 2. Sheet fully open, swiping up, scrolling: true, panning: false
+            if (isFullOpen && !isSwipingDown) {
+              scrollable(true);
+              debug('full open, swiping up, scroll', true);
+              blockPan = true;
+            }
+            //  3. Sheet not fully open, swiping down, scrolling: false, panning: true
+            if (!isFullOpen && isSwipingDown) {
+              if (nodeIsScrolling) {
                 scrollable(true);
-                return;
-              }
-
-              const startY =
-                event.nativeEvent.y - event.nativeEvent.translationY;
-              if (!enableGesturesInScrollView && startY > 100) {
-                return;
-              }
-
-              if (gestureEventCounter < 2) {
-                return;
-              }
-
-              if (swipingDown || !isFullOpen) {
-                if (Platform.OS === 'ios') {
-                  for (let i = 0; i < draggableNodes.current.length; i++) {
-                    const node = draggableNodes.current[i];
-                    const scrollRef = resolveScrollRef(node.ref);
-                    if (!offsets[i] || node.offset.current?.y === 0) {
-                      offsets[i] = node.offset.current?.y || 0;
-                    }
-                    scrollRef.scrollTo({
-                      x: 0,
-                      y: offsets[i],
-                      animated: false,
-                    });
-                  }
-                }
-              }
-
-              if (!isFullOpen) {
-                isScrollingGesture = false;
-                blockSwipeGesture = false;
-              }
-
-              if (isScrollingGesture && !swipingDown) {
-                return scrollable(true);
-              } else {
-                scrollable(false);
-              }
-
-              isScrollingGesture = false;
-
-              if (!deltaYOnGestureStart) {
-                deltaYOnGestureStart = deltaY;
-              }
-              deltaY = deltaY - deltaYOnGestureStart;
-
-              const value = initialValue.current + deltaY;
-
-              velocity = 1;
-
-              const correctedValue =
-                //@ts-ignore
-                value <= minTranslateValue.current
-                  ? //@ts-ignore
-                    minTranslateValue.current - value
-                  : //@ts-ignore
-                    value;
-
-              if (
-                //@ts-ignore
-                correctedValue / overdrawFactor >= overdrawSize &&
-                deltaY <= 0
-              ) {
-                return;
-              }
-
-              const minSnapPoint = getNextPosition(0);
-              const translateYValue =
-                value <= minTranslateValue.current
-                  ? overdrawEnabled
-                    ? minTranslateValue.current -
-                      correctedValue / overdrawFactor
-                    : minTranslateValue.current
-                  : value;
-
-              if (!closable && disableDragBeyondMinimumSnapPoint) {
-                animations.translateY.setValue(
-                  translateYValue >= minSnapPoint
-                    ? minSnapPoint
-                    : translateYValue,
+                blockPan = true;
+                debug(
+                  'not full open, swiping down, scroll on active node',
+                  true,
                 );
               } else {
-                animations.translateY.setValue(translateYValue);
+                scrollable(false);
+                debug('not full open, swiping down, scroll', false);
+                blockPan = false;
               }
-            },
-            failOffsetX: [-20, 20],
-            activeOffsetY: [-5, 5],
-            onEnded() {
-              deltaYOnGestureStart = 0;
-              offsets = [];
-              start = undefined;
-              isScrollingGesture = false;
-              gestureEventCounter = 0;
-              lockGesture = false;
-              const isMovingUp = getCurrentPosition() < initialValue.current;
+            }
 
-              // When finger is lifted, we enable scrolling on all
-              // scrollable nodes again
-              scrollable(true);
-
-              if (
-                (!isMovingUp &&
-                  getCurrentPosition() < initialValue.current + springOffset) ||
-                (isMovingUp &&
-                  getCurrentPosition() > initialValue.current - springOffset)
-              ) {
-                returnAnimation(1);
-                velocity = 0;
-                return;
-              }
-
-              if (!isMovingUp) {
-                snapBackward(velocity);
+            // 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
+            if (isFullOpen && isSwipingDown) {
+              if (nodeIsScrolling) {
+                scrollable(true);
+                debug('full open, swiping down, scroll on active node', true);
+                blockPan = true;
               } else {
-                snapForward(velocity);
-              }
-              velocity = 0;
-            },
-            enabled: gestureEnabled,
-          } as PanGestureHandlerProps);
-    }, [
-      animations.translateY,
-      closable,
-      currentContext,
-      disableDragBeyondMinimumSnapPoint,
-      enableGesturesInScrollView,
-      gestureEnabled,
-      getActiveDraggableNodes,
-      getCurrentPosition,
-      getNextPosition,
-      overdrawEnabled,
-      overdrawFactor,
-      overdrawSize,
-      returnAnimation,
-      sheetId,
-      snapBackward,
-      snapForward,
-      springOffset,
-    ]);
+                const hasRefreshControl = activeDraggableNodes.some(
+                  node => node.node.handlerConfig.hasRefreshControl,
+                );
+                if (hasRefreshControl) {
+                  for (const node of activeDraggableNodes) {
+                    if (node.node.handlerConfig.hasRefreshControl) {
+                      // Refresh Control will work in to 15% area of the DraggableNode.
+                      const refreshControlBounds =
+                        node.rectWithBoundary.py +
+                        node.rectWithBoundary.h *
+                          node.node.handlerConfig.refreshControlBoundary;
 
-    const handlers = React.useMemo(() => {
-      let prevDeltaY = 0;
-      let lockGesture = false;
-      let offsets: number[] = [];
-      let start: {x: number; y: number} | undefined;
-      let deltaYOnGestureStart = 0;
-
-      return !gestureEnabled || Platform.OS !== 'web'
-        ? {panHandlers: {}}
-        : PanResponder.create({
-            onMoveShouldSetPanResponder: (_event, gesture) => {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext))
-                return false;
-              let vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
-              let vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
-              if (vy < 0.05 || vx > 0.05) {
-                return false;
-              }
-
-              const activeDraggableNodes = getActiveDraggableNodes(
-                _event.nativeEvent.pageX,
-                _event.nativeEvent.pageY,
-              );
-              for (let node of activeDraggableNodes) {
-                const scrollRef = resolveScrollRef(node.node.ref);
-                offsets.push((scrollRef as HTMLDivElement).scrollTop);
-              }
-              return true;
-            },
-            onStartShouldSetPanResponder: (_event, _gesture) => {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext))
-                return false;
-              const activeDraggableNodes = getActiveDraggableNodes(
-                _event.nativeEvent.pageX,
-                _event.nativeEvent.pageY,
-              );
-              for (let node of activeDraggableNodes) {
-                const scrollRef = resolveScrollRef(node.node.ref);
-                offsets.push((scrollRef as HTMLDivElement).scrollTop);
-              }
-              return true;
-            },
-            onPanResponderMove: (_event, gesture) => {
-              let deltaY = gesture.dy;
-              const swipingDown = prevDeltaY < deltaY;
-              prevDeltaY = deltaY;
-              const isFullOpen = getCurrentPosition() === 0;
-              let blockSwipeGesture = false;
-              if (!start) {
-                start = {
-                  x: _event.nativeEvent.pageX,
-                  y: _event.nativeEvent.pageY,
-                };
-              }
-              const activeDraggableNodes = getActiveDraggableNodes(
-                start.x,
-                start.y,
-              );
-
-              if (activeDraggableNodes.length > 0) {
-                if (isFullOpen) {
-                  if (swipingDown) {
-                    for (let i = 0; i < activeDraggableNodes.length; i++) {
-                      const node = activeDraggableNodes[i];
-                      if (!node.node.offset.current) continue;
-                      const {y} = node.node.offset.current;
-                      if (y === ScrollState.END) {
-                        blockSwipeGesture = true;
-                        const scrollRef = resolveScrollRef(node.node.ref);
-                        offsets[i] = (scrollRef as HTMLDivElement).scrollTop;
-                        continue;
-                      }
-                      if (
-                        y === 0 &&
-                        node.node.handlerConfig.hasRefreshControl
-                      ) {
-                        // Refresh Control will work in to 15% area of the DraggableNode.
-                        const refreshControlBounds =
-                          node.rectWithBoundry.py +
-                          node.rectWithBoundry.h *
-                            node.node.handlerConfig.refreshControlBoundary;
-                        if (!refreshControlBounds) continue;
-                        if (_event.nativeEvent.pageY < refreshControlBounds) {
-                          lockGesture = true;
-                          blockSwipeGesture = false;
-                          continue;
-                        } else {
-                          blockSwipeGesture = false;
-                          continue;
-                        }
-                      }
-                      if (y > 5) {
-                        blockSwipeGesture = true;
-                        const scrollRef = resolveScrollRef(node.node.ref);
-                        offsets[i] = (scrollRef as HTMLDivElement).scrollTop;
-
-                        continue;
-                      }
-                    }
-                  } else {
-                    for (let i = 0; i < activeDraggableNodes.length; i++) {
-                      const node = activeDraggableNodes[i];
-                      if (!node.node.offset.current) continue;
-                      const {y} = node.node.offset.current;
-                      if (y > -1) {
-                        blockSwipeGesture = true;
-                        continue;
+                      if (!refreshControlBounds) continue;
+                      if (event.absoluteY < refreshControlBounds) {
+                        scrollable(true);
+                        blockPan = true;
+                        isRefreshing = true;
                       }
                     }
                   }
                 } else {
-                  for (let i = 0; i < activeDraggableNodes.length; i++) {
-                    const node = activeDraggableNodes[i];
-                    const scrollRef = resolveScrollRef(node.node.ref);
-                    (scrollRef as HTMLDivElement).scrollTop = offsets[i];
-                  }
+                  scrollable(false);
+                  blockPan = false;
                 }
               }
-              if (blockSwipeGesture || lockGesture) {
-                return;
-              }
+            }
+          } else {
+            blockPan = false;
+          }
 
-              const startY = gesture.moveY - gesture.dy;
-              if (!enableGesturesInScrollView && startY > 100) {
-                return;
-              }
+          if (isRefreshing) {
+            blockPan = true;
+            scrollable(true);
+          }
 
-              if (!deltaYOnGestureStart) {
-                deltaYOnGestureStart = deltaY;
-              }
+          let value = oldValue;
+          if (!deltaYOnGestureStart) {
+            deltaYOnGestureStart = deltaY;
+          }
+          deltaY = deltaY - deltaYOnGestureStart;
+          if (!blockPan) {
+            value = initialValue.current + deltaY;
+            oldValue = value;
+          }
 
-              deltaY = deltaY - deltaYOnGestureStart;
-
-              const value = initialValue.current + deltaY;
-              const correctedValue =
-                //@ts-ignore
-                value <= minTranslateValue.current
-                  ? //@ts-ignore
-                    minTranslateValue.current - value
-                  : //@ts-ignore
-                    value;
-              if (
-                //@ts-ignore
-                correctedValue / overdrawFactor >= overdrawSize &&
-                gesture.dy <= 0
-              ) {
-                return;
-              }
-
-              const minSnapPoint = getNextPosition(0);
-              const translateYValue =
-                value <= minTranslateValue.current
-                  ? overdrawEnabled
-                    ? minTranslateValue.current -
-                      correctedValue / overdrawFactor
-                    : minTranslateValue.current
-                  : value;
-
-              if (!closable && disableDragBeyondMinimumSnapPoint) {
-                animations.translateY.setValue(
-                  translateYValue >= minSnapPoint
-                    ? minSnapPoint
-                    : translateYValue,
-                );
-              } else {
-                animations.translateY.setValue(translateYValue);
-              }
-            },
-            onPanResponderEnd: (_event, gesture) => {
-              start = undefined;
-              offsets = [];
-              prevDeltaY = 0;
-              deltaYOnGestureStart = 0;
-              const isMovingUp = getCurrentPosition() < initialValue.current;
-              if (
-                (!isMovingUp &&
-                  getCurrentPosition() < initialValue.current + springOffset) ||
-                (isMovingUp &&
-                  getCurrentPosition() > initialValue.current - springOffset)
-              ) {
-                returnAnimation(gesture.vy);
-                return;
-              }
-
-              if (!isMovingUp) {
-                snapBackward(gesture.vy);
-              } else {
-                snapForward(gesture.vy);
-              }
-            },
+          debug('value', {
+            initialValue: initialValue.current,
+            deltaY,
+            value,
           });
-    }, [
-      gestureEnabled,
-      sheetId,
-      currentContext,
-      getActiveDraggableNodes,
-      getCurrentPosition,
-      enableGesturesInScrollView,
-      overdrawFactor,
-      overdrawSize,
-      getNextPosition,
-      overdrawEnabled,
-      closable,
-      disableDragBeyondMinimumSnapPoint,
-      animations.translateY,
-      springOffset,
-      returnAnimation,
-      snapBackward,
-      snapForward,
-    ]);
+
+          velocity = 1;
+          const correctedValue =
+            value <= minTranslateValue.current
+              ? minTranslateValue.current - value
+              : value;
+
+          if (correctedValue / overdrawFactor >= overdrawSize && deltaY <= 0) {
+            return;
+          }
+
+          const minSnapPoint = getNextPosition(0);
+          const translateYValue =
+            value <= minTranslateValue.current
+              ? overdrawEnabled
+                ? minTranslateValue.current - correctedValue / overdrawFactor
+                : minTranslateValue.current
+              : value;
+
+          if (!closable && disableDragBeyondMinimumSnapPoint) {
+            animations.translateY.setValue(
+              translateYValue >= minSnapPoint ? minSnapPoint : translateYValue,
+            );
+          } else {
+            animations.translateY.setValue(translateYValue);
+          }
+        })
+        .onEnd(() => {
+          if (!gestureEnabled) return;
+          deltaYOnGestureStart = 0;
+          const isMovingUp = getCurrentPosition() < initialValue.current;
+
+          if (
+            (!isMovingUp &&
+              getCurrentPosition() < initialValue.current + springOffset) ||
+            (isMovingUp &&
+              getCurrentPosition() > initialValue.current - springOffset)
+          ) {
+            returnAnimation(1);
+            velocity = 0;
+            debug('return animation....', 'returning');
+            return;
+          }
+
+          if (!isMovingUp) {
+            console.log('snap back...');
+            snapBackward(velocity);
+          } else {
+            snapForward(velocity);
+          }
+          velocity = 0;
+        });
+    }, [gestureEnabled]);
 
     const onTouch = (event: GestureResponderEvent) => {
       onTouchBackdrop?.(event);
@@ -1284,7 +1040,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const context = {
-      ref: panHandlerRef,
+      ref: panGestureRef,
       eventManager: internalEventManager,
     };
 
@@ -1366,76 +1122,70 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                           },
                         ],
                       }}>
-                      {dimensions.height === 0 ? null : (
-                        <PanGestureHandler {...panHandlers} ref={panHandlerRef}>
-                          <Animated.View
-                            {...handlers.panHandlers}
-                            onLayout={onSheetLayout}
-                            ref={panViewRef}
-                            testID={props.testIDs?.sheet}
-                            style={[
-                              styles.container,
-                              {
-                                borderTopRightRadius: 10,
-                                borderTopLeftRadius: 10,
-                              },
-                              props.containerStyle,
-                              {
-                                maxHeight: keyboard.keyboardShown
-                                  ? dimensions.height - keyboard.keyboardHeight
-                                  : dimensions.height,
-                                marginTop: keyboard.keyboardShown ? 0.5 : 0,
-                              },
-                            ]}>
-                            {drawUnderStatusBar ? (
-                              <Animated.View
-                                style={{
-                                  height: 100,
-                                  position: 'absolute',
-                                  top: -50,
-                                  backgroundColor:
-                                    containerStyle?.backgroundColor || 'white',
-                                  width: '100%',
-                                  borderTopRightRadius:
-                                    containerStyle?.borderRadius || 10,
-                                  borderTopLeftRadius:
-                                    containerStyle?.borderRadius || 10,
-                                  transform: [
-                                    {
-                                      translateY: animations.underlayTranslateY,
-                                    },
-                                  ],
-                                }}
-                              />
-                            ) : null}
-                            {gestureEnabled || props.headerAlwaysVisible ? (
-                              props.CustomHeaderComponent ? (
-                                props.CustomHeaderComponent
-                              ) : (
-                                <Animated.View
-                                  style={[
-                                    styles.indicator,
-                                    props.indicatorStyle,
-                                  ]}
-                                />
-                              )
-                            ) : null}
-
-                            <View
+                      <GestureDetector gesture={panGesture}>
+                        <Animated.View
+                          onLayout={onSheetLayout}
+                          ref={panViewRef}
+                          testID={props.testIDs?.sheet}
+                          style={[
+                            styles.container,
+                            {
+                              borderTopRightRadius: 10,
+                              borderTopLeftRadius: 10,
+                            },
+                            props.containerStyle,
+                            {
+                              maxHeight: keyboard.keyboardShown
+                                ? dimensions.height - keyboard.keyboardHeight
+                                : dimensions.height,
+                              marginTop: keyboard.keyboardShown ? 0.5 : 0,
+                            },
+                          ]}>
+                          {drawUnderStatusBar ? (
+                            <Animated.View
                               style={{
-                                flexShrink: 1,
-                              }}>
-                              {router?.hasRoutes() ? (
-                                <RouterContext.Provider value={router}>
-                                  {router?.stack.map(renderRoute)}
-                                </RouterContext.Provider>
-                              ) : (
-                                props?.children
-                              )}
-                            </View>
-                          </Animated.View>
-                        </PanGestureHandler>
-                      )}
+                                height: 100,
+                                position: 'absolute',
+                                top: -50,
+                                backgroundColor:
+                                  containerStyle?.backgroundColor || 'white',
+                                width: '100%',
+                                borderTopRightRadius:
+                                  containerStyle?.borderRadius || 10,
+                                borderTopLeftRadius:
+                                  containerStyle?.borderRadius || 10,
+                                transform: [
+                                  {
+                                    translateY: animations.underlayTranslateY,
+                                  },
+                                ],
+                              }}
+                            />
+                          ) : null}
+                          {gestureEnabled || props.headerAlwaysVisible ? (
+                            props.CustomHeaderComponent ? (
+                              props.CustomHeaderComponent
+                            ) : (
+                              <Animated.View
+                                style={[styles.indicator, props.indicatorStyle]}
+                              />
+                            )
+                          ) : null}
+
+                          <View
+                            style={{
+                              flexShrink: 1,
+                            }}>
+                            {router?.hasRoutes() ? (
+                              <RouterContext.Provider value={router}>
+                                {router?.stack.map(renderRoute)}
+                              </RouterContext.Provider>
+                            ) : (
+                              props?.children
+                            )}
+                          </View>
+                        </Animated.View>
+                      </GestureDetector>
 
                       {overdrawEnabled ? (
                         <Animated.View

@@ -37,12 +37,10 @@ function $FlatList<T>(
       {...props}
       {...handlers}
       onScroll={event => {
-        handlers.onScroll(event);
         props.onScroll?.(event);
       }}
       bounces={false}
       onLayout={event => {
-        handlers.onLayout();
         props.onLayout?.(event);
       }}
       scrollEventThrottle={1}
