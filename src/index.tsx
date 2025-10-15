@@ -31,7 +31,6 @@ import Animated, {
   Easing,
   runOnJS,
   runOnUI,
-  useAnimatedReaction,
   useSharedValue,
   withSpring,
   withTiming,
@@ -118,7 +117,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const animationListenerId = 266786;
     const id = useSheetIDContext();
     const sheetId = props.id || id;
-    const lock = useRef(false);
     const panViewRef = useRef<View>(null);
     const rootViewContainerRef = useRef<View>(null);
     const gestureBoundaries = useRef<{
