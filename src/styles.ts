@@ -13,7 +13,7 @@ export const styles = StyleSheet.create({
   },
   indicator: {
     height: 6,
-    width: 45,
+    width: 120,
     borderRadius: 100,
     backgroundColor: "#f0f0f0",
     marginVertical: 5,
