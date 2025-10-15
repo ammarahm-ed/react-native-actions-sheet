@@ -1,6 +1,6 @@
 import {createContext, useCallback, useContext, useState} from 'react';
-import {Animated} from 'react-native';
 import {Sheets, ActionSheetRef} from '../types';
+import {SharedValue, withTiming} from 'react-native-reanimated';
 
 export type RouteDefinition<T extends {} = {}> = T;
 
@@ -83,20 +83,17 @@ export const useRouter = ({
   getRef?: () => ActionSheetRef;
   onNavigate?: (route: string) => void;
   onNavigateBack?: (route: string) => void;
-  routeOpacity: Animated.Value;
+  routeOpacity: SharedValue<number>;
 }): Router => {
   const [stack, setStack] = useState<Route[]>([]);
   const currentRoute: Route | undefined = stack?.[stack.length - 1];
 
   const animate = useCallback(
-    (snap = 0, opacity = 0, delay = 0) => {
+    (snap = 0, opacity = 0, _delay = 0) => {
       getRef?.().snapToRelativeOffset(snap);
-      Animated.timing(routeOpacity, {
-        toValue: opacity,
+      routeOpacity.value = withTiming(opacity, {
         duration: 150,
-        useNativeDriver: true,
-        delay: delay,
-      }).start();
+      });
     },
     [getRef, routeOpacity],
   );
@@ -138,11 +135,9 @@ export const useRouter = ({
     } else {
       setStack([routes[0]]);
     }
-    Animated.timing(routeOpacity, {
-      toValue: 1,
+    routeOpacity.value = withTiming(1, {
       duration: 150,
-      useNativeDriver: true,
-    }).start();
+    });
   };
 
   const goBack = (name?: string, snap?: number) => {
@@ -228,7 +223,10 @@ export function useSheetRouteParams<
   SheetId extends keyof Sheets = never,
   RouteKey extends keyof Sheets[SheetId]['routes'] = never,
   //@ts-ignore
->(id?: SheetId | (string & {}), routeKey?: RouteKey | (string & {})): Sheets[SheetId]['routes'][RouteKey] {
+>(
+  _id?: SheetId | (string & {}),
+  _routeKey?: RouteKey | (string & {}),
+): Sheets[SheetId]['routes'][RouteKey] {
   const context = useContext(RouterParamsContext);
   return context;
 }

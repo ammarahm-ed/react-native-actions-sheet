@@ -5,13 +5,11 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useRef,
+  useState,
 } from 'react';
 import {
-  Animated,
   BackHandler,
-  Easing,
   GestureResponderEvent,
   Keyboard,
   LayoutChangeEvent,
@@ -21,7 +19,6 @@ import {
   Platform,
   StyleSheet,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import {
@@ -30,6 +27,14 @@ import {
   GestureHandlerRootView,
   GestureType,
 } from 'react-native-gesture-handler';
+import Animated, {
+  Easing,
+  runOnJS,
+  runOnUI,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   DraggableNodes,
@@ -58,7 +63,7 @@ import {
 import {getZIndexFromStack, SheetManager} from './sheetmanager';
 import {styles} from './styles';
 import type {ActionSheetProps, ActionSheetRef} from './types';
-import {debug, getElevation, SUPPORTED_ORIENTATIONS} from './utils';
+import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
@@ -109,6 +114,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const sheetRef = useSheetRef();
     const minTranslateValue = useRef(0);
     const keyboardWasVisible = useRef(false);
+    const animationListenerId = 266786;
     const prevKeyboardHeight = useRef(0);
     const id = useSheetIDContext();
     const sheetId = props.id || id;
@@ -126,8 +132,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const panGestureRef = useRef<GestureType>(undefined);
     const closing = useRef(false);
     const draggableNodes = useRef<NodesRef>([]);
-    const sheetLayoutRef = useRef<LayoutRectangle>(null);
-    const dimensions = useWindowDimensions();
+    const [dimensions, setDimensions] = useState({
+      width: -1,
+      height: -1,
+    });
     const dimensionsRef = useRef(dimensions);
     dimensionsRef.current = dimensions;
     const containerStyle = StyleSheet.flatten(props.containerStyle);
@@ -150,27 +158,19 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
       },
     });
-    const animations = useMemo(
-      () => ({
-        opacity: new Animated.Value(0),
-        translateY: new Animated.Value(0),
-        underlayTranslateY: new Animated.Value(100),
-        keyboardTranslate: new Animated.Value(0),
-        routeOpacity: new Animated.Value(0),
-      }),
-      [],
-    );
-    const animationListeners = useRef<{
-      translateY?: string;
-    }>({});
 
+    const opacity = useSharedValue(0);
+    const translateY = useSharedValue(0);
+    const underlayTranslateY = useSharedValue(100);
+    const keyboardTranslate = useSharedValue(0);
+    const routeOpacity = useSharedValue(0);
     const router = useRouter({
       routes: routes,
       getRef: () => getRef(),
       initialRoute: initialRoute as string,
       onNavigate: props.onNavigate,
       onNavigateBack: props.onNavigateBack,
-      routeOpacity: animations.routeOpacity,
+      routeOpacity: routeOpacity,
     });
     const routerRef = useRef(router);
     payloadRef.current = payload;
@@ -192,91 +192,65 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         prevSnapIndex.current = currentSnapIndex.current;
         props.onSnapIndexChange?.(currentSnapIndex.current);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.onSnapIndexChange]);
 
-    const returnAnimation = React.useCallback(
-      (velocity?: number) => {
+    const moveSheetWithAnimation = React.useCallback(
+      (velocity?: number, value?: number, min?: number) => {
+        let initial = value || initialValue.current;
+        let minTranslate = min || minTranslateValue.current;
         if (!animated) {
-          animations.translateY.setValue(initialValue.current);
+          translateY.value = initial;
           return;
         }
-        const config = props.openAnimationConfig;
 
-        const correctedValue =
-          initialValue.current > minTranslateValue.current
-            ? initialValue.current
-            : 0;
+        const config = props.openAnimationConfig;
+        const correctedValue = initial > minTranslate ? initial : 0;
 
         notifyOffsetChange(correctedValue as number);
-
-        if (!config) {
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            friction: 8,
-            ...config,
+        translateY.value = withSpring(
+          initial,
+          config || {
             velocity: typeof velocity !== 'number' ? undefined : velocity,
-          }).start();
-        } else {
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...config,
-            velocity: typeof velocity !== 'number' ? undefined : velocity,
-          }).start();
-        }
+            damping: 16,
+          },
+        );
 
         notifySnapIndexChanged();
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       [animated, props.openAnimationConfig],
     );
 
-    const opacityAnimation = React.useCallback(
-      (opacity: number) => {
-        Animated.timing(animations.opacity, {
-          duration: 150,
-          easing: Easing.in(Easing.ease),
-          toValue: opacity,
-          useNativeDriver: true,
-        }).start();
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [],
-    );
+    const animationSheetOpacity = React.useCallback((value: number) => {
+      opacity.value = withTiming(value, {
+        duration: 150,
+        easing: Easing.in(Easing.ease),
+      });
+    }, []);
 
-    const hideAnimation = React.useCallback(
-      (vy?: number, callback?: ({finished}: {finished: boolean}) => void) => {
+    const hideSheetWithAnimation = React.useCallback(
+      (vy?: number, callback?: () => void) => {
         if (!animated) {
-          callback?.({finished: true});
+          callback?.();
           return;
         }
         const config = props.closeAnimationConfig;
-        opacityAnimation(0);
-        const animation = Animated.spring(animations.translateY, {
-          velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
-          toValue: dimensionsRef.current.height * 1.3,
-          useNativeDriver: true,
-          ...config,
-        });
-        animation.start();
-        setTimeout(() => {
-          animation.stop();
-          callback?.({finished: true});
-        }, 150);
+        animationSheetOpacity(0);
+        translateY.value = withTiming(
+          dimensionsRef.current.height * 1.3,
+          config || {
+            velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
+            duration: 200,
+          },
+        );
+        setTimeout(callback, 150);
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [animated, opacityAnimation, props.closeAnimationConfig],
+      [animated, animationSheetOpacity, props.closeAnimationConfig],
     );
 
     const getCurrentPosition = React.useCallback(() => {
-      //@ts-ignore
-      return animations.translateY._value <= minTranslateValue.current + 5
+      return translateY.value <= minTranslateValue.current + 5
         ? 0
-        : //@ts-ignore
-          (animations.translateY._value as number);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+        : (translateY.value as number);
     }, []);
 
     const getNextPosition = React.useCallback(
@@ -295,12 +269,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       isModal && !props?.backgroundInteractionEnabled ? Modal : Animated.View;
 
     useEffect(() => {
-      let animationListener;
       if (drawUnderStatusBar || props.onChange) {
-        animationListener = animations.translateY.addListener(value => {
+        const onValueChange = (value: number) => {
           const correctedValue =
-            value.value > minTranslateValue.current
-              ? value.value - minTranslateValue.current
+            value > minTranslateValue.current
+              ? value - minTranslateValue.current
               : 0;
           props?.onChange?.(correctedValue, actionSheetHeight.current);
           if (drawUnderStatusBar) {
@@ -310,65 +283,71 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 (keyboard.keyboardHeight + insets.bottom + insets.top)
               : dimensionsRef.current.height - (insets.bottom + insets.top);
             if (actionSheetHeight.current >= correctedHeight - 1) {
-              if (value.value < 100) {
-                animations.underlayTranslateY.setValue(
-                  Math.max(value.value - 20, -20),
-                );
+              if (value < 100) {
+                underlayTranslateY.value = Math.max(value - 20, -20);
               } else {
-                //@ts-ignore
-                if (animations.underlayTranslateY._value !== 100) {
-                  animations.underlayTranslateY.setValue(100);
+                if (underlayTranslateY.value !== 100) {
+                  underlayTranslateY.value = 100;
                 }
               }
             } else {
-              //@ts-ignore
-              if (animations.underlayTranslateY._value !== 100) {
-                animations.underlayTranslateY.setValue(100);
+              if (underlayTranslateY.value !== 100) {
+                underlayTranslateY.value = 100;
               }
             }
           }
-        });
+        };
+        runOnUI(() => {
+          translateY.addListener(animationListenerId, value => {
+            runOnJS(onValueChange)(value);
+          });
+        })();
       }
-      animationListeners.current.translateY = animationListener;
       return () => {
-        animationListener &&
-          animations.translateY.removeListener(animationListener);
+        runOnUI((animationListener: number) => {
+          translateY.removeListener(animationListener);
+        })(animationListenerId);
       };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props?.id, keyboard.keyboardShown, keyboard.keyboardHeight]);
 
     const onSheetLayout = React.useCallback(
-      (event: LayoutChangeEvent) => {
-        sheetLayoutRef.current = {...event.nativeEvent.layout};
+      async (event: LayoutChangeEvent) => {
+        const sheetHeight = event.nativeEvent.layout.height;
+        if (dimensionsRef.current.height === -1) {
+          return;
+        }
+        // await waitAsync(10);
         if (closing.current) return;
         const rootViewHeight = dimensionsRef.current?.height;
 
         actionSheetHeight.current =
-          event.nativeEvent.layout.height > dimensionsRef.current.height
+          sheetHeight > dimensionsRef.current.height
             ? dimensionsRef.current.height
-            : event.nativeEvent.layout.height;
-        minTranslateValue.current =
-          rootViewHeight -
-          (actionSheetHeight.current + insets.bottom + insets.top);
+            : sheetHeight;
 
-        if (initialValue.current < 0) {
-          animations.translateY.setValue(rootViewHeight * 1.1);
+        let minTranslate = 0;
+        let initial = initialValue.current;
+
+        minTranslate = rootViewHeight - actionSheetHeight.current;
+        if (initial === -1) {
+          translateY.value = rootViewHeight * 1.1;
         }
+
         const nextInitialValue =
           actionSheetHeight.current +
-          minTranslateValue.current -
+          minTranslate -
           (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
             100;
 
-        initialValue.current =
+        initial =
           (keyboard.keyboardShown || keyboardWasVisible.current) &&
-          initialValue.current <= nextInitialValue &&
-          initialValue.current >= minTranslateValue.current
-            ? initialValue.current
+          initial <= nextInitialValue &&
+          initial >= minTranslate
+            ? initial
             : nextInitialValue;
 
         const sheetBottomEdgePosition =
-          initialValue.current +
+          initial +
           (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
             100;
 
@@ -376,27 +355,28 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           sheetBottomEdgePosition -
           (dimensionsRef.current?.height - keyboard.keyboardHeight);
 
-        initialValue.current =
+        initial =
           sheetPositionWithKeyboard > 0
-            ? initialValue.current - sheetPositionWithKeyboard
-            : initialValue.current;
+            ? initial - sheetPositionWithKeyboard
+            : initial;
 
         if (keyboard.keyboardShown) {
-          minTranslateValue.current =
-            minTranslateValue.current -
-            (keyboard.keyboardHeight + insets.bottom + insets.bottom);
-
+          minTranslate = minTranslate - keyboard.keyboardHeight;
           keyboardWasVisible.current = true;
           prevKeyboardHeight.current = keyboard.keyboardHeight;
         } else {
           keyboardWasVisible.current = false;
         }
-        opacityAnimation(1);
-        returnAnimation();
 
-        if (initialValue.current > 100) {
+        minTranslateValue.current = minTranslate;
+        initialValue.current = initial;
+
+        animationSheetOpacity(1);
+        moveSheetWithAnimation(undefined, initial, minTranslate);
+
+        if (initial > 100) {
           if (lock.current) return;
-          animations.underlayTranslateY.setValue(100);
+          underlayTranslateY.value = 100;
         }
         if (Platform.OS === 'web') {
           document.body.style.overflowY = 'hidden';
@@ -407,10 +387,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         snapPoints,
         keyboard.keyboardShown,
         keyboard.keyboardHeight,
-        opacityAnimation,
-        animations.translateY,
-        animations.underlayTranslateY,
-        returnAnimation,
+        animationSheetOpacity,
+        translateY,
+        underlayTranslateY,
+        moveSheetWithAnimation,
       ],
     );
 
@@ -418,7 +398,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       (vy?: number, data?: any, isSheetManagerOrRef?: boolean) => {
         if (hiding.current) return;
         if (!closable && !isSheetManagerOrRef) {
-          returnAnimation(vy);
+          moveSheetWithAnimation(vy);
           return;
         }
         hiding.current = true;
@@ -426,39 +406,34 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (closable) {
           closing.current = true;
           Keyboard.dismiss();
-          animationListeners.current.translateY &&
-            animations.translateY.removeListener(
-              animationListeners.current.translateY,
-            );
-          animationListeners.current.translateY = undefined;
+          // translateY.removeListener(245);
         }
-        hideAnimation(vy, ({finished}) => {
-          if (finished) {
-            if (closable || isSheetManagerOrRef) {
-              setVisible(false);
-              if (props.onClose) {
-                props.onClose?.((data || payloadRef.current || data) as never);
-                hiding.current = false;
-              }
-              hardwareBackPressEvent.current?.remove();
-              if (sheetId) {
-                SheetManager.remove(sheetId, currentContext);
-                hiding.current = false;
-                actionSheetEventManager.publish(
-                  `onclose_${sheetId}`,
-                  data || payloadRef.current || data,
-                  currentContext,
-                );
-              } else {
-                hiding.current = false;
-              }
-              currentSnapIndex.current = initialSnapIndex;
-              closing.current = false;
-              keyboard.reset();
-            } else {
-              animations.opacity.setValue(1);
-              returnAnimation();
+        hideSheetWithAnimation(vy, () => {
+          if (closable || isSheetManagerOrRef) {
+            setVisible(false);
+            if (props.onClose) {
+              props.onClose?.((data || payloadRef.current || data) as never);
+              hiding.current = false;
             }
+            hardwareBackPressEvent.current?.remove();
+            if (sheetId) {
+              SheetManager.remove(sheetId, currentContext);
+              hiding.current = false;
+              actionSheetEventManager.publish(
+                `onclose_${sheetId}`,
+                data || payloadRef.current || data,
+                currentContext,
+              );
+            } else {
+              hiding.current = false;
+            }
+            currentSnapIndex.current = initialSnapIndex;
+            closing.current = false;
+            initialValue.current = -1;
+            keyboard.reset();
+          } else {
+            opacity.value = 1;
+            moveSheetWithAnimation();
           }
         });
         if (Platform.OS === 'web') {
@@ -466,12 +441,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           document.documentElement.style.overflowY = 'auto';
         }
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       [
         closable,
-        hideAnimation,
+        hideSheetWithAnimation,
         props.onClose,
-        returnAnimation,
+        moveSheetWithAnimation,
         setVisible,
         keyboard,
       ],
@@ -505,8 +479,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const snapForward = React.useCallback(
       (vy: number) => {
         if (currentSnapIndex.current === snapPoints.length - 1) {
-          initialValue.current = getNextPosition(currentSnapIndex.current);
-          returnAnimation(vy);
+          const next = getNextPosition(currentSnapIndex.current);
+          moveSheetWithAnimation(vy, next);
+          initialValue.current = next;
           return;
         }
         let nextSnapPoint = 0;
@@ -524,15 +499,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
         if (nextSnapPoint > 100) {
           console.warn('Snap points should range between 0 to 100.');
-          returnAnimation(vy);
+          moveSheetWithAnimation(vy);
           return;
         }
         currentSnapIndex.current = nextSnapIndex;
-        initialValue.current = getNextPosition(currentSnapIndex.current);
-
-        returnAnimation(vy);
+        const next = getNextPosition(currentSnapIndex.current);
+        initialValue.current = next;
+        moveSheetWithAnimation(vy, next);
       },
-      [getCurrentPosition, getNextPosition, returnAnimation, snapPoints],
+      [getCurrentPosition, getNextPosition, moveSheetWithAnimation, snapPoints],
     );
     /**
      * Snap towards the bottom
@@ -542,10 +517,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (currentSnapIndex.current === 0) {
           if (closable) {
             initialValue.current = dimensionsRef.current.height * 1.3;
-            hideSheet(vy);
+            setTimeout(() => hideSheet(vy));
           } else {
-            initialValue.current = getNextPosition(currentSnapIndex.current);
-            returnAnimation(vy);
+            const next = getNextPosition(currentSnapIndex.current);
+            moveSheetWithAnimation(vy, next);
+            initialValue.current = next;
           }
           return;
         }
@@ -569,20 +545,20 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
         if (nextSnapPoint < 0) {
           console.warn('Snap points should range between 0 to 100.');
-          returnAnimation(vy);
+          moveSheetWithAnimation(vy);
           return;
         }
-        console.log('snap backk...', nextSnapIndex);
         currentSnapIndex.current = nextSnapIndex;
-        initialValue.current = getNextPosition(currentSnapIndex.current);
-        returnAnimation(vy);
+        const next = getNextPosition(currentSnapIndex.current);
+        initialValue.current = next;
+        moveSheetWithAnimation(vy);
       },
       [
         closable,
         getCurrentPosition,
         getNextPosition,
         hideSheet,
-        returnAnimation,
+        moveSheetWithAnimation,
         snapPoints,
       ],
     );
@@ -592,7 +568,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         const {w, h, px, py} = rect;
         return {...rect, boundryX: px + w, boundryY: py + h};
       }
-
       return {w: 0, h: 0, px: 0, py: 0, x: 0, y: 0, boundryX: 0, boundryY: 0};
     }
 
@@ -650,189 +625,179 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       };
       let oldValue = 0;
       let isRefreshing = false;
-      return Gesture.Pan()
-        .withRef(panGestureRef)
-        .onChange(event => {
-          if (!gestureEnabled) return;
-          let blockPan = false;
-          let deltaY = event.translationY;
-          let isSwipingDown = prevDeltaY < deltaY;
 
-          debug('is swiping down', {isSwipingDown, prevDeltaY, deltaY});
+      const onChangeJs = (translationY, absoluteX, absoluteY) => {
+        if (!gestureEnabled) return;
+        let blockPan = false;
+        let deltaY = translationY;
+        let isSwipingDown = prevDeltaY < deltaY;
 
-          prevDeltaY = deltaY;
+        prevDeltaY = deltaY;
 
-          if (!start) {
-            start = {
-              x: event.absoluteX,
-              y: event.absoluteY,
-            };
-          }
+        if (!start) {
+          start = {
+            x: absoluteX,
+            y: absoluteY,
+          };
+        }
 
-          const isFullOpen = getCurrentPosition() === 0;
+        const isFullOpen =
+          translateY.value <= minTranslateValue.current + 5
+            ? 0
+            : (translateY.value as number);
 
-          const activeDraggableNodes = getActiveDraggableNodes(
-            start.x,
-            start.y,
-            !isFullOpen || (isFullOpen && !isSwipingDown),
+        const activeDraggableNodes = getActiveDraggableNodes(
+          start.x,
+          start.y,
+          !isFullOpen || (isFullOpen && !isSwipingDown),
+        );
+
+        if (activeDraggableNodes.length > 0 && !isRefreshing) {
+          const nodeIsScrolling = activeDraggableNodes.some(
+            node => node.node.offset.current.y !== 0,
           );
 
-          debug('swipe direction', isSwipingDown ? 'down' : 'up');
-          debug('active nodes', activeDraggableNodes.length);
-          //@ts-ignore
-          if (activeDraggableNodes.length > 0 && !isRefreshing) {
-            const nodeIsScrolling = activeDraggableNodes.some(
-              node => node.node.offset.current.y !== 0,
-            );
+          /**
+           * Draggable nodes handling cases:
+           *
+           * 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
+           * 2. Sheet fully open, swiping up, scrolling: true, panning: false
+           * 3. Sheet not fully open, swiping down, scrolling: false, panning: true
+           * 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
+           * 5. Add support for pull to refresh
+           */
 
-            /**
-             * Draggable nodes handling cases:
-             *
-             * 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
-             * 2. Sheet fully open, swiping up, scrolling: true, panning: false
-             * 3. Sheet not fully open, swiping down, scrolling: false, panning: true
-             * 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
-             * 5. Add support for pull to refresh
-             */
+          // 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
 
-            // 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
-
-            if (!isFullOpen && !isSwipingDown) {
-              scrollable(false);
-              debug('not full open, swiping up, scroll', false);
-              blockPan = false;
-            }
-
-            // 2. Sheet fully open, swiping up, scrolling: true, panning: false
-            if (isFullOpen && !isSwipingDown) {
-              scrollable(true);
-              debug('full open, swiping up, scroll', true);
-              blockPan = true;
-            }
-            //  3. Sheet not fully open, swiping down, scrolling: false, panning: true
-            if (!isFullOpen && isSwipingDown) {
-              if (nodeIsScrolling) {
-                scrollable(true);
-                blockPan = true;
-                debug(
-                  'not full open, swiping down, scroll on active node',
-                  true,
-                );
-              } else {
-                scrollable(false);
-                debug('not full open, swiping down, scroll', false);
-                blockPan = false;
-              }
-            }
-
-            // 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
-            if (isFullOpen && isSwipingDown) {
-              if (nodeIsScrolling) {
-                scrollable(true);
-                debug('full open, swiping down, scroll on active node', true);
-                blockPan = true;
-              } else {
-                const hasRefreshControl = activeDraggableNodes.some(
-                  node => node.node.handlerConfig.hasRefreshControl,
-                );
-                if (hasRefreshControl) {
-                  for (const node of activeDraggableNodes) {
-                    if (node.node.handlerConfig.hasRefreshControl) {
-                      // Refresh Control will work in to 15% area of the DraggableNode.
-                      const refreshControlBounds =
-                        node.rectWithBoundary.py +
-                        node.rectWithBoundary.h *
-                          node.node.handlerConfig.refreshControlBoundary;
-
-                      if (!refreshControlBounds) continue;
-                      if (event.absoluteY < refreshControlBounds) {
-                        scrollable(true);
-                        blockPan = true;
-                        isRefreshing = true;
-                      }
-                    }
-                  }
-                } else {
-                  scrollable(false);
-                  blockPan = false;
-                }
-              }
-            }
-          } else {
+          if (!isFullOpen && !isSwipingDown) {
+            scrollable(false);
             blockPan = false;
           }
 
-          if (isRefreshing) {
-            blockPan = true;
+          // 2. Sheet fully open, swiping up, scrolling: true, panning: false
+          if (isFullOpen && !isSwipingDown) {
             scrollable(true);
+            blockPan = true;
+          }
+          //  3. Sheet not fully open, swiping down, scrolling: false, panning: true
+          if (!isFullOpen && isSwipingDown) {
+            if (nodeIsScrolling) {
+              scrollable(true);
+              blockPan = true;
+            } else {
+              scrollable(false);
+              blockPan = false;
+            }
           }
 
-          let value = oldValue;
-          if (!deltaYOnGestureStart) {
-            deltaYOnGestureStart = deltaY;
+          // 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
+          if (isFullOpen && isSwipingDown) {
+            if (nodeIsScrolling) {
+              scrollable(true);
+              blockPan = true;
+            } else {
+              const hasRefreshControl = activeDraggableNodes.some(
+                node => node.node.handlerConfig.hasRefreshControl,
+              );
+              if (hasRefreshControl) {
+                for (const node of activeDraggableNodes) {
+                  if (node.node.handlerConfig.hasRefreshControl) {
+                    // Refresh Control will work in to 15% area of the DraggableNode.
+                    const refreshControlBounds =
+                      node.rectWithBoundary.py +
+                      node.rectWithBoundary.h *
+                        node.node.handlerConfig.refreshControlBoundary;
+
+                    if (!refreshControlBounds) continue;
+                    if (absoluteY < refreshControlBounds) {
+                      scrollable(true);
+                      blockPan = true;
+                      isRefreshing = true;
+                    }
+                  }
+                }
+              } else {
+                scrollable(false);
+                blockPan = false;
+              }
+            }
           }
-          deltaY = deltaY - deltaYOnGestureStart;
-          if (!blockPan) {
-            value = initialValue.current + deltaY;
-            oldValue = value;
-          }
+        } else {
+          blockPan = false;
+        }
 
-          debug('value', {
-            initialValue: initialValue.current,
-            deltaY,
-            value,
-          });
+        if (isRefreshing) {
+          blockPan = true;
+          scrollable(true);
+        }
 
-          velocity = 1;
-          const correctedValue =
-            value <= minTranslateValue.current
-              ? minTranslateValue.current - value
-              : value;
+        let value = oldValue;
+        if (!deltaYOnGestureStart) {
+          deltaYOnGestureStart = deltaY;
+        }
+        deltaY = deltaY - deltaYOnGestureStart;
+        if (!blockPan) {
+          value = initialValue.current + deltaY;
+          oldValue = value;
+        }
 
-          if (correctedValue / overdrawFactor >= overdrawSize && deltaY <= 0) {
-            return;
-          }
+        velocity = 1;
+        const correctedValue =
+          value <= minTranslateValue.current
+            ? minTranslateValue.current - value
+            : value;
 
-          const minSnapPoint = getNextPosition(0);
-          const translateYValue =
-            value <= minTranslateValue.current
-              ? overdrawEnabled
-                ? minTranslateValue.current - correctedValue / overdrawFactor
-                : minTranslateValue.current
-              : value;
+        if (correctedValue / overdrawFactor >= overdrawSize && deltaY <= 0) {
+          return;
+        }
 
-          if (!closable && disableDragBeyondMinimumSnapPoint) {
-            animations.translateY.setValue(
-              translateYValue >= minSnapPoint ? minSnapPoint : translateYValue,
-            );
-          } else {
-            animations.translateY.setValue(translateYValue);
-          }
+        const minSnapPoint = getNextPosition(0);
+        const translateYValue =
+          value <= minTranslateValue.current
+            ? overdrawEnabled
+              ? minTranslateValue.current - correctedValue / overdrawFactor
+              : minTranslateValue.current
+            : value;
+
+        if (!closable && disableDragBeyondMinimumSnapPoint) {
+          translateY.value =
+            translateYValue >= minSnapPoint ? minSnapPoint : translateYValue;
+        } else {
+          translateY.value = translateYValue;
+        }
+      };
+      const onEndJs = () => {
+        if (!gestureEnabled) return;
+        deltaYOnGestureStart = 0;
+        const isMovingUp = getCurrentPosition() < initialValue.current;
+
+        if (
+          (!isMovingUp &&
+            getCurrentPosition() < initialValue.current + springOffset) ||
+          (isMovingUp &&
+            getCurrentPosition() > initialValue.current - springOffset)
+        ) {
+          moveSheetWithAnimation(1);
+          velocity = 0;
+          return;
+        }
+
+        if (!isMovingUp) {
+          snapBackward(velocity);
+        } else {
+          snapForward(velocity);
+        }
+        velocity = 0;
+      };
+
+      return Gesture.Pan()
+        .withRef(panGestureRef)
+        .onChange(event => {
+          const {absoluteX, absoluteY, translationY} = event;
+          runOnJS(onChangeJs)(translationY, absoluteX, absoluteY);
         })
         .onEnd(() => {
-          if (!gestureEnabled) return;
-          deltaYOnGestureStart = 0;
-          const isMovingUp = getCurrentPosition() < initialValue.current;
-
-          if (
-            (!isMovingUp &&
-              getCurrentPosition() < initialValue.current + springOffset) ||
-            (isMovingUp &&
-              getCurrentPosition() > initialValue.current - springOffset)
-          ) {
-            returnAnimation(1);
-            velocity = 0;
-            debug('return animation....', 'returning');
-            return;
-          }
-
-          if (!isMovingUp) {
-            console.log('snap back...');
-            snapBackward(velocity);
-          } else {
-            snapForward(velocity);
-          }
-          velocity = 0;
+          runOnJS(onEndJs)();
         });
     }, [gestureEnabled]);
 
@@ -872,11 +837,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             actionSheetHeight.current +
             minTranslateValue.current -
             (actionSheetHeight.current * offset) / 100;
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...props.openAnimationConfig,
-          }).start();
+          setTimeout(() => {
+            translateY.value = withSpring(
+              initialValue.current,
+              props.openAnimationConfig || {duration: 300},
+            );
+          });
         },
         snapToRelativeOffset: (offset: number) => {
           if (offset === 0) {
@@ -891,22 +857,24 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             getRef().snapToOffset(100);
             return;
           }
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...props.openAnimationConfig,
-          }).start();
+          setTimeout(() => {
+            translateY.value = withSpring(
+              initialValue.current,
+              props.openAnimationConfig || {duration: 300},
+            );
+          });
         },
         snapToIndex: (index: number) => {
           if (index > snapPoints.length || index < 0) return;
           currentSnapIndex.current = index;
           initialValue.current = getNextPosition(index);
 
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...props.openAnimationConfig,
-          }).start();
+          setTimeout(() => {
+            translateY.value = withSpring(
+              initialValue.current,
+              props.openAnimationConfig || {duration: 300},
+            );
+          });
           notifySnapIndexChanged();
         },
         handleChildScrollEnd: () => {
@@ -915,7 +883,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           );
         },
         modifyGesturesForLayout: (_id, layout, scrollOffset) => {
-          //@ts-ignore
           gestureBoundaries.current[_id] = {
             ...layout,
             scrollOffset: scrollOffset,
@@ -934,7 +901,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         onBeforeShow,
         setVisible,
         hideSheet,
-        animations.translateY,
+        translateY,
         props.openAnimationConfig,
         snapPoints.length,
         getNextPosition,
@@ -1024,7 +991,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             style={{
               display:
                 route.name !== router.currentRoute?.name ? 'none' : 'flex',
-              opacity: animations.routeOpacity,
+              opacity: routeOpacity,
             }}>
             <RouterParamsContext.Provider value={route?.params}>
               <RouteComponent
@@ -1036,15 +1003,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           </Animated.View>
         );
       },
-      [animations.routeOpacity, router, sheetPayload],
+      [routeOpacity, router, sheetPayload],
     );
 
     const context = {
       ref: panGestureRef,
       eventManager: internalEventManager,
     };
-
-    console.log(insets);
 
     return (
       <>
@@ -1056,6 +1021,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               <PanGestureRefContext.Provider value={context}>
                 <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
+                    onLayout={event => {
+                      setDimensions({
+                        width: event.nativeEvent.layout.width,
+                        height: event.nativeEvent.layout.height,
+                      });
+                    }}
                     ref={rootViewContainerRef}
                     pointerEvents={
                       props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
@@ -1063,13 +1034,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                     style={[
                       styles.parentContainer,
                       {
-                        opacity: animations.opacity,
+                        opacity: opacity,
                         width: '100%',
                         justifyContent: 'flex-end',
-                        height: dimensions.height,
                         transform: [
                           {
-                            translateY: animations.keyboardTranslate,
+                            translateY: keyboardTranslate,
                           },
                         ],
                       },
@@ -1109,16 +1079,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                           typeof elevation === 'number' ? elevation : 5,
                         ),
                         flex: undefined,
-                        height: dimensions.height - insets.top,
-                        maxHeight: dimensions.height - insets.top,
-                        paddingBottom: keyboard.keyboardShown
-                          ? keyboard.keyboardHeight || 0
-                          : useBottomSafeAreaPadding
-                            ? insets.bottom
-                            : 0,
+                        height: dimensions.height,
+                        maxHeight: dimensions.height,
                         transform: [
                           {
-                            translateY: animations.translateY,
+                            translateY: translateY,
                           },
                         ],
                       }}>
@@ -1132,12 +1097,20 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             {
                               borderTopRightRadius: 10,
                               borderTopLeftRadius: 10,
+                              borderWidth: 2,
+                              paddingBottom: keyboard.keyboardShown
+                                ? keyboard.keyboardHeight || 0
+                                : useBottomSafeAreaPadding
+                                  ? insets.bottom
+                                  : 0,
                             },
                             props.containerStyle,
                             {
                               maxHeight: keyboard.keyboardShown
-                                ? dimensions.height - keyboard.keyboardHeight
-                                : dimensions.height,
+                                ? dimensions.height -
+                                  insets.top -
+                                  keyboard.keyboardHeight
+                                : dimensions.height - insets.top,
                               marginTop: keyboard.keyboardShown ? 0.5 : 0,
                             },
                           ]}>
@@ -1156,7 +1129,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                   containerStyle?.borderRadius || 10,
                                 transform: [
                                   {
-                                    translateY: animations.underlayTranslateY,
+                                    translateY: underlayTranslateY,
                                   },
                                 ],
                               }}
@@ -1175,8 +1148,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                           <View
                             style={{
                               flexShrink: 1,
-                              borderWidth: 3,
-                              borderColor: 'red',
                             }}>
                             {router?.hasRoutes() ? (
                               <RouterContext.Provider value={router}>

@@ -1,14 +1,14 @@
 import React from 'react';
 import {
-  Animated,
   GestureResponderEvent,
   LayoutRectangle,
-  TouchableOpacityProps,
-  ViewStyle,
   StyleProp,
+  TouchableOpacityProps,
+  ViewStyle
 } from 'react-native';
+import { SpringConfig } from 'react-native-reanimated/lib/typescript/animation/springUtils';
 import EventManager from './eventmanager';
-import {Route} from './hooks/use-router';
+import { Route } from './hooks/use-router';
 
 export interface Sheets {}
 
@@ -121,17 +121,11 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   /**
    * The open animation is a spring animation. You can modify it using the config below.
    */
-  openAnimationConfig?: Omit<
-    Omit<Animated.SpringAnimationConfig, 'toValue'>,
-    'useNativeDriver'
-  >;
+  openAnimationConfig?: SpringConfig;
   /**
    * The open animation is a spring animation. You can modify it by providing a custom config.
    */
-  closeAnimationConfig?: Omit<
-    Omit<Animated.SpringAnimationConfig, 'toValue'>,
-    'useNativeDriver'
-  >;
+  closeAnimationConfig?: SpringConfig;
   /**
    * Provide snap points ranging from 0 to 100. ActionSheet will snap between these points. If no snap points
    * are provided, the default is a single snap point set to `100` which means that the sheet will be opened
