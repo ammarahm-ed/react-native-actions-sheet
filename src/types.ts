@@ -4,11 +4,11 @@ import {
   LayoutRectangle,
   StyleProp,
   TouchableOpacityProps,
-  ViewStyle
+  ViewStyle,
 } from 'react-native';
-import { SpringConfig } from 'react-native-reanimated/lib/typescript/animation/springUtils';
+import {SpringConfig} from 'react-native-reanimated/lib/typescript/animation/springUtils';
 import EventManager from './eventmanager';
-import { Route } from './hooks/use-router';
+import {Route} from './hooks/use-router';
 
 export interface Sheets {}
 
@@ -312,7 +312,7 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
 
   /**
    * Apply padding to bottom based on device safe area insets.
-   * 
+   *
    * @default true
    */
   useBottomSafeAreaPadding?: boolean;
@@ -338,12 +338,14 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   onOpen?: () => void;
 
   /**
-   * Event called when the position of the ActionSheet changes. When the `position` value is 0, it means that the ActionSheet has reached top.
+   * Event called when the position of the ActionSheet changes.
+   * 
+   * @param {number} percentage Sheet visible on the screen in percentage.
    */
-  onChange?: (position: number, height: number) => void;
+  onChange?: (position: number) => void;
 
   /**
-   * additional props to pass to the backdrop element. Useful for adding custom accessibility props.
+   * Additional props to pass to the backdrop element. Useful for adding custom accessibility props.
    */
   backdropProps?: Partial<TouchableOpacityProps>;
 
@@ -351,7 +353,7 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * Default safeArea insets provided through a library such as
    * react-native-safe-area-insets. This also helps in giving a tiny boost
    * in performance as the sheet does not have to calculate insets anymore.
-   * 
+   *
    * @deprecated Insets are used internally by default through react-native-safe-area-insets. This prop is no-op.
    */
   safeAreaInsets?: {top: number; left: number; right: number; bottom: number};

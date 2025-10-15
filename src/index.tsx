@@ -31,6 +31,7 @@ import Animated, {
   Easing,
   runOnJS,
   runOnUI,
+  useAnimatedReaction,
   useSharedValue,
   withSpring,
   withTiming,
@@ -115,7 +116,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const minTranslateValue = useRef(0);
     const keyboardWasVisible = useRef(false);
     const animationListenerId = 266786;
-    const prevKeyboardHeight = useRef(0);
     const id = useSheetIDContext();
     const sheetId = props.id || id;
     const lock = useRef(false);
@@ -270,26 +270,30 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     useEffect(() => {
       if (drawUnderStatusBar || props.onChange) {
+        let prevPercentage = 0;
         const onValueChange = (value: number) => {
           const correctedValue =
             value > minTranslateValue.current
               ? value - minTranslateValue.current
               : 0;
-          props?.onChange?.(correctedValue, actionSheetHeight.current);
+
+          const percentage =
+            ((actionSheetHeight.current - correctedValue) /
+              actionSheetHeight.current) *
+            100;
+            
+          const rounded = Math.round(percentage);
+          if (rounded !== prevPercentage && rounded > -1) {
+            prevPercentage = rounded;
+            props.onChange?.(Math.round(percentage));
+          }
+
           if (drawUnderStatusBar) {
-            if (lock.current) return;
-            const correctedHeight = keyboard.keyboardShown
-              ? dimensionsRef.current.height -
-                (keyboard.keyboardHeight + insets.bottom + insets.top)
-              : dimensionsRef.current.height - (insets.bottom + insets.top);
-            if (actionSheetHeight.current >= correctedHeight - 1) {
-              if (value < 100) {
-                underlayTranslateY.value = Math.max(value - 20, -20);
-              } else {
-                if (underlayTranslateY.value !== 100) {
-                  underlayTranslateY.value = 100;
-                }
-              }
+            if (percentage > 85) {
+              const distanceFromTop = 100 - percentage;
+              underlayTranslateY.value = Math.max(
+                (actionSheetHeight.current / 100) * distanceFromTop,
+              );
             } else {
               if (underlayTranslateY.value !== 100) {
                 underlayTranslateY.value = 100;
@@ -308,10 +312,16 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           translateY.removeListener(animationListener);
         })(animationListenerId);
       };
-    }, [props?.id, keyboard.keyboardShown, keyboard.keyboardHeight]);
+    }, [
+      props?.id,
+      keyboard.keyboardShown,
+      keyboard.keyboardHeight,
+      dimensions,
+    ]);
 
     const onSheetLayout = React.useCallback(
       async (event: LayoutChangeEvent) => {
+        console.log('onsheetlayout', event.nativeEvent.layout);
         const sheetHeight = event.nativeEvent.layout.height;
         if (dimensionsRef.current.height === -1) {
           return;
@@ -355,18 +365,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           sheetBottomEdgePosition -
           (dimensionsRef.current?.height - keyboard.keyboardHeight);
 
-        initial =
-          sheetPositionWithKeyboard > 0
-            ? initial - sheetPositionWithKeyboard
-            : initial;
-
-        if (keyboard.keyboardShown) {
-          minTranslate = minTranslate - keyboard.keyboardHeight;
-          keyboardWasVisible.current = true;
-          prevKeyboardHeight.current = keyboard.keyboardHeight;
-        } else {
-          keyboardWasVisible.current = false;
-        }
+        initial = keyboard.keyboardShown
+          ? initial - sheetPositionWithKeyboard
+          : initial;
 
         minTranslateValue.current = minTranslate;
         initialValue.current = initial;
@@ -375,7 +376,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         moveSheetWithAnimation(undefined, initial, minTranslate);
 
         if (initial > 100) {
-          if (lock.current) return;
           underlayTranslateY.value = 100;
         }
         if (Platform.OS === 'web') {
@@ -1022,6 +1022,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
                     onLayout={event => {
+                      console.log('root layout', event.nativeEvent.layout);
                       setDimensions({
                         width: event.nativeEvent.layout.width,
                         height: event.nativeEvent.layout.height,
@@ -1098,11 +1099,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               borderTopRightRadius: 10,
                               borderTopLeftRadius: 10,
                               borderWidth: 2,
-                              paddingBottom: keyboard.keyboardShown
-                                ? keyboard.keyboardHeight || 0
-                                : useBottomSafeAreaPadding
-                                  ? insets.bottom
-                                  : 0,
+                              paddingBottom: useBottomSafeAreaPadding
+                                ? insets.bottom
+                                : 0,
                             },
                             props.containerStyle,
                             {
