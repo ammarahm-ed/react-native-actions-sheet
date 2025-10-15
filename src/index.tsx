@@ -279,7 +279,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             ((actionSheetHeight.current - correctedValue) /
               actionSheetHeight.current) *
             100;
-            
+
           const rounded = Math.round(percentage);
           if (rounded !== prevPercentage && rounded > -1) {
             prevPercentage = rounded;
@@ -1099,7 +1099,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             {
                               borderTopRightRadius: 10,
                               borderTopLeftRadius: 10,
-                              borderWidth: 2,
                               paddingBottom: useBottomSafeAreaPadding
                                 ? insets.bottom
                                 : 0,
