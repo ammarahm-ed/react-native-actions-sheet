@@ -35,7 +35,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   DraggableNodes,
   DraggableNodesContext,
@@ -43,16 +43,16 @@ import {
   NodesRef,
   PanGestureRefContext,
 } from './context';
-import EventManager, { actionSheetEventManager } from './eventmanager';
+import EventManager, {actionSheetEventManager} from './eventmanager';
 import {
   Route,
   RouterContext,
   RouterParamsContext,
   useRouter,
 } from './hooks/use-router';
-import { resolveScrollRef } from './hooks/use-scroll-handlers';
+import {resolveScrollRef} from './hooks/use-scroll-handlers';
 import useSheetManager from './hooks/use-sheet-manager';
-import { useKeyboard } from './hooks/useKeyboard';
+import {useKeyboard} from './hooks/useKeyboard';
 import {
   SheetProvider,
   useProviderContext,
@@ -60,10 +60,10 @@ import {
   useSheetPayload,
   useSheetRef,
 } from './provider';
-import { getZIndexFromStack, SheetManager } from './sheetmanager';
-import { styles } from './styles';
-import type { ActionSheetProps, ActionSheetRef } from './types';
-import { getElevation, SUPPORTED_ORIENTATIONS } from './utils';
+import {getZIndexFromStack, SheetManager} from './sheetmanager';
+import {styles} from './styles';
+import type {ActionSheetProps, ActionSheetRef} from './types';
+import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
@@ -97,7 +97,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       enableGesturesInScrollView = true,
       disableDragBeyondMinimumSnapPoint,
       useBottomSafeAreaPadding = true,
-      openAnimationConfig = {damping: 120, stiffness: 900,mass: 7 },
+      openAnimationConfig = {damping: 120, stiffness: 900, mass: 7},
       ...props
     },
     ref,
@@ -1108,7 +1108,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                           flex: undefined,
                           height: dimensions.height,
                           maxHeight: dimensions.height,
-                          opacity: !dimensions.height ? 0 : 1,
                           transform: [
                             {
                               translateY: translateY,
