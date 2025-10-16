@@ -117,9 +117,9 @@ export const useRouter = ({
             return [...nextStack, {...next, params: params || next.params}];
           }
           onNavigate?.(next.name);
-          animate(0, 1, 150);
           return [...state, {...next, params: params || next.params}];
         });
+        setTimeout(() => animate(0, 1, 150));
       }, 100);
     },
     [animate, routes, onNavigate],
@@ -148,7 +148,6 @@ export const useRouter = ({
         const next = routes?.find(route => route.name === name);
         if (state.length === 1) {
           close();
-          animate(0, 1);
           return state;
         }
 
@@ -157,7 +156,6 @@ export const useRouter = ({
           nextStack.pop();
           if (currentRoute) {
             onNavigateBack?.(nextStack[nextStack.length - 1]?.name);
-            animate(0, 1, 150);
           }
           return nextStack;
         }
@@ -166,13 +164,13 @@ export const useRouter = ({
           const nextStack = [...state];
           nextStack.splice(currentIndex);
           onNavigateBack?.(nextStack[nextStack.length - 1]?.name);
-          animate(0, 1, 150);
           return [...nextStack, next];
         }
-        animate(0, 1, 150);
+        
         onNavigateBack?.(next.name);
         return [...stack, next];
       });
+      setTimeout(() => animate(0, 1, 150));
     }, 100);
   };
 

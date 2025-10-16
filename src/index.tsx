@@ -676,8 +676,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               node => node.node.offset.current.y !== 0,
             );
 
-            console.log(nodeIsScrolling);
-
             /**
              * Draggable nodes handling cases:
              *
@@ -765,15 +763,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             deltaYOnGestureStart = deltaY;
           }
 
-          console.log(deltaY, deltaYOnGestureStart);
-
           deltaY = deltaY - deltaYOnGestureStart;
           if (!blockPan) {
             value = initialValue.current + deltaY;
             oldValue = value;
           }
-
-          console.log(value);
 
           velocity = 1;
           const correctedValue =
