@@ -35,7 +35,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   DraggableNodes,
   DraggableNodesContext,
@@ -43,16 +43,16 @@ import {
   NodesRef,
   PanGestureRefContext,
 } from './context';
-import EventManager, {actionSheetEventManager} from './eventmanager';
+import EventManager, { actionSheetEventManager } from './eventmanager';
 import {
   Route,
   RouterContext,
   RouterParamsContext,
   useRouter,
 } from './hooks/use-router';
-import {resolveScrollRef} from './hooks/use-scroll-handlers';
+import { resolveScrollRef } from './hooks/use-scroll-handlers';
 import useSheetManager from './hooks/use-sheet-manager';
-import {useKeyboard} from './hooks/useKeyboard';
+import { useKeyboard } from './hooks/useKeyboard';
 import {
   SheetProvider,
   useProviderContext,
@@ -60,10 +60,10 @@ import {
   useSheetPayload,
   useSheetRef,
 } from './provider';
-import {getZIndexFromStack, SheetManager} from './sheetmanager';
-import {styles} from './styles';
-import type {ActionSheetProps, ActionSheetRef} from './types';
-import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
+import { getZIndexFromStack, SheetManager } from './sheetmanager';
+import { styles } from './styles';
+import type { ActionSheetProps, ActionSheetRef } from './types';
+import { getElevation, SUPPORTED_ORIENTATIONS } from './utils';
 
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
@@ -97,6 +97,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       enableGesturesInScrollView = true,
       disableDragBeyondMinimumSnapPoint,
       useBottomSafeAreaPadding = true,
+      openAnimationConfig = {damping: 120, stiffness: 900,mass: 7 },
       ...props
     },
     ref,
@@ -201,21 +202,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           return;
         }
 
-        const config = props.openAnimationConfig;
+        const config = openAnimationConfig;
         const correctedValue = initial > minTranslate ? initial : 0;
 
         notifyOffsetChange(correctedValue as number);
-        translateY.value = withSpring(
-          initial,
-          config || {
-            velocity: typeof velocity !== 'number' ? undefined : velocity,
-            damping: 150,
-          },
-        );
+        translateY.value = withSpring(initial, {
+          ...config,
+          velocity: typeof velocity !== 'number' ? undefined : velocity,
+        });
 
         notifySnapIndexChanged();
       },
-      [animated, props.openAnimationConfig],
+      [animated, openAnimationConfig],
     );
 
     const animationSheetOpacity = React.useCallback((value: number) => {
@@ -868,7 +866,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             (actionSheetHeight.current * offset) / 100;
           translateY.value = withSpring(
             initialValue.current,
-            props.openAnimationConfig || {damping: 150},
+            openAnimationConfig,
           );
         },
         snapToRelativeOffset: (offset: number) => {
@@ -886,7 +884,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }
           translateY.value = withSpring(
             initialValue.current,
-            props.openAnimationConfig || {damping: 150},
+            openAnimationConfig,
           );
         },
         snapToIndex: (index: number) => {
@@ -895,7 +893,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           initialValue.current = getNextPosition(index);
           translateY.value = withSpring(
             initialValue.current,
-            props.openAnimationConfig || {damping: 150},
+            openAnimationConfig,
           );
           notifySnapIndexChanged();
         },
@@ -924,7 +922,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         setVisible,
         hideSheet,
         translateY,
-        props.openAnimationConfig,
+        openAnimationConfig,
         snapPoints.length,
         getNextPosition,
         notifySnapIndexChanged,
