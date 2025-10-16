@@ -209,7 +209,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           initial,
           config || {
             velocity: typeof velocity !== 'number' ? undefined : velocity,
-            dampingRatio: 0.7,
+            damping: 150,
           },
         );
 
@@ -286,17 +286,21 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             props.onChange?.(Math.round(percentage));
           }
 
+          const percentScreenCovered =
+            (actionSheetHeight.current /
+              (dimensionsRef.current.height - insets.top)) *
+            100;
           if (drawUnderStatusBar) {
-            if (percentage > 85) {
-              const distanceFromTop = 100 - percentage;
+            if (percentage > 85 && percentScreenCovered > 99) {
+              var distanceFromTop = 100 - percentage;
               underlayTranslateY.value = Math.max(
                 (actionSheetHeight.current / 100) * distanceFromTop,
               );
             } else {
-              if (underlayTranslateY.value !== 130) {
-                underlayTranslateY.value = 130;
-              }
+              underlayTranslateY.value = 130;
             }
+          } else {
+            underlayTranslateY.value = 130;
           }
         };
         runOnUI(() => {
@@ -641,11 +645,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             });
           }
         }
-        
       }
 
-
-        let blockPan = false;
+      let blockPan = false;
 
       const onChangeJs = (translationY, absoluteX, absoluteY) => {
         if (!gestureEnabled) return;
@@ -691,7 +693,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               deltaYOnGestureStart = prevDeltaY;
             }
             blockPan = false;
-
           }
 
           // 2. Sheet fully open, swiping up, scrolling: true, panning: false
@@ -706,9 +707,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               blockPan = true;
             } else {
               scrollable(false);
-               if (blockPan) {
-              deltaYOnGestureStart = prevDeltaY;
-            }
+              if (blockPan) {
+                deltaYOnGestureStart = prevDeltaY;
+              }
               blockPan = false;
             }
           }
@@ -741,9 +742,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 }
               } else {
                 scrollable(false);
-                 if (blockPan) {
-              deltaYOnGestureStart = prevDeltaY;
-            }
+                if (blockPan) {
+                  deltaYOnGestureStart = prevDeltaY;
+                }
                 blockPan = false;
               }
             }
@@ -867,7 +868,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             (actionSheetHeight.current * offset) / 100;
           translateY.value = withSpring(
             initialValue.current,
-            props.openAnimationConfig || {dampingRatio: 0.7},
+            props.openAnimationConfig || {damping: 150},
           );
         },
         snapToRelativeOffset: (offset: number) => {
@@ -885,7 +886,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }
           translateY.value = withSpring(
             initialValue.current,
-            props.openAnimationConfig || {dampingRatio: 0.7},
+            props.openAnimationConfig || {damping: 150},
           );
         },
         snapToIndex: (index: number) => {
@@ -894,7 +895,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           initialValue.current = getNextPosition(index);
           translateY.value = withSpring(
             initialValue.current,
-            props.openAnimationConfig || {dampingRatio: 0.7},
+            props.openAnimationConfig || {damping: 150},
           );
           notifySnapIndexChanged();
         },
@@ -1046,6 +1047,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
                     onLayout={event => {
+                      if (event.nativeEvent.layout.height < 10) return;
                       setDimensions({
                         width: event.nativeEvent.layout.width,
                         height: event.nativeEvent.layout.height,
@@ -1068,140 +1070,148 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         ],
                       },
                     ]}>
-                    {!props?.backgroundInteractionEnabled ? (
-                      <TouchableOpacity
-                        onPress={onTouch}
-                        activeOpacity={defaultOverlayOpacity}
-                        testID={props.testIDs?.backdrop}
-                        style={{
-                          height: dimensions.height + insets.top + 100,
-                          width: '100%',
-                          position: 'absolute',
-                          backgroundColor: overlayColor,
-                          opacity: defaultOverlayOpacity,
-                        }}
-                        {...(props.backdropProps ? props.backdropProps : {})}
-                      />
-                    ) : null}
-
-                    <Animated.View
-                      pointerEvents="box-none"
-                      style={{
-                        borderTopRightRadius:
-                          containerStyle?.borderTopRightRadius || 10,
-                        borderTopLeftRadius:
-                          containerStyle?.borderTopLeftRadius || 10,
-                        backgroundColor:
-                          containerStyle?.backgroundColor || 'white',
-                        borderBottomLeftRadius:
-                          containerStyle?.borderBottomLeftRadius || undefined,
-                        borderBottomRightRadius:
-                          containerStyle?.borderBottomRightRadius || undefined,
-                        borderRadius: containerStyle?.borderRadius || undefined,
-                        width: containerStyle?.width || '100%',
-                        ...getElevation(
-                          typeof elevation === 'number' ? elevation : 5,
-                        ),
-                        flex: undefined,
-                        height: dimensions.height,
-                        maxHeight: dimensions.height,
-                        transform: [
-                          {
-                            translateY: translateY,
-                          },
-                        ],
-                      }}>
-                      <GestureDetector gesture={panGesture}>
-                        <Animated.View
-                          onLayout={onSheetLayout}
-                          ref={panViewRef}
-                          testID={props.testIDs?.sheet}
-                          style={[
-                            styles.container,
-                            {
-                              borderTopRightRadius: 10,
-                              borderTopLeftRadius: 10,
-                              paddingBottom: useBottomSafeAreaPadding
-                                ? insets.bottom
-                                : 0,
-                            },
-                            props.containerStyle,
-                            {
-                              maxHeight: keyboard.keyboardShown
-                                ? dimensions.height -
-                                  insets.top -
-                                  keyboard.keyboardHeight
-                                : dimensions.height - insets.top,
-                              marginTop: keyboard.keyboardShown ? 0.5 : 0,
-                            },
-                          ]}>
-                          {drawUnderStatusBar ? (
-                            <Animated.View
-                              style={{
-                                height: 130,
-                                position: 'absolute',
-                                top: -80,
-                                backgroundColor:
-                                  containerStyle?.backgroundColor || 'white',
-                                width: '100%',
-                                borderTopRightRadius:
-                                  containerStyle?.borderRadius || 10,
-                                borderTopLeftRadius:
-                                  containerStyle?.borderRadius || 10,
-                                transform: [
-                                  {
-                                    translateY: underlayTranslateY,
-                                  },
-                                ],
-                              }}
-                            />
-                          ) : null}
-                          {gestureEnabled || props.headerAlwaysVisible ? (
-                            props.CustomHeaderComponent ? (
-                              props.CustomHeaderComponent
-                            ) : (
-                              <Animated.View
-                                style={[styles.indicator, props.indicatorStyle]}
-                              />
-                            )
-                          ) : null}
-
-                          <View
-                            style={{
-                              flexShrink: 1,
-                            }}>
-                            {router?.hasRoutes() ? (
-                              <RouterContext.Provider value={router}>
-                                {router?.stack.map(renderRoute)}
-                              </RouterContext.Provider>
-                            ) : (
-                              props?.children
-                            )}
-                          </View>
-                        </Animated.View>
-                      </GestureDetector>
-
-                      {overdrawEnabled ? (
-                        <Animated.View
+                    <>
+                      {!props?.backgroundInteractionEnabled ? (
+                        <TouchableOpacity
+                          onPress={onTouch}
+                          activeOpacity={defaultOverlayOpacity}
+                          testID={props.testIDs?.backdrop}
                           style={{
+                            height: dimensions.height + insets.top + 100,
+                            width: '100%',
                             position: 'absolute',
-                            height: overdrawSize,
-                            bottom: -overdrawSize,
-                            backgroundColor:
-                              containerStyle?.backgroundColor || 'white',
-                            width: containerStyle?.width || dimensions.width,
+                            backgroundColor: overlayColor,
+                            opacity: defaultOverlayOpacity,
                           }}
+                          {...(props.backdropProps ? props.backdropProps : {})}
                         />
                       ) : null}
-                    </Animated.View>
 
-                    {ExtraOverlayComponent}
-                    {props.withNestedSheetProvider}
-                    {sheetId ? (
-                      <SheetProvider
-                        context={`$$-auto-${sheetId}-${currentContext}-provider`}
-                      />
-                    ) : null}
+                      <Animated.View
+                        pointerEvents="box-none"
+                        style={{
+                          borderTopRightRadius:
+                            containerStyle?.borderTopRightRadius || 10,
+                          borderTopLeftRadius:
+                            containerStyle?.borderTopLeftRadius || 10,
+                          backgroundColor:
+                            containerStyle?.backgroundColor || 'white',
+                          borderBottomLeftRadius:
+                            containerStyle?.borderBottomLeftRadius || undefined,
+                          borderBottomRightRadius:
+                            containerStyle?.borderBottomRightRadius ||
+                            undefined,
+                          borderRadius:
+                            containerStyle?.borderRadius || undefined,
+                          width: containerStyle?.width || '100%',
+                          ...getElevation(
+                            typeof elevation === 'number' ? elevation : 5,
+                          ),
+                          flex: undefined,
+                          height: dimensions.height,
+                          maxHeight: dimensions.height,
+                          opacity: !dimensions.height ? 0 : 1,
+                          transform: [
+                            {
+                              translateY: translateY,
+                            },
+                          ],
+                        }}>
+                        <GestureDetector gesture={panGesture}>
+                          <Animated.View
+                            onLayout={onSheetLayout}
+                            ref={panViewRef}
+                            testID={props.testIDs?.sheet}
+                            style={[
+                              styles.container,
+                              {
+                                borderTopRightRadius: 10,
+                                borderTopLeftRadius: 10,
+                                paddingBottom: useBottomSafeAreaPadding
+                                  ? insets.bottom
+                                  : 0,
+                              },
+                              props.containerStyle,
+                              {
+                                maxHeight: keyboard.keyboardShown
+                                  ? dimensions.height -
+                                    insets.top -
+                                    keyboard.keyboardHeight
+                                  : dimensions.height - insets.top,
+                                marginTop: keyboard.keyboardShown ? 0.5 : 0,
+                              },
+                            ]}>
+                            {drawUnderStatusBar ? (
+                              <Animated.View
+                                style={{
+                                  height: 130,
+                                  position: 'absolute',
+                                  top: -80,
+                                  backgroundColor:
+                                    containerStyle?.backgroundColor || 'white',
+                                  width: '100%',
+                                  borderTopRightRadius:
+                                    containerStyle?.borderRadius || 10,
+                                  borderTopLeftRadius:
+                                    containerStyle?.borderRadius || 10,
+                                  transform: [
+                                    {
+                                      translateY: underlayTranslateY,
+                                    },
+                                  ],
+                                }}
+                              />
+                            ) : null}
+                            {gestureEnabled || props.headerAlwaysVisible ? (
+                              props.CustomHeaderComponent ? (
+                                props.CustomHeaderComponent
+                              ) : (
+                                <Animated.View
+                                  style={[
+                                    styles.indicator,
+                                    props.indicatorStyle,
+                                  ]}
+                                />
+                              )
+                            ) : null}
+
+                            <View
+                              style={{
+                                flexShrink: 1,
+                              }}>
+                              {router?.hasRoutes() ? (
+                                <RouterContext.Provider value={router}>
+                                  {router?.stack.map(renderRoute)}
+                                </RouterContext.Provider>
+                              ) : (
+                                props?.children
+                              )}
+                            </View>
+                          </Animated.View>
+                        </GestureDetector>
+
+                        {overdrawEnabled ? (
+                          <Animated.View
+                            style={{
+                              position: 'absolute',
+                              height: overdrawSize,
+                              bottom: -overdrawSize,
+                              backgroundColor:
+                                containerStyle?.backgroundColor || 'white',
+                              width: containerStyle?.width || dimensions.width,
+                            }}
+                          />
+                        ) : null}
+                      </Animated.View>
+
+                      {ExtraOverlayComponent}
+                      {props.withNestedSheetProvider}
+                      {sheetId ? (
+                        <SheetProvider
+                          context={`$$-auto-${sheetId}-${currentContext}-provider`}
+                        />
+                      ) : null}
+                    </>
                   </Animated.View>
                 </DraggableNodesContext.Provider>
               </PanGestureRefContext.Provider>
