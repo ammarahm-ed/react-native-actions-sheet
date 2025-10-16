@@ -1,5 +1,5 @@
 {
-  "include": ["index.ts", "src/views/FlashList.tsx"],
+  "include": ["index.ts"],
   "compilerOptions": {
     "baseUrl": "./",
     "jsx": "react-native",
