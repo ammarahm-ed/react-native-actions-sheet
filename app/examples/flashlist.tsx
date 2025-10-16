@@ -1,7 +1,7 @@
 import React, {useCallback} from 'react';
 import {Text, View} from 'react-native';
-import ActionSheet from 'react-native-actions-sheet';
-import {FlashList} from 'react-native-actions-sheet/dist/src/views/FlashList';
+import ActionSheet, { ScrollView } from 'react-native-actions-sheet';
+import {FlashList} from '@shopify/flash-list';
 
 function FlashListSheet() {
   const vegetableNamesWithEmoji = [
@@ -101,7 +101,7 @@ function FlashListSheet() {
         }}>
         <FlashList
           data={vegetableNamesWithEmoji}
-          estimatedItemSize={40}
+          renderScrollComponent={ScrollView}
           ListHeaderComponent={
             <Text
               style={{
