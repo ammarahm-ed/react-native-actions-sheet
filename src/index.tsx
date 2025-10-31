@@ -31,6 +31,7 @@ import Animated, {
   Easing,
   runOnJS,
   runOnUI,
+  useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
@@ -161,7 +162,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const opacity = useSharedValue(0);
     const translateY = useSharedValue(0);
     const underlayTranslateY = useSharedValue(130);
-    const keyboardTranslate = useSharedValue(0);
     const routeOpacity = useSharedValue(0);
     const router = useRouter({
       routes: routes,
@@ -325,7 +325,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (dimensionsRef.current.height === -1) {
           return;
         }
-        // await waitAsync(10);
         if (closing.current) return;
         const rootViewHeight = dimensionsRef.current?.height;
 
@@ -1026,6 +1025,32 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       eventManager: internalEventManager,
     };
 
+    const animatedOpacityStyle = useAnimatedStyle(() => {
+      return {
+        opacity: opacity.value,
+      };
+    }, [opacity]);
+
+    const animatedTranslateStyle = useAnimatedStyle(() => {
+      return {
+        transform: [
+          {
+            translateY: translateY.value,
+          },
+        ],
+      };
+    }, [translateY]);
+
+    const animatedUnderlayTranslateStyle = useAnimatedStyle(() => {
+      return {
+        transform: [
+          {
+            translateY: underlayTranslateY.value,
+          },
+        ],
+      };
+    }, [underlayTranslateY]);
+
     return (
       <>
         {visible ? (
@@ -1053,15 +1078,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                     style={[
                       styles.parentContainer,
                       {
-                        opacity: opacity,
                         width: '100%',
                         justifyContent: 'flex-end',
-                        transform: [
-                          {
-                            translateY: keyboardTranslate,
-                          },
-                        ],
                       },
+                      animatedOpacityStyle,
                     ]}>
                     <>
                       {!props?.backgroundInteractionEnabled ? (
@@ -1082,33 +1102,32 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
                       <Animated.View
                         pointerEvents="box-none"
-                        style={{
-                          borderTopRightRadius:
-                            containerStyle?.borderTopRightRadius || 10,
-                          borderTopLeftRadius:
-                            containerStyle?.borderTopLeftRadius || 10,
-                          backgroundColor:
-                            containerStyle?.backgroundColor || 'white',
-                          borderBottomLeftRadius:
-                            containerStyle?.borderBottomLeftRadius || undefined,
-                          borderBottomRightRadius:
-                            containerStyle?.borderBottomRightRadius ||
-                            undefined,
-                          borderRadius:
-                            containerStyle?.borderRadius || undefined,
-                          width: containerStyle?.width || '100%',
-                          ...getElevation(
-                            typeof elevation === 'number' ? elevation : 5,
-                          ),
-                          flex: undefined,
-                          height: dimensions.height,
-                          maxHeight: dimensions.height,
-                          transform: [
-                            {
-                              translateY: translateY,
-                            },
-                          ],
-                        }}>
+                        style={[
+                          {
+                            borderTopRightRadius:
+                              containerStyle?.borderTopRightRadius || 10,
+                            borderTopLeftRadius:
+                              containerStyle?.borderTopLeftRadius || 10,
+                            backgroundColor:
+                              containerStyle?.backgroundColor || 'white',
+                            borderBottomLeftRadius:
+                              containerStyle?.borderBottomLeftRadius ||
+                              undefined,
+                            borderBottomRightRadius:
+                              containerStyle?.borderBottomRightRadius ||
+                              undefined,
+                            borderRadius:
+                              containerStyle?.borderRadius || undefined,
+                            width: containerStyle?.width || '100%',
+                            ...getElevation(
+                              typeof elevation === 'number' ? elevation : 5,
+                            ),
+                            flex: undefined,
+                            height: dimensions.height,
+                            maxHeight: dimensions.height,
+                          },
+                          animatedTranslateStyle,
+                        ]}>
                         <GestureDetector gesture={panGesture}>
                           <Animated.View
                             onLayout={onSheetLayout}
@@ -1135,23 +1154,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             ]}>
                             {drawUnderStatusBar ? (
                               <Animated.View
-                                style={{
-                                  height: 130,
-                                  position: 'absolute',
-                                  top: -80,
-                                  backgroundColor:
-                                    containerStyle?.backgroundColor || 'white',
-                                  width: '100%',
-                                  borderTopRightRadius:
-                                    containerStyle?.borderRadius || 10,
-                                  borderTopLeftRadius:
-                                    containerStyle?.borderRadius || 10,
-                                  transform: [
-                                    {
-                                      translateY: underlayTranslateY,
-                                    },
-                                  ],
-                                }}
+                                style={[
+                                  {
+                                    height: 130,
+                                    position: 'absolute',
+                                    top: -80,
+                                    backgroundColor:
+                                      containerStyle?.backgroundColor ||
+                                      'white',
+                                    width: '100%',
+                                    borderTopRightRadius:
+                                      containerStyle?.borderRadius || 10,
+                                    borderTopLeftRadius:
+                                      containerStyle?.borderRadius || 10,
+                                  },
+                                  animatedUnderlayTranslateStyle,
+                                ]}
                               />
                             ) : null}
                             {gestureEnabled || props.headerAlwaysVisible ? (
