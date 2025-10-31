@@ -606,6 +606,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [],
     );
 
+    
+
     const panGesture = React.useMemo(() => {
       let prevDeltaY = 0;
       let deltaYOnGestureStart = 0;
@@ -622,7 +624,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         for (let i = 0; i < draggableNodes.current.length; i++) {
           const node = draggableNodes.current[i];
           const scrollRef = resolveScrollRef(node.ref);
-          if (Platform.OS === 'ios') {
+          if (Platform.OS === 'ios' || Platform.OS === "web") {
             if (!value) {
               if (!offsets[i] || node.offset.current?.y === 0) {
                 offsets[i] = node.offset.current?.y || 0;
@@ -635,7 +637,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             } else {
               offsets[i] = node.offset.current?.y || 0;
             }
-          } else {
+          } else if (Platform.OS === "android") {
             scrollRef?.setNativeProps({
               scrollEnabled: value,
             });
@@ -1100,119 +1102,122 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         />
                       ) : null}
 
-                      <Animated.View
-                        pointerEvents="box-none"
-                        style={[
-                          {
-                            borderTopRightRadius:
-                              containerStyle?.borderTopRightRadius || 10,
-                            borderTopLeftRadius:
-                              containerStyle?.borderTopLeftRadius || 10,
-                            backgroundColor:
-                              containerStyle?.backgroundColor || 'white',
-                            borderBottomLeftRadius:
-                              containerStyle?.borderBottomLeftRadius ||
-                              undefined,
-                            borderBottomRightRadius:
-                              containerStyle?.borderBottomRightRadius ||
-                              undefined,
-                            borderRadius:
-                              containerStyle?.borderRadius || undefined,
-                            width: containerStyle?.width || '100%',
-                            ...getElevation(
-                              typeof elevation === 'number' ? elevation : 5,
-                            ),
-                            flex: undefined,
-                            height: dimensions.height,
-                            maxHeight: dimensions.height,
-                          },
-                          animatedTranslateStyle,
-                        ]}>
-                        <GestureDetector gesture={panGesture}>
-                          <Animated.View
-                            onLayout={onSheetLayout}
-                            ref={panViewRef}
-                            testID={props.testIDs?.sheet}
-                            style={[
-                              styles.container,
-                              {
-                                borderTopRightRadius: 10,
-                                borderTopLeftRadius: 10,
-                                paddingBottom: useBottomSafeAreaPadding
-                                  ? insets.bottom
-                                  : 0,
-                              },
-                              props.containerStyle,
-                              {
-                                maxHeight: keyboard.keyboardShown
-                                  ? dimensions.height -
-                                    insets.top -
-                                    keyboard.keyboardHeight
-                                  : dimensions.height - insets.top,
-                                marginTop: keyboard.keyboardShown ? 0.5 : 0,
-                              },
-                            ]}>
-                            {drawUnderStatusBar ? (
-                              <Animated.View
-                                style={[
-                                  {
-                                    height: 130,
-                                    position: 'absolute',
-                                    top: -80,
-                                    backgroundColor:
-                                      containerStyle?.backgroundColor ||
-                                      'white',
-                                    width: '100%',
-                                    borderTopRightRadius:
-                                      containerStyle?.borderRadius || 10,
-                                    borderTopLeftRadius:
-                                      containerStyle?.borderRadius || 10,
-                                  },
-                                  animatedUnderlayTranslateStyle,
-                                ]}
-                              />
-                            ) : null}
-                            {gestureEnabled || props.headerAlwaysVisible ? (
-                              props.CustomHeaderComponent ? (
-                                props.CustomHeaderComponent
-                              ) : (
-                                <Animated.View
-                                  style={[
-                                    styles.indicator,
-                                    props.indicatorStyle,
-                                  ]}
-                                />
-                              )
-                            ) : null}
-
-                            <View
-                              style={{
-                                flexShrink: 1,
-                              }}>
-                              {router?.hasRoutes() ? (
-                                <RouterContext.Provider value={router}>
-                                  {router?.stack.map(renderRoute)}
-                                </RouterContext.Provider>
-                              ) : (
-                                props?.children
-                              )}
-                            </View>
-                          </Animated.View>
-                        </GestureDetector>
-
-                        {overdrawEnabled ? (
-                          <Animated.View
-                            style={{
-                              position: 'absolute',
-                              height: overdrawSize,
-                              bottom: -overdrawSize,
+                      {dimensions.height === -1 && Platform.OS === "web" ? null : (
+                        <Animated.View
+                          pointerEvents="box-none"
+                          style={[
+                            {
+                              borderTopRightRadius:
+                                containerStyle?.borderTopRightRadius || 10,
+                              borderTopLeftRadius:
+                                containerStyle?.borderTopLeftRadius || 10,
                               backgroundColor:
                                 containerStyle?.backgroundColor || 'white',
-                              width: containerStyle?.width || dimensions.width,
-                            }}
-                          />
-                        ) : null}
-                      </Animated.View>
+                              borderBottomLeftRadius:
+                                containerStyle?.borderBottomLeftRadius ||
+                                undefined,
+                              borderBottomRightRadius:
+                                containerStyle?.borderBottomRightRadius ||
+                                undefined,
+                              borderRadius:
+                                containerStyle?.borderRadius || undefined,
+                              width: containerStyle?.width || '100%',
+                              ...getElevation(
+                                typeof elevation === 'number' ? elevation : 5,
+                              ),
+                              flex: undefined,
+                              height: dimensions.height,
+                              maxHeight: dimensions.height,
+                            },
+                            animatedTranslateStyle,
+                          ]}>
+                          <GestureDetector gesture={panGesture}>
+                            <Animated.View
+                              onLayout={onSheetLayout}
+                              ref={panViewRef}
+                              testID={props.testIDs?.sheet}
+                              style={[
+                                styles.container,
+                                {
+                                  borderTopRightRadius: 10,
+                                  borderTopLeftRadius: 10,
+                                  paddingBottom: useBottomSafeAreaPadding
+                                    ? insets.bottom
+                                    : 0,
+                                },
+                                props.containerStyle,
+                                {
+                                  maxHeight: keyboard.keyboardShown
+                                    ? dimensions.height -
+                                      insets.top -
+                                      keyboard.keyboardHeight
+                                    : dimensions.height - insets.top,
+                                  marginTop: keyboard.keyboardShown ? 0.5 : 0,
+                                },
+                              ]}>
+                              {drawUnderStatusBar ? (
+                                <Animated.View
+                                  style={[
+                                    {
+                                      height: 130,
+                                      position: 'absolute',
+                                      top: -80,
+                                      backgroundColor:
+                                        containerStyle?.backgroundColor ||
+                                        'white',
+                                      width: '100%',
+                                      borderTopRightRadius:
+                                        containerStyle?.borderRadius || 10,
+                                      borderTopLeftRadius:
+                                        containerStyle?.borderRadius || 10,
+                                    },
+                                    animatedUnderlayTranslateStyle,
+                                  ]}
+                                />
+                              ) : null}
+                              {gestureEnabled || props.headerAlwaysVisible ? (
+                                props.CustomHeaderComponent ? (
+                                  props.CustomHeaderComponent
+                                ) : (
+                                  <Animated.View
+                                    style={[
+                                      styles.indicator,
+                                      props.indicatorStyle,
+                                    ]}
+                                  />
+                                )
+                              ) : null}
+
+                              <View
+                                style={{
+                                  flexShrink: 1,
+                                }}>
+                                {router?.hasRoutes() ? (
+                                  <RouterContext.Provider value={router}>
+                                    {router?.stack.map(renderRoute)}
+                                  </RouterContext.Provider>
+                                ) : (
+                                  props?.children
+                                )}
+                              </View>
+                            </Animated.View>
+                          </GestureDetector>
+
+                          {overdrawEnabled ? (
+                            <Animated.View
+                              style={{
+                                position: 'absolute',
+                                height: overdrawSize,
+                                bottom: -overdrawSize,
+                                backgroundColor:
+                                  containerStyle?.backgroundColor || 'white',
+                                width:
+                                  containerStyle?.width || dimensions.width,
+                              }}
+                            />
+                          ) : null}
+                        </Animated.View>
+                      )}
 
                       {ExtraOverlayComponent}
                       {props.withNestedSheetProvider}
