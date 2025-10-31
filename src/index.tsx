@@ -62,7 +62,7 @@ import {
 } from './provider';
 import {getZIndexFromStack, SheetManager} from './sheetmanager';
 import {styles} from './styles';
-import type {ActionSheetProps, ActionSheetRef} from './types';
+import {ActionSheetProps, ActionSheetRef} from './types';
 import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
@@ -689,9 +689,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             // 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
             if (!isFullOpen && !isSwipingDown) {
               scrollable(false);
-              if (blockPan) {
-                deltaYOnGestureStart = deltaY;
-              }
+              // if (blockPan) {
+              //   deltaYOnGestureStart = deltaY;
+              // }
               blockPan = false;
             }
 
@@ -707,9 +707,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 blockPan = true;
               } else {
                 scrollable(false);
-                if (blockPan) {
-                  // deltaYOnGestureStart = deltaY;
-                }
+                // if (blockPan) {
+                //   // deltaYOnGestureStart = deltaY;
+                // }
                 blockPan = false;
               }
             }
@@ -720,6 +720,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 scrollable(true);
                 blockPan = true;
               } else {
+                if (!deltaYOnGestureStart && deltaY > 0) {
+                  deltaYOnGestureStart = deltaY;
+                }
                 const hasRefreshControl = activeDraggableNodes.some(
                   node => node.node.handlerConfig.hasRefreshControl,
                 );
@@ -742,9 +745,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   }
                 } else {
                   scrollable(false);
-                  if (blockPan) {
-                    deltaYOnGestureStart = deltaY;
-                  }
                   blockPan = false;
                 }
               }
@@ -759,15 +759,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }
 
           let value = oldValue;
-          if (!deltaYOnGestureStart) {
-            deltaYOnGestureStart = deltaY;
-          }
 
           deltaY = deltaY - deltaYOnGestureStart;
           if (!blockPan) {
             value = initialValue.current + deltaY;
             oldValue = value;
           }
+
+          if (blockPan) return;
 
           velocity = 1;
           const correctedValue =
