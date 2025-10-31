@@ -1,17 +1,14 @@
 /* eslint-disable curly */
-import React, {RefObject, useImperativeHandle} from 'react';
+import React, { RefObject, useImperativeHandle } from 'react';
 import {
-  Platform,
   ScrollView as RNScrollView,
-  ScrollViewProps,
+  ScrollViewProps
 } from 'react-native';
 import {
-  NativeViewGestureHandlerProps,
-  ScrollView as RNGHScrollView,
+  ScrollView as RNGHScrollView
 } from 'react-native-gesture-handler';
-import {useScrollHandlers} from '../hooks/use-scroll-handlers';
+import { useScrollHandlers } from '../hooks/use-scroll-handlers';
 type Props = ScrollViewProps &
-  Partial<NativeViewGestureHandlerProps> &
   React.RefAttributes<RNScrollView> & {
     /**
      * By default refresh control gesture will work in top 15% area of the ScrollView. You can set a different value here.
@@ -21,20 +18,18 @@ type Props = ScrollViewProps &
     refreshControlGestureArea?: number;
   };
 
-const ScrollComponent = Platform.OS === 'web' ? RNScrollView : RNGHScrollView;
-
 function $ScrollView(
   props: Props,
-  ref: React.ForwardedRef<RefObject<RNScrollView>>,
+  ref: RefObject<RNScrollView>,
 ) {
   const handlers = useScrollHandlers<RNScrollView>({
     hasRefreshControl: !!props.refreshControl,
     refreshControlBoundary: props.refreshControlGestureArea || 0.15,
   });
-  useImperativeHandle(ref, () => handlers.ref);
+  useImperativeHandle(ref, () => handlers.ref.current);
 
   return (
-    <ScrollComponent
+    <RNGHScrollView
       {...props}
       ref={handlers.ref}
       simultaneousHandlers={handlers.simultaneousHandlers}
