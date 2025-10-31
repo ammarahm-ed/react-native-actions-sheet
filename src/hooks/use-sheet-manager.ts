@@ -32,7 +32,7 @@ const useSheetManager = ({
         },
       ),
       actionSheetEventManager.subscribe(`hide_${id}`, (data: any, context) => {
-        if (currentContext !== context) return;
+        if (context && currentContext !== context) return;
         onHide?.(data);
       }),
     ];
