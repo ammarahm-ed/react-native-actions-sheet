@@ -75,6 +75,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       closeOnPressBack = true,
       springOffset = 50,
       elevation = 5,
+      enableElevation = true,
       defaultOverlayOpacity = 0.3,
       overlayColor = 'black',
       closable = true,
@@ -1179,9 +1180,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               borderRadius:
                                 containerStyle?.borderRadius || undefined,
                               width: containerStyle?.width || '100%',
-                              ...getElevation(
-                                typeof elevation === 'number' ? elevation : 5,
-                              ),
+                              ...(enableElevation
+                                ? getElevation(
+                                    typeof elevation === 'number'
+                                      ? elevation
+                                      : 5,
+                                  )
+                                : {}),
                               flex: undefined,
                               height: dimensions.height,
                               maxHeight: dimensions.height,
