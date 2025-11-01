@@ -773,9 +773,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         ? {enabled: false}
         : ({
             onBegan: () => {
-              if (Platform.OS === 'android') {
-                scrollable(false);
-              }
+              // if (Platform.OS === 'android') {
+              //   scrollable(false);
+              // }
             },
             onGestureEvent(event) {
               if (sheetId && !isRenderedOnTop(sheetId, currentContext)) return;
