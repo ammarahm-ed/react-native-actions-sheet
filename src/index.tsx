@@ -1,6 +1,7 @@
 /* eslint-disable curly */
 import React, {
   forwardRef,
+  Fragment,
   RefObject,
   useCallback,
   useEffect,
@@ -16,6 +17,7 @@ import {
   LayoutRectangle,
   Modal,
   NativeEventSubscription,
+  PanResponder,
   Platform,
   StyleSheet,
   TouchableOpacity,
@@ -26,6 +28,7 @@ import {
   GestureDetector,
   GestureHandlerRootView,
   GestureType,
+  PanGesture,
 } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -606,8 +609,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [],
     );
 
-    
-
     const panGesture = React.useMemo(() => {
       let prevDeltaY = 0;
       let deltaYOnGestureStart = 0;
@@ -624,20 +625,24 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         for (let i = 0; i < draggableNodes.current.length; i++) {
           const node = draggableNodes.current[i];
           const scrollRef = resolveScrollRef(node.ref);
-          if (Platform.OS === 'ios' || Platform.OS === "web") {
+          if (Platform.OS === 'ios' || Platform.OS === 'web') {
             if (!value) {
               if (!offsets[i] || node.offset.current?.y === 0) {
                 offsets[i] = node.offset.current?.y || 0;
               }
-              scrollRef.scrollTo({
-                x: 0,
-                y: offsets[i],
-                animated: false,
-              });
+              if (Platform.OS === 'web') {
+                (scrollRef as HTMLDivElement).scrollTop = offsets[i];
+              } else {
+                scrollRef.scrollTo({
+                  x: 0,
+                  y: offsets[i],
+                  animated: false,
+                });
+              }
             } else {
               offsets[i] = node.offset.current?.y || 0;
             }
-          } else if (Platform.OS === "android") {
+          } else if (Platform.OS === 'android') {
             scrollRef?.setNativeProps({
               scrollEnabled: value,
             });
@@ -647,181 +652,229 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
       let blockPan = false;
 
-      return Gesture.Pan()
-        .withRef(panGestureRef)
-        .onChange(event => {
-          const {absoluteX, absoluteY, translationY} = event;
-          if (!gestureEnabled) return;
-          let deltaY = translationY;
-          let isSwipingDown = prevDeltaY < deltaY;
+      const onChange = (
+        absoluteX: number,
+        absoluteY: number,
+        translationY: number,
+      ) => {
+        if (!gestureEnabled) return;
+        let deltaY = translationY;
+        let isSwipingDown = prevDeltaY < deltaY;
 
-          prevDeltaY = deltaY;
+        prevDeltaY = deltaY;
 
-          if (!start) {
-            start = {
-              x: absoluteX,
-              y: absoluteY,
-            };
-          }
+        if (!start) {
+          start = {
+            x: absoluteX,
+            y: absoluteY,
+          };
+        }
 
-          const isFullOpen = getCurrentPosition() === 0;
+        const isFullOpen = getCurrentPosition() === 0;
 
-          const activeDraggableNodes = getActiveDraggableNodes(
-            start.x,
-            start.y,
-            !isFullOpen || (isFullOpen && !isSwipingDown),
+        const activeDraggableNodes = getActiveDraggableNodes(
+          start.x,
+          start.y,
+          !isFullOpen || (isFullOpen && !isSwipingDown),
+        );
+
+        if (activeDraggableNodes.length > 0 && !isRefreshing) {
+          const nodeIsScrolling = activeDraggableNodes.some(
+            node => node.node.offset.current.y !== 0,
           );
 
-          if (activeDraggableNodes.length > 0 && !isRefreshing) {
-            const nodeIsScrolling = activeDraggableNodes.some(
-              node => node.node.offset.current.y !== 0,
-            );
+          /**
+           * Draggable nodes handling cases:
+           *
+           * 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
+           * 2. Sheet fully open, swiping up, scrolling: true, panning: false
+           * 3. Sheet not fully open, swiping down, scrolling: false, panning: true
+           * 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
+           * 5. Add support for pull to refresh
+           */
 
-            /**
-             * Draggable nodes handling cases:
-             *
-             * 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
-             * 2. Sheet fully open, swiping up, scrolling: true, panning: false
-             * 3. Sheet not fully open, swiping down, scrolling: false, panning: true
-             * 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
-             * 5. Add support for pull to refresh
-             */
-
-            // 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
-            if (!isFullOpen && !isSwipingDown) {
-              scrollable(false);
-              // if (blockPan) {
-              //   deltaYOnGestureStart = deltaY;
-              // }
-              blockPan = false;
-            }
-
-            // 2. Sheet fully open, swiping up, scrolling: true, panning: false
-            if (isFullOpen && !isSwipingDown) {
-              scrollable(true);
-              blockPan = true;
-            }
-            //  3. Sheet not fully open, swiping down, scrolling: false, panning: true
-            if (!isFullOpen && isSwipingDown) {
-              if (nodeIsScrolling) {
-                scrollable(true);
-                blockPan = true;
-              } else {
-                scrollable(false);
-                // if (blockPan) {
-                //   // deltaYOnGestureStart = deltaY;
-                // }
-                blockPan = false;
-              }
-            }
-
-            // 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
-            if (isFullOpen && isSwipingDown) {
-              if (nodeIsScrolling) {
-                scrollable(true);
-                blockPan = true;
-              } else {
-                if (!deltaYOnGestureStart && deltaY > 0) {
-                  deltaYOnGestureStart = deltaY;
-                }
-                const hasRefreshControl = activeDraggableNodes.some(
-                  node => node.node.handlerConfig.hasRefreshControl,
-                );
-                if (hasRefreshControl) {
-                  for (const node of activeDraggableNodes) {
-                    if (node.node.handlerConfig.hasRefreshControl) {
-                      // Refresh Control will work in to 15% area of the DraggableNode.
-                      const refreshControlBounds =
-                        node.rectWithBoundary.py +
-                        node.rectWithBoundary.h *
-                          node.node.handlerConfig.refreshControlBoundary;
-
-                      if (!refreshControlBounds) continue;
-                      if (absoluteY < refreshControlBounds) {
-                        scrollable(true);
-                        blockPan = true;
-                        isRefreshing = true;
-                      }
-                    }
-                  }
-                } else {
-                  scrollable(false);
-                  blockPan = false;
-                }
-              }
-            }
-          } else {
+          // 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
+          if (!isFullOpen && !isSwipingDown) {
+            scrollable(false);
+            // if (blockPan) {
+            //   deltaYOnGestureStart = deltaY;
+            // }
             blockPan = false;
           }
 
-          if (isRefreshing) {
-            blockPan = true;
+          // 2. Sheet fully open, swiping up, scrolling: true, panning: false
+          if (isFullOpen && !isSwipingDown) {
             scrollable(true);
+            blockPan = true;
+          }
+          //  3. Sheet not fully open, swiping down, scrolling: false, panning: true
+          if (!isFullOpen && isSwipingDown) {
+            if (nodeIsScrolling) {
+              scrollable(true);
+              blockPan = true;
+            } else {
+              scrollable(false);
+              // if (blockPan) {
+              //   // deltaYOnGestureStart = deltaY;
+              // }
+              blockPan = false;
+            }
           }
 
-          let value = oldValue;
+          // 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
+          if (isFullOpen && isSwipingDown) {
+            if (nodeIsScrolling) {
+              scrollable(true);
+              blockPan = true;
+            } else {
+              if (!deltaYOnGestureStart && deltaY > 0) {
+                deltaYOnGestureStart = deltaY;
+              }
+              const hasRefreshControl = activeDraggableNodes.some(
+                node => node.node.handlerConfig.hasRefreshControl,
+              );
+              if (hasRefreshControl) {
+                for (const node of activeDraggableNodes) {
+                  if (node.node.handlerConfig.hasRefreshControl) {
+                    // Refresh Control will work in to 15% area of the DraggableNode.
+                    const refreshControlBounds =
+                      node.rectWithBoundary.py +
+                      node.rectWithBoundary.h *
+                        node.node.handlerConfig.refreshControlBoundary;
 
-          deltaY = deltaY - deltaYOnGestureStart;
-          if (!blockPan) {
-            value = initialValue.current + deltaY;
-            oldValue = value;
+                    if (!refreshControlBounds) continue;
+                    if (absoluteY < refreshControlBounds) {
+                      scrollable(true);
+                      blockPan = true;
+                      isRefreshing = true;
+                    }
+                  }
+                }
+              } else {
+                scrollable(false);
+                blockPan = false;
+              }
+            }
           }
+        } else {
+          blockPan = false;
+        }
 
-          if (blockPan) return;
-
-          velocity = 1;
-          const correctedValue =
-            value <= minTranslateValue.current
-              ? minTranslateValue.current - value
-              : value;
-
-          if (correctedValue / overdrawFactor >= overdrawSize && deltaY <= 0) {
-            return;
-          }
-
-          const minSnapPoint = getNextPosition(0);
-          const translateYValue =
-            value <= minTranslateValue.current
-              ? overdrawEnabled
-                ? minTranslateValue.current - correctedValue / overdrawFactor
-                : minTranslateValue.current
-              : value;
-
-          if (!closable && disableDragBeyondMinimumSnapPoint) {
-            translateY.value =
-              translateYValue >= minSnapPoint ? minSnapPoint : translateYValue;
-          } else {
-            translateY.value = translateYValue;
-          }
-        })
-        .runOnJS(true)
-        .activeOffsetY([-5, 5])
-        .failOffsetX([-5, 5])
-        .onEnd(() => {
-          if (!gestureEnabled) return;
-          deltaYOnGestureStart = 0;
-          const isMovingUp = getCurrentPosition() < initialValue.current;
-
+        if (isRefreshing) {
+          blockPan = true;
           scrollable(true);
+        }
 
-          if (
-            (!isMovingUp &&
-              getCurrentPosition() < initialValue.current + springOffset) ||
-            (isMovingUp &&
-              getCurrentPosition() > initialValue.current - springOffset)
-          ) {
-            moveSheetWithAnimation(1);
-            velocity = 0;
-            return;
-          }
+        let value = oldValue;
 
-          if (!isMovingUp) {
-            snapBackward(velocity);
-          } else {
-            snapForward(velocity);
-          }
+        deltaY = deltaY - deltaYOnGestureStart;
+        if (!blockPan) {
+          value = initialValue.current + deltaY;
+          oldValue = value;
+        }
+
+        if (blockPan) return;
+
+        velocity = 1;
+        const correctedValue =
+          value <= minTranslateValue.current
+            ? minTranslateValue.current - value
+            : value;
+
+        if (correctedValue / overdrawFactor >= overdrawSize && deltaY <= 0) {
+          return;
+        }
+
+        const minSnapPoint = getNextPosition(0);
+        const translateYValue =
+          value <= minTranslateValue.current
+            ? overdrawEnabled
+              ? minTranslateValue.current - correctedValue / overdrawFactor
+              : minTranslateValue.current
+            : value;
+
+        if (!closable && disableDragBeyondMinimumSnapPoint) {
+          translateY.value =
+            translateYValue >= minSnapPoint ? minSnapPoint : translateYValue;
+        } else {
+          translateY.value = translateYValue;
+        }
+      };
+
+      const onEnd = () => {
+        if (!gestureEnabled) return;
+        deltaYOnGestureStart = 0;
+        const isMovingUp = getCurrentPosition() < initialValue.current;
+
+        scrollable(true);
+
+        if (
+          (!isMovingUp &&
+            getCurrentPosition() < initialValue.current + springOffset) ||
+          (isMovingUp &&
+            getCurrentPosition() > initialValue.current - springOffset)
+        ) {
+          moveSheetWithAnimation(1);
           velocity = 0;
-        });
+          return;
+        }
+
+        if (!isMovingUp) {
+          snapBackward(velocity);
+        } else {
+          snapForward(velocity);
+        }
+        velocity = 0;
+      };
+
+      return Platform.OS === 'web'
+        ? PanResponder.create({
+            onMoveShouldSetPanResponder: (_event, gesture) => {
+              let vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
+              let vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
+              if (vy < 0.05 || vx > 0.05) {
+                return false;
+              }
+
+              const activeDraggableNodes = getActiveDraggableNodes(
+                _event.nativeEvent.pageX,
+                _event.nativeEvent.pageY,
+              );
+              for (let node of activeDraggableNodes) {
+                const scrollRef = resolveScrollRef(node.node.ref);
+                offsets.push((scrollRef as HTMLDivElement).scrollTop);
+              }
+              return true;
+            },
+            onStartShouldSetPanResponder: (_event, _gesture) => {
+              const activeDraggableNodes = getActiveDraggableNodes(
+                _event.nativeEvent.pageX,
+                _event.nativeEvent.pageY,
+              );
+              for (let node of activeDraggableNodes) {
+                const scrollRef = resolveScrollRef(node.node.ref);
+                offsets.push((scrollRef as HTMLDivElement).scrollTop);
+              }
+              return true;
+            },
+            onPanResponderMove: (_event, gesture) => {
+              onChange(
+                _event.nativeEvent.pageX,
+                _event.nativeEvent.pageY,
+                gesture.dy,
+              );
+            },
+            onPanResponderEnd: onEnd,
+          })
+        : Gesture.Pan()
+            .withRef(panGestureRef)
+            .onChange(event =>
+              onChange(event.absoluteX, event.absoluteY, event.translationY),
+            )
+            .runOnJS(true)
+            .activeOffsetY([-5, 5])
+            .failOffsetX([-5, 5])
+            .onEnd(onEnd);
     }, [gestureEnabled]);
 
     const onTouch = (event: GestureResponderEvent) => {
@@ -1053,6 +1106,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       };
     }, [underlayTranslateY]);
 
+    const GestureMobileOnly =
+      Platform.OS === 'web' ? Fragment : GestureDetector;
+
     return (
       <>
         {visible ? (
@@ -1102,7 +1158,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         />
                       ) : null}
 
-                      {dimensions.height === -1 && Platform.OS === "web" ? null : (
+                      {dimensions.height === -1 &&
+                      Platform.OS === 'web' ? null : (
                         <Animated.View
                           pointerEvents="box-none"
                           style={[
@@ -1131,8 +1188,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             },
                             animatedTranslateStyle,
                           ]}>
-                          <GestureDetector gesture={panGesture}>
+                          <GestureMobileOnly gesture={panGesture as PanGesture}>
                             <Animated.View
+                              {...((panGesture as any)?.panHandlers || {})}
                               onLayout={onSheetLayout}
                               ref={panViewRef}
                               testID={props.testIDs?.sheet}
@@ -1201,7 +1259,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                 )}
                               </View>
                             </Animated.View>
-                          </GestureDetector>
+                          </GestureMobileOnly>
 
                           {overdrawEnabled ? (
                             <Animated.View
