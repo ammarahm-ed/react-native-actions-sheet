@@ -275,6 +275,12 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   isModal?: boolean;
 
   /**
+   * Set the distance where the sheet should appear from. A value of 1 means sheet starts appearing from the bottom of the screen.
+   * @default 1
+   */
+  initialTranslateFactor: number;
+
+  /**
    * The default zIndex of wrapper `View` when `isModal` is set to false or background interaction is enabled is 9999. You can change it here.
    */
 
@@ -339,7 +345,7 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
 
   /**
    * Event called when the position of the ActionSheet changes.
-   * 
+   *
    * @param {number} percentage Sheet visible on the screen in percentage.
    */
   onChange?: (position: number) => void;
