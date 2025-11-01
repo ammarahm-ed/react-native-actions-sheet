@@ -1,7 +1,6 @@
 import React, {useCallback} from 'react';
 import {Text, View} from 'react-native';
 import ActionSheet, {ScrollView} from 'react-native-actions-sheet';
-import {RefreshControl} from 'react-native-gesture-handler';
 
 function ScrollViewSheet() {
   const vegetableNamesWithEmoji = [

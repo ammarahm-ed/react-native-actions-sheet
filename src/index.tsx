@@ -1,4 +1,3 @@
-/* eslint-disable curly */
 import React, {
   forwardRef,
   Fragment,
@@ -39,7 +38,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   DraggableNodes,
   DraggableNodesContext,
@@ -47,16 +46,16 @@ import {
   NodesRef,
   PanGestureRefContext,
 } from './context';
-import EventManager, { actionSheetEventManager } from './eventmanager';
+import EventManager, {actionSheetEventManager} from './eventmanager';
 import {
   Route,
   RouterContext,
   RouterParamsContext,
   useRouter,
 } from './hooks/use-router';
-import { resolveScrollRef } from './hooks/use-scroll-handlers';
+import {resolveScrollRef} from './hooks/use-scroll-handlers';
 import useSheetManager from './hooks/use-sheet-manager';
-import { useKeyboard } from './hooks/useKeyboard';
+import {useKeyboard} from './hooks/useKeyboard';
 import {
   SheetProvider,
   useProviderContext,
@@ -64,10 +63,10 @@ import {
   useSheetPayload,
   useSheetRef,
 } from './provider';
-import { getZIndexFromStack, SheetManager } from './sheetmanager';
-import { styles } from './styles';
-import { ActionSheetProps, ActionSheetRef } from './types';
-import { getElevation, SUPPORTED_ORIENTATIONS } from './utils';
+import {getZIndexFromStack, SheetManager} from './sheetmanager';
+import {styles} from './styles';
+import {ActionSheetProps, ActionSheetRef} from './types';
+import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
@@ -242,6 +241,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             duration: 200,
           },
         );
+        /**
+         * Using setTimeout to ensure onClose is triggered when sheet is off screen
+         * or is close to reaching off screen.
+         */
         setTimeout(callback, 150);
       },
       [animated, animationSheetOpacity, props.closeAnimationConfig],
@@ -413,7 +416,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (closable) {
           closing.current = true;
           Keyboard.dismiss();
-          // translateY.removeListener(245);
+          runOnUI((animationListener: number) => {
+            translateY.removeListener(animationListener);
+          })(animationListenerId);
         }
         hideSheetWithAnimation(vy, () => {
           if (closable || isSheetManagerOrRef) {
@@ -524,7 +529,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (currentSnapIndex.current === 0) {
           if (closable) {
             initialValue.current = dimensionsRef.current.height * 1.3;
-            setTimeout(() => hideSheet(vy));
+            hideSheet(vy);
           } else {
             const next = getNextPosition(currentSnapIndex.current);
             moveSheetWithAnimation(vy, next);
@@ -697,9 +702,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           // 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
           if (!isFullOpen && !isSwipingDown) {
             scrollable(false);
-            // if (blockPan) {
-            //   deltaYOnGestureStart = deltaY;
-            // }
             blockPan = false;
           }
 
@@ -715,9 +717,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               blockPan = true;
             } else {
               scrollable(false);
-              // if (blockPan) {
-              //   // deltaYOnGestureStart = deltaY;
-              // }
               blockPan = false;
             }
           }

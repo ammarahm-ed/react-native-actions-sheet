@@ -135,12 +135,6 @@ export function useScrollHandlers<T>(options?: DraggableNodeOptions) {
     }, 100);
   }, [nodeRef, onMeasure]);
 
-  // useEffect(() => {
-  //   setTimeout(() => {
-  //     setRender(true);
-  //   }, 300);
-  // }, []);
-
   const onLayout = React.useCallback(() => {
     measureAndLayout();
     subscription.current?.unsubscribe();
