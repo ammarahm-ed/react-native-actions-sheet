@@ -24,6 +24,7 @@ import {
   Platform,
   SafeAreaView,
   StatusBar,
+  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -156,10 +157,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const hiding = useRef(false);
     const payloadRef = useRef(payload);
     const sheetPayload = useSheetPayload();
-    const panHandlerRef = useRef();
+    const panHandlerRef = useRef(null);
     const closing = useRef(false);
     const draggableNodes = useRef<NodesRef>([]);
-    const sheetLayoutRef = useRef<LayoutRectangle>();
+    const sheetLayoutRef = useRef<LayoutRectangle>(null);
     const [dimensions, setDimensions] = useState<{
       width: number;
       height: number;
@@ -178,6 +179,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       layouTimer?: NodeJS.Timeout;
       resizing?: boolean;
     }>({});
+
+    const containerStyle = StyleSheet.flatten(props.containerStyle);
 
     if (safeAreaInsets) {
       safeAreaPaddings.current = safeAreaInsets;
@@ -341,7 +344,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [snapPoints],
     );
 
-    const hardwareBackPressEvent = useRef<NativeEventSubscription>();
+    const hardwareBackPressEvent = useRef<NativeEventSubscription>(null);
     const Root: React.ElementType =
       isModal && !props?.backgroundInteractionEnabled ? Modal : Animated.View;
 
@@ -1475,7 +1478,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           <Root {...rootProps}>
             <GestureHandlerRoot
               isModal={isModal}
-              style={styles.parentContainer}>
+              style={styles.parentContainer}
+              pointerEvents={
+                props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
+              }>
               <PanGestureRefContext.Provider value={context}>
                 <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
@@ -1520,14 +1526,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       pointerEvents="box-none"
                       style={{
                         borderTopRightRadius:
-                          props.containerStyle?.borderTopRightRadius || 10,
+                          containerStyle?.borderTopRightRadius || 10,
                         borderTopLeftRadius:
-                          props.containerStyle?.borderTopLeftRadius || 10,
+                          containerStyle?.borderTopLeftRadius || 10,
                         backgroundColor:
-                          props.containerStyle?.backgroundColor || 'white',
+                          containerStyle?.backgroundColor || 'white',
                         borderBottomLeftRadius:
-                          props.containerStyle?.borderBottomLeftRadius ||
-                          undefined,
+                          containerStyle?.borderBottomLeftRadius || undefined,
                         borderBottomRightRadius:
                           props.containerStyle?.borderBottomRightRadius ||
                           undefined,
@@ -1580,13 +1585,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                   position: 'absolute',
                                   top: -50,
                                   backgroundColor:
-                                    props.containerStyle?.backgroundColor ||
-                                    'white',
+                                    containerStyle?.backgroundColor || 'white',
                                   width: '100%',
                                   borderTopRightRadius:
-                                    props.containerStyle?.borderRadius || 10,
+                                    containerStyle?.borderRadius || 10,
                                   borderTopLeftRadius:
-                                    props.containerStyle?.borderRadius || 10,
+                                    containerStyle?.borderRadius || 10,
                                   transform: [
                                     {
                                       translateY: animations.underlayTranslateY,
@@ -1631,9 +1635,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             height: overdrawSize,
                             bottom: -overdrawSize,
                             backgroundColor:
-                              props.containerStyle?.backgroundColor || 'white',
-                            width:
-                              props.containerStyle?.width || dimensions.width,
+                              containerStyle?.backgroundColor || 'white',
+                            width: containerStyle?.width || dimensions.width,
                           }}
                         />
                       ) : null}
@@ -1659,7 +1662,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
 const GestureHandlerRoot = (props: any) => {
   return props.isModal ? (
-    <GestureHandlerRootView style={props.style}>
+    <GestureHandlerRootView
+      style={props.style}
+      pointerEvents={props.pointerEvents}>
       {props.children}
     </GestureHandlerRootView>
   ) : (

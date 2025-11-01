@@ -99,8 +99,8 @@ export function useDraggable<T>(options?: DraggableNodeOptions) {
 export function useScrollHandlers<T>(options?: DraggableNodeOptions) {
   const [_render, setRender] = useState(false);
   const {nodeRef, gestureContext, offset, layout} = useDraggable<T>(options);
-  const timer = useRef<NodeJS.Timeout>();
-  const subscription = useRef<EventHandlerSubscription>();
+  const timer = useRef<NodeJS.Timeout>(null);
+  const subscription = useRef<EventHandlerSubscription>(null);
   const onMeasure = useCallback(
     (x: number, y: number, w: number, h: number, px: number, py: number) => {
       layout.current = {
@@ -120,6 +120,7 @@ export function useScrollHandlers<T>(options?: DraggableNodeOptions) {
     timer.current = setTimeout(() => {
       const ref = resolveScrollRef(nodeRef);
       if (Platform.OS == 'web') {
+        if (!ref) return;
         const rect = (ref as HTMLDivElement).getBoundingClientRect();
         (ref as HTMLDivElement).style.overflow = "auto";
         onMeasure(rect.x, rect.y, rect.width, rect.height, rect.left, rect.top);

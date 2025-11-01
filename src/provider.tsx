@@ -134,8 +134,7 @@ export const useSheetIDContext = () => useContext(SheetIDContext);
 // >;
 
 export function useSheetRef<SheetId extends keyof Sheets = never>(
-  //@ts-ignore
-  id?: SheetId | (string & {}),
+  _id?: SheetId | (string & {}),
 ) {
   return useContext(SheetRefContext) as MutableRefObject<
     ActionSheetRef<SheetId>
@@ -147,8 +146,7 @@ export function useSheetRef<SheetId extends keyof Sheets = never>(
  * @returns
  */
 export function useSheetPayload<SheetId extends keyof Sheets = never>(
-  //@ts-ignore
-  id?: SheetId | (string & {}),
+  _id?: SheetId | (string & {}),
 ) {
   return useContext(SheetPayloadContext) as Sheets[SheetId]['payload'];
 }
@@ -157,6 +155,7 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [payload, setPayload] = useState();
   const [visible, setVisible] = useState(false);
   const ref = useRef<ActionSheetRef | null>(null);
+  const clearPayloadTimeoutRef = useRef<NodeJS.Timeout>(null);
   const Sheet = context.startsWith('$$-auto-')
     ? sheetsRegistry?.global?.[id]
     : sheetsRegistry[context]
@@ -166,6 +165,7 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const onShow = React.useCallback(
     (data: any, ctx = 'global') => {
       if (ctx !== context) return;
+      clearTimeout(clearPayloadTimeoutRef.current);
       setPayload(data);
       setVisible(true);
     },
@@ -176,9 +176,10 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
     (_data: any, ctx = 'global') => {
       if (context !== ctx) return;
       setVisible(false);
-      setTimeout(() => {
+      clearTimeout(clearPayloadTimeoutRef.current);
+      clearPayloadTimeoutRef.current = setTimeout(() => {
         setPayload(undefined);
-      }, 1);
+      }, 50);
     },
     [context],
   );

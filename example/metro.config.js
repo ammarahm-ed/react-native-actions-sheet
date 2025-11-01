@@ -1,7 +1,5 @@
-const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
+const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const path = require('path');
-const exclusionList = require('metro-config/src/defaults/exclusionList');
-
 const moduleRoot = path.resolve(__dirname, '..');
 
 /**
@@ -46,13 +44,12 @@ const config = {
 
       return context.resolveRequest(context, moduleName, platform);
     },
-    blockList: exclusionList([
+    blockList: [
       new RegExp(`${moduleRoot}/node_modules/react/.*`),
       new RegExp(`${moduleRoot}/node_modules/react-native/.*`),
       new RegExp(`${moduleRoot}/node_modules/react-native-gesture-handler`),
-      new RegExp(`${moduleRoot}/node_modules/@shopify/flash-list`),
       new RegExp(`${moduleRoot}/node_modules/react-native-safe-area-context`),
-    ]),
+    ],
   },
   transformer: {
     getTransformOptions: async () => ({

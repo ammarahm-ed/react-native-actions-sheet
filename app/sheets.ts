@@ -1,4 +1,8 @@
-import {RouteDefinition, SheetDefinition, registerSheet} from 'react-native-actions-sheet';
+import {
+  RouteDefinition,
+  SheetDefinition,
+  registerSheet,
+} from 'react-native-actions-sheet';
 import Hello from './examples/hello';
 import Gestures from './examples/gestures';
 import SnapMe from './examples/snap-me';
@@ -15,7 +19,6 @@ import RouterSheet from './examples/router';
 import DrawUnderStatusBar from './examples/draw-under-statusbar';
 import ReturnData from './examples/return-data';
 
-
 // Register your Sheet component.
 /**
  * Registering the sheets here because otherwise sheet closes on
@@ -28,12 +31,12 @@ registerSheet('input', Input);
 registerSheet('payload', Payload);
 registerSheet('background-interaction', BackgroundInteraction);
 registerSheet('always-open', AlwaysOpen);
-registerSheet("scrollview", ScrollViewSheet);
-registerSheet('flatlist', FlatListSheet)
-registerSheet('flashlist', FlashListSheet)
+registerSheet('scrollview', ScrollViewSheet);
+registerSheet('flatlist', FlatListSheet);
+registerSheet('flashlist', FlashListSheet);
 registerSheet('scrollview-resize', ResizeSheet);
-registerSheet("nested-sheets", NestedSheet);
-registerSheet("sheet-router", RouterSheet);
+registerSheet('nested-sheets', NestedSheet);
+registerSheet('sheet-router', RouterSheet);
 registerSheet('draw-under-statusbar', DrawUnderStatusBar);
 registerSheet('return-data', ReturnData);
 
@@ -56,25 +59,24 @@ declare module 'react-native-actions-sheet' {
       };
     }>;
     'background-interaction': SheetDefinition;
-    'always-open': SheetDefinition,
-    'scrollview': SheetDefinition,
-    'flatlist': SheetDefinition,
-    'flashlist': SheetDefinition,
-    'scrollview-resize': SheetDefinition,
+    'always-open': SheetDefinition;
+    scrollview: SheetDefinition;
+    flatlist: SheetDefinition;
+    flashlist: SheetDefinition;
+    'scrollview-resize': SheetDefinition;
     'sheet-router': SheetDefinition<{
       routes: {
         'route-a': RouteDefinition;
         'route-b': RouteDefinition<{
-          value: string
+          value: string;
         }>;
-      }
+      };
     }>;
     'nested-sheets': SheetDefinition;
     'draw-under-statusbar': SheetDefinition;
     'return-data': SheetDefinition<{
-      returnValue: boolean
-    }>,
-
+      returnValue: boolean;
+    }>;
   }
 }
 

@@ -1,7 +1,6 @@
-const { getDefaultConfig } = require('expo/metro-config');
-const { mergeConfig} = require('@react-native/metro-config');
+const {getDefaultConfig} = require('expo/metro-config');
+const {mergeConfig} = require('@react-native/metro-config');
 const path = require('path');
-const exclusionList = require('metro-config/src/defaults/exclusionList');
 
 const moduleRoot = path.resolve(__dirname, '..');
 
@@ -12,16 +11,18 @@ const moduleRoot = path.resolve(__dirname, '..');
  * @type {import('metro-config').MetroConfig}
  */
 const config = {
-  watchFolders: [moduleRoot,  path.join(__dirname, '../app'),],
+  watchFolders: [moduleRoot, path.join(__dirname, '../app')],
   resolver: {
     extraNodeModules: {
       react: path.resolve(__dirname, 'node_modules/react'),
       'react-native': path.resolve(__dirname, 'node_modules/react-native'),
-      'react-native-web': path.resolve(__dirname, 'node_modules/react-native-web'),
+      'react-native-web': path.resolve(
+        __dirname,
+        'node_modules/react-native-web',
+      ),
       'react-native-actions-sheet': path.resolve(__dirname, '../'),
     },
     resolveRequest: (context, moduleName, platform) => {
-
       if (moduleName === 'react-native-safe-area-context') {
         return {
           filePath: path.resolve(
@@ -33,7 +34,7 @@ const config = {
           type: 'sourceFile',
         };
       }
-      
+
       if (moduleName === 'react-native-gesture-handler') {
         return {
           filePath: path.resolve(
@@ -48,12 +49,11 @@ const config = {
 
       return context.resolveRequest(context, moduleName, platform);
     },
-    blockList: exclusionList([
+    blockList: [
       new RegExp(`${moduleRoot}/node_modules/react/.*`),
       new RegExp(`${moduleRoot}/node_modules/react-native/.*`),
       new RegExp(`${moduleRoot}/node_modules/react-native-gesture-handler`),
-      new RegExp(`${moduleRoot}/node_modules/@shopify/flash-list`),
-    ]),
+    ],
   },
   transformer: {
     getTransformOptions: async () => ({

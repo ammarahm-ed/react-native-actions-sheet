@@ -5,6 +5,7 @@ import {
   LayoutRectangle,
   TouchableOpacityProps,
   ViewStyle,
+  StyleProp,
 } from 'react-native';
 import EventManager from './eventmanager';
 import {Route} from './hooks/use-router';
@@ -182,7 +183,7 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   /**
    * Style the top indicator bar in ActionSheet.
    */
-  indicatorStyle?: ViewStyle;
+  indicatorStyle?: StyleProp<ViewStyle>;
 
   /**
    * Color of the overlay/backdrop.
@@ -206,7 +207,7 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   /**
    * Any custom styles for the container.
    * */
-  containerStyle?: ViewStyle;
+  containerStyle?: StyleProp<ViewStyle>;
 
   /**
    * Control closing ActionSheet by touching on backdrop.
