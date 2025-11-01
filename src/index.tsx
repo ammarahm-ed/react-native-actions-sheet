@@ -778,7 +778,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               }
             },
             onGestureEvent(event) {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext)) return;
+              if (
+                sheetId &&
+                id === sheetId &&
+                !isRenderedOnTop(sheetId, currentContext)
+              )
+                return;
 
               const gesture = event.nativeEvent;
               let deltaY = gesture.translationY;
@@ -1010,7 +1015,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         ? {panHandlers: {}}
         : PanResponder.create({
             onMoveShouldSetPanResponder: (_event, gesture) => {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext))
+              if (
+                sheetId &&
+                id === sheetId &&
+                !isRenderedOnTop(sheetId, currentContext)
+              )
                 return false;
               let vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
               let vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
@@ -1029,7 +1038,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               return true;
             },
             onStartShouldSetPanResponder: (_event, _gesture) => {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext))
+              if (
+                sheetId &&
+                id === sheetId &&
+                !isRenderedOnTop(sheetId, currentContext)
+              )
                 return false;
               const activeDraggableNodes = getActiveDraggableNodes(
                 _event.nativeEvent.pageX,
