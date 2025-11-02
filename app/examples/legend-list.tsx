@@ -1,10 +1,10 @@
 import React, {useCallback} from 'react';
 import {Text, View} from 'react-native';
 import ActionSheet, {ScrollView, useSheetRef} from 'react-native-actions-sheet';
-import {FlashList} from '@shopify/flash-list';
 import {Button} from '../components/button';
+import {LegendList} from '@legendapp/list';
 
-function FlashListSheet() {
+function LegendListExample() {
   const ref = useSheetRef();
   const vegetableNamesWithEmoji = [
     '🍅 Tomato',
@@ -89,21 +89,23 @@ function FlashListSheet() {
     ),
     [],
   );
+
   return (
     <ActionSheet gestureEnabled>
       <View
         style={{
           paddingHorizontal: 12,
-          paddingTop: 20,
           gap: 10,
-          width: '100%',
-          maxHeight: '100%',
-          // FlashList needs some fixed height here
-          height: '100%',
+          width:'100%',
+          maxHeight: '100%'
         }}>
-        <FlashList
+        <LegendList
           data={vegetableNamesWithEmoji}
-          renderScrollComponent={ScrollView}
+          renderScrollComponent={(props) => <ScrollView {...props}/>}
+          style={{
+            width: '100%',
+          }}
+          estimatedItemSize={80}
           ListHeaderComponent={
             <Text
               style={{
@@ -115,6 +117,7 @@ function FlashListSheet() {
               Vegetables
             </Text>
           }
+          keyExtractor={(item, index) => `${item} + ${index}`}
           renderItem={renderItem}
         />
         <Button
@@ -128,4 +131,4 @@ function FlashListSheet() {
   );
 }
 
-export default FlashListSheet;
+export default LegendListExample;

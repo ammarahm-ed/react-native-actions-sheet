@@ -2,6 +2,7 @@ import {
   RouteDefinition,
   SheetDefinition,
   registerSheet,
+  SheetRegister,
 } from 'react-native-actions-sheet';
 import Hello from './examples/hello';
 import Gestures from './examples/gestures';
@@ -18,27 +19,8 @@ import NestedSheet from './examples/nested';
 import RouterSheet from './examples/router';
 import DrawUnderStatusBar from './examples/draw-under-statusbar';
 import ReturnData from './examples/return-data';
-
-// Register your Sheet component.
-/**
- * Registering the sheets here because otherwise sheet closes on
- * hot reload during development.
- */
-registerSheet('hello', Hello);
-registerSheet('gestures', Gestures);
-registerSheet('snap-me', SnapMe);
-registerSheet('input', Input);
-registerSheet('payload', Payload);
-registerSheet('background-interaction', BackgroundInteraction);
-registerSheet('always-open', AlwaysOpen);
-registerSheet('scrollview', ScrollViewSheet);
-registerSheet('flatlist', FlatListSheet);
-registerSheet('flashlist', FlashListSheet);
-registerSheet('scrollview-resize', ResizeSheet);
-registerSheet('nested-sheets', NestedSheet);
-registerSheet('sheet-router', RouterSheet);
-registerSheet('draw-under-statusbar', DrawUnderStatusBar);
-registerSheet('return-data', ReturnData);
+import FloatingSheet from './examples/floating-sheet';
+import LegendListExample from './examples/legend-list';
 
 /**
  * We extend some of the types here to give us great intellisense
@@ -74,15 +56,36 @@ declare module 'react-native-actions-sheet' {
     }>;
     'nested-sheets': SheetDefinition;
     'draw-under-statusbar': SheetDefinition;
+    'floating-sheet': SheetDefinition;
     'return-data': SheetDefinition<{
       returnValue: boolean;
     }>;
+    'legend-list':SheetDefinition
   }
 }
 
-export {};
-
-/**
- * Since we are not importing our Sheets in any component or file, we want to make sure
- * they are bundled by the JS bundler. Hence we will import this file in App.js.
- */
+export const Sheets = () => {
+  return (
+    <SheetRegister
+      sheets={{
+        hello: Hello,
+        gestures: Gestures,
+        'snap-me': SnapMe,
+        input: Input,
+        payload: Payload,
+        'background-interaction': BackgroundInteraction,
+        'always-open': AlwaysOpen,
+        scrollview: ScrollViewSheet,
+        flashlist: FlashListSheet,
+        flatlist: FlatListSheet,
+        'scrollview-resize': ResizeSheet,
+        'nested-sheets': NestedSheet,
+        'sheet-router': RouterSheet,
+        'draw-under-statusbar': DrawUnderStatusBar,
+        'return-data': ReturnData,
+        'floating-sheet': FloatingSheet,
+         'legend-list': LegendListExample
+      }}
+    />
+  );
+};

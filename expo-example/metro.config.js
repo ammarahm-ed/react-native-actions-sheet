@@ -24,7 +24,8 @@ const config = {
         'node_modules/react-native-web',
       ),
       'react-native-actions-sheet': path.resolve(__dirname, '../'),
-       'react-native-reanimated': path.resolve(__dirname, 'node_modules/react-native-reanimated')
+       'react-native-reanimated': path.resolve(__dirname, 'node_modules/react-native-reanimated'),
+       '@legendapp/list': path.resolve(__dirname, 'node_modules/@legendapp/list')
     },
     resolveRequest: (context, moduleName, platform) => {
       if (moduleName === 'react-native-safe-area-context') {

@@ -2,6 +2,7 @@
 import React from 'react';
 import {
   Linking,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -20,6 +21,12 @@ const MainScreen = () => {
       title: 'Hello',
       onOpen: () => {
         SheetManager.show('hello');
+      },
+    },
+    {
+      title: 'Floating Sheet',
+      onOpen: () => {
+        SheetManager.show('floating-sheet');
       },
     },
     {
@@ -109,6 +116,12 @@ const MainScreen = () => {
       },
     },
     {
+      title: 'LegendList',
+      onOpen: () => {
+        SheetManager.show('legend-list');
+      },
+    },
+    {
       title: 'Resize',
       onOpen: () => {
         SheetManager.show('scrollview-resize');
@@ -137,13 +150,13 @@ const MainScreen = () => {
         <StatusBar
           translucent
           backgroundColor="transparent"
-          barStyle="dark-content"
+          barStyle="light-content"
         />
 
         <Text
           style={{
             color: 'black',
-            fontWeight: '100',
+            fontWeight: '400',
             fontSize: 30,
             alignSelf: 'center',
           }}>
@@ -158,14 +171,29 @@ const MainScreen = () => {
             paddingHorizontal: 12,
           }}>
           {examples.map(item => (
-            <TouchableOpacity
+            <Pressable
               key={item.title}
               onPress={() => {
                 item.onOpen();
               }}
-              style={styles.btn}>
+              style={pressed => ({
+                height: 50,
+                justifyContent: 'center',
+                alignItems: 'center',
+                alignSelf: 'center',
+                backgroundColor: pressed.pressed ? '#d9d9d9' : '#f0f0f0',
+                paddingHorizontal: 10,
+                borderRadius: 10,
+                elevation: 5,
+                shadowColor: 'black',
+                shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
+                shadowOpacity: 0.2,
+                shadowRadius: 0.7 * 4,
+                width: '100%',
+                marginBottom: 10,
+              })}>
               <Text style={styles.btnTitle}>{item.title}</Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </ScrollView>
       </SafeAreaView>
@@ -176,32 +204,16 @@ const MainScreen = () => {
 export default MainScreen;
 
 const styles = StyleSheet.create({
-  btn: {
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    elevation: 5,
-    shadowColor: 'black',
-    shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
-    shadowOpacity: 0.2,
-    shadowRadius: 0.7 * 4,
-    width: '100%',
-    marginBottom: 10,
-  },
   safeareview: {
     justifyContent: 'center',
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: 'lightgreen',
     alignItems: 'center',
     gap: 10,
     paddingTop: 40,
   },
   btnTitle: {
-    color: 'white',
+    color: 'block',
     fontWeight: 'bold',
   },
 });

@@ -1,4 +1,11 @@
-import { Pressable, PressableProps, StyleProp, Text, TextStyle, ViewStyle } from 'react-native';
+import {
+  Pressable,
+  PressableProps,
+  StyleProp,
+  Text,
+  TextStyle,
+  ViewStyle,
+} from 'react-native';
 
 export function Button(
   props: PressableProps & {
@@ -15,7 +22,7 @@ export function Button(
           justifyContent: 'center',
           alignItems: 'center',
           alignSelf: 'center',
-          backgroundColor: '#2563eb',
+          backgroundColor: 'black',
           paddingHorizontal: 10,
           borderRadius: 10,
           elevation: 5,
