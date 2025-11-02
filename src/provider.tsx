@@ -1,27 +1,21 @@
-/* eslint-disable curly */
 import React, {
   createContext,
   ReactNode,
   RefObject,
   useContext,
   useEffect,
-  useReducer,
   useRef,
-  useState
+  useState,
 } from 'react';
-import { actionSheetEventManager } from './eventmanager';
-import { ActionSheetRef, Sheets } from './types';
+import {actionSheetEventManager} from './eventmanager';
+import {ActionSheetRef, Sheets} from './types';
 
 export const providerRegistryStack: string[] = [];
 
 /**
  * An object that holds all the sheet components against their ids.
  */
-export const sheetsRegistry: {
-  [context: string]: {[id: string]: React.ElementType};
-} = {
-  global: {},
-};
+export const sheetsRegistry: {[id: string]: React.ElementType} = {};
 
 export interface SheetProps<SheetId extends keyof Sheets = never> {
   sheetId: SheetId | (string & {});
@@ -32,17 +26,14 @@ export interface SheetProps<SheetId extends keyof Sheets = never> {
 export function registerSheet<SheetId extends keyof Sheets = never>(
   id: SheetId | (string & {}),
   Sheet: React.ElementType,
-  ...contexts: string[]
+  /**
+   * @deprecated Does nothing
+   */
+  ..._contexts: string[]
 ) {
   if (!id || !Sheet) return;
-  if (!contexts || contexts.length === 0) contexts = ['global'];
-  for (let context of contexts) {
-    const registry = !sheetsRegistry[context]
-      ? (sheetsRegistry[context] = {})
-      : sheetsRegistry[context];
-    registry[id] = Sheet;
-    actionSheetEventManager.publish(`${context}-on-register`);
-  }
+  sheetsRegistry[id] = Sheet;
+  actionSheetEventManager.publish('context-on-register');
 }
 
 /**
@@ -71,21 +62,21 @@ export function SheetProvider({
   context?: string;
   children?: ReactNode;
 }) {
-  const [, forceUpdate] = useReducer(x => x + 1, 0);
-  const sheetIds = Object.keys(
-    sheetsRegistry[context] || sheetsRegistry['global'] || {},
-  );
+  const [sheetIds, setSheetIds] = useState(Object.keys(sheetsRegistry));
   const onRegister = React.useCallback(() => {
-    // Rerender when a new sheet is added.
-    forceUpdate();
-  }, [forceUpdate]);
+    setSheetIds(Object.keys(sheetsRegistry));
+  }, []);
 
   useEffect(() => {
-    providerRegistryStack.indexOf(context) > -1
-      ? providerRegistryStack.indexOf(context)
-      : providerRegistryStack.push(context) - 1;
+    if (providerRegistryStack.indexOf(context) === -1) {
+      providerRegistryStack.push(context);
+    } else {
+      throw new Error(
+        `You are trying to register multiple SheetProviders with the same context id: ${context}. Use a unique context id for each SheetProvider in your app.`,
+      );
+    }
     const unsub = actionSheetEventManager.subscribe(
-      `${context}-on-register`,
+      `context-on-register`,
       onRegister,
     );
     return () => {
@@ -94,8 +85,11 @@ export function SheetProvider({
     };
   }, [context, onRegister]);
 
-  const renderSheet = (sheetId: string) => (
-    <RenderSheet key={sheetId} id={sheetId} context={context} />
+  const renderSheet = React.useCallback(
+    (sheetId: string) => (
+      <RenderSheet key={sheetId} id={sheetId} context={context} />
+    ),
+    [context],
   );
 
   return (
@@ -135,9 +129,7 @@ export const useSheetIDContext = () => useContext(SheetIDContext);
 export function useSheetRef<SheetId extends keyof Sheets = never>(
   _id?: SheetId | (string & {}),
 ) {
-  return useContext(SheetRefContext) as RefObject<
-    ActionSheetRef<SheetId>
-  >;
+  return useContext(SheetRefContext) as RefObject<ActionSheetRef<SheetId>>;
 }
 
 /**
@@ -155,11 +147,7 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [visible, setVisible] = useState(false);
   const ref = useRef<ActionSheetRef | null>(null);
   const clearPayloadTimeoutRef = useRef<NodeJS.Timeout>(null);
-  const Sheet = context.startsWith('$$-auto-')
-    ? sheetsRegistry?.global?.[id]
-    : sheetsRegistry[context]
-    ? sheetsRegistry[context]?.[id]
-    : undefined;
+  const Sheet = sheetsRegistry[id] || null;
 
   const onShow = React.useCallback(
     (data: any, ctx = 'global') => {
@@ -221,3 +209,60 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
     </ProviderContext.Provider>
   );
 };
+
+export type SheetRegisterProps = {
+  sheets: {
+    [K in keyof Sheets]: React.ElementType;
+  };
+};
+/**
+ * Registers the sheet components with the global Sheet registery allowing
+ * you to open sheets from anywhere in the app.
+ *
+ * We recommend you to use this once in your app in your `<App/>` component.
+ *
+ * @example
+ * ```tsx
+ * import {SheetProvider, SheetDefinition} from "react-native-actions-sheet";
+ *
+ * declare module 'react-native-actions-sheet' {
+ *  export interface Sheets {
+ *    'example-sheet': SheetDefinition;
+ *    }
+ * }
+ *
+ * const App = () => {
+ *  return <View>
+ *    <SheetRegister
+ *      sheets={
+ *      "example-sheet": ExampleSheet
+ *    }
+ *    />
+ * </View>
+ * }
+ * ```
+ */
+export function SheetRegister(props: SheetRegisterProps): React.JSX.Element {
+  const registered = useRef(false);
+  if (!registered.current) {
+    registered.current = true;
+    Object.keys(props.sheets).forEach(id => {
+      if (!props.sheets[id]) {
+        throw new Error(
+          `SheetRegistry trying to register ${id} that is not a React Component.`,
+        );
+      }
+      if (sheetsRegistry[id]) {
+        if (__DEV__) {
+          console.warn(
+            `SheetRegistry tried to register sheet with the same id ${id} multiple times. If you are registering Sheets will multiple SheetRegistery components, make sure the ids are unique.`,
+          );
+        }
+        return;
+      }
+      sheetsRegistry[id] = props.sheets[id];
+    });
+  }
+
+  return null;
+}

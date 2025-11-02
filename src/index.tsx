@@ -12,7 +12,6 @@ import {
   BackHandler,
   GestureResponderEvent,
   Keyboard,
-  LayoutChangeEvent,
   LayoutRectangle,
   Modal,
   NativeEventSubscription,
@@ -118,6 +117,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const currentContext = useProviderContext();
     const currentSnapIndex = useRef(initialSnapIndex);
     const sheetRef = useSheetRef();
+    const sheetHeightRef = useRef(0);
     const minTranslateValue = useRef(0);
     const keyboardWasVisible = useRef(false);
     const animationListenerId = 266786;
@@ -328,8 +328,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     ]);
 
     const onSheetLayout = React.useCallback(
-      async (event: LayoutChangeEvent) => {
-        const sheetHeight = event.nativeEvent.layout.height;
+      async (height: number) => {
+        const sheetHeight = height;
+        sheetHeightRef.current = sheetHeight;
         if (dimensionsRef.current.height === -1) {
           return;
         }
@@ -1129,6 +1130,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         width: event.nativeEvent.layout.width,
                         height: event.nativeEvent.layout.height,
                       });
+                      if (sheetHeightRef.current) {
+                        /**
+                         * Android has a bug where it will fire multiple onLayout events with
+                         * different values. Here we ensure that sheet is rendered at correct position
+                         */
+                        setTimeout(() => {
+                          onSheetLayout(sheetHeightRef.current);
+                        });
+                      }
                     }}
                     ref={rootViewContainerRef}
                     pointerEvents={
@@ -1187,7 +1197,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                       : 5,
                                   )
                                 : {}),
-                              flex: undefined,
                               height: dimensions.height,
                               maxHeight: dimensions.height,
                             },
@@ -1196,7 +1205,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                           <GestureMobileOnly gesture={panGesture as PanGesture}>
                             <Animated.View
                               {...((panGesture as any)?.panHandlers || {})}
-                              onLayout={onSheetLayout}
+                              onLayout={event =>
+                                onSheetLayout(event.nativeEvent.layout.height)
+                              }
                               ref={panViewRef}
                               testID={props.testIDs?.sheet}
                               style={[
@@ -1215,6 +1226,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                       insets.top -
                                       keyboard.keyboardHeight
                                     : dimensions.height - insets.top,
+                                  // Using this to trigger layout when keyboard is shown
                                   marginTop: keyboard.keyboardShown ? 0.5 : 0,
                                 },
                               ]}>
@@ -1251,18 +1263,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                 )
                               ) : null}
 
-                              <View
-                                style={{
-                                  flexShrink: 1,
-                                }}>
-                                {router?.hasRoutes() ? (
-                                  <RouterContext.Provider value={router}>
-                                    {router?.stack.map(renderRoute)}
-                                  </RouterContext.Provider>
-                                ) : (
-                                  props?.children
-                                )}
-                              </View>
+                              {router?.hasRoutes() ? (
+                                <RouterContext.Provider value={router}>
+                                  {router?.stack.map(renderRoute)}
+                                </RouterContext.Provider>
+                              ) : (
+                                props?.children
+                              )}
                             </Animated.View>
                           </GestureMobileOnly>
 
