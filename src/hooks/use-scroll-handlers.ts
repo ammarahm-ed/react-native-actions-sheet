@@ -55,7 +55,7 @@ export function useDraggable<T>(options?: DraggableNodeOptions) {
           ref: nodeRef,
           offset: offset,
           rect: layout,
-          handlerConfig: options,
+          handlerConfig: options || {} as DraggableNodeOptions,
         });
       }
     };
