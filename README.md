@@ -23,18 +23,13 @@ Check out the [installation](https://rnas.vercel.app/installation) section of ou
 
 Check out our dedicated documentation page for info about this library, it's features, API reference and more: [https://rnas.vercel.app](https://rnas.vercel.app)
 
-## Migrating from v0.7.0
+## Migrating from v0.9.x
 
 The new version of ActionSheet introduces some **breaking changes**. Please read through the [migration guide](https://rnas.vercel.app/guides/migrate) and take the necessary steps.
 
 ## Examples
 
 The source code for the example (showcase) app is under the example/ directory. If you want to play with the ActionSheet but don't feel like trying it on a real app, you can run the [example snack](https://snack.expo.dev/@ammarahmed/github.com-ammarahm-ed-react-native-actions-sheet:expo-example).
-
-## Documentation for v0.7.0 & older
-
-You can find the docs in [v0.7.0 branch](https://github.com/ammarahm-ed/react-native-actions-sheet/tree/v0.7.0)
-
 ## Consider supporting with a ⭐️ [star on GitHub](https://github.com/ammarahm-ed/react-native-actions-sheet/)
 
 If you are using the library in one of your projects, consider supporting with a star. It takes a lot of time and effort to keep this maintained and address issues and bugs. Thank you.

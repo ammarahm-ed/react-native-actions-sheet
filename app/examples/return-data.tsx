@@ -11,22 +11,21 @@ function ReturnData() {
         marginTop: 10,
         width: 150,
       }}
-      gestureEnabled
-      drawUnderStatusBar>
+      gestureEnabled>
       <View
         style={{
           alignItems: 'center',
           justifyContent: 'center',
           gap: 10,
           paddingHorizontal: 12,
-            paddingTop: 20
+          paddingTop: 20,
         }}>
         <Text
           style={{
             color: 'black',
             fontSize: 30,
-            textAlign:'center',
-            marginBottom: 10
+            textAlign: 'center',
+            marginBottom: 10,
           }}>
           Are you sure you want to star react-native-actions-sheet repo on
           Github?
@@ -43,7 +42,7 @@ function ReturnData() {
             ref.current.hide(false);
           }}
           style={{
-            backgroundColor:"#a9a9a9"
+            backgroundColor: '#a9a9a9',
           }}
         />
       </View>

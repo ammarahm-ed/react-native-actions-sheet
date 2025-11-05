@@ -13,7 +13,7 @@ Create your ActionSheet component and export it.
 ```tsx
 function ExampleSheet() {
   return (
-    <ActionSheet>
+    <ActionSheet gestureEnabled>
       <View>
         <Text>Hello World</Text>
       </View>
@@ -26,11 +26,10 @@ export default ExampleSheet;
 
 Create a `sheets.tsx` file and import your sheet then register it.
 
-```ts
-import {registerSheet, SheetDefinition} from 'react-native-actions-sheet';
+```tsx
+import {SheetRegister, SheetDefinition} from 'react-native-actions-sheet';
 import ExampleSheet from 'example-sheet.tsx';
 
-registerSheet('example-sheet', ExampleSheet);
 
 // We extend some of the types here to give us great intellisense
 // across the app for all registered sheets.
@@ -39,17 +38,22 @@ declare module 'react-native-actions-sheet' {
     'example-sheet': SheetDefinition;
   }
 }
+
+export const Sheets = () => {
+  return <SheetRegister sheets={{'example-sheet': ExampleSheet}} />
+}
 ```
 
-In `App.js` import `sheets.tsx` and wrap your app in `SheetProvider`.
+In `App.tsx` import `Sheets` component and wrap your app in `SheetProvider`.
 
 ```tsx
 import {SheetProvider} from 'react-native-actions-sheet';
-import 'sheets.tsx';
+import { Sheets } from 'sheets.tsx';
 
 function App() {
   return (
     <SheetProvider>
+      <Sheets />
       {
         // your app components
       }

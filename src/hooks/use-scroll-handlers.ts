@@ -1,5 +1,10 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {NativeScrollEvent, NativeSyntheticEvent, Platform} from 'react-native';
+import {
+  NativeMethods,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+} from 'react-native';
 import {
   DraggableNodeOptions,
   LayoutRect,
@@ -50,7 +55,7 @@ export function useDraggable<T>(options?: DraggableNodeOptions) {
           ref: nodeRef,
           offset: offset,
           rect: layout,
-          handlerConfig: options,
+          handlerConfig: options || {} as DraggableNodeOptions,
         });
       }
     };
@@ -97,7 +102,7 @@ export function useDraggable<T>(options?: DraggableNodeOptions) {
  * ```
  */
 export function useScrollHandlers<T>(options?: DraggableNodeOptions) {
-  const [_render, setRender] = useState(false);
+  const [_render, _setRender] = useState(false);
   const {nodeRef, gestureContext, offset, layout} = useDraggable<T>(options);
   const timer = useRef<NodeJS.Timeout>(null);
   const subscription = useRef<EventHandlerSubscription>(null);
@@ -112,7 +117,7 @@ export function useScrollHandlers<T>(options?: DraggableNodeOptions) {
         py,
       };
     },
-    [layout],
+    [],
   );
 
   const measureAndLayout = React.useCallback(() => {
@@ -122,61 +127,45 @@ export function useScrollHandlers<T>(options?: DraggableNodeOptions) {
       if (Platform.OS == 'web') {
         if (!ref) return;
         const rect = (ref as HTMLDivElement).getBoundingClientRect();
-        (ref as HTMLDivElement).style.overflow = "auto";
+        (ref as HTMLDivElement).style.overflow = 'auto';
         onMeasure(rect.x, rect.y, rect.width, rect.height, rect.left, rect.top);
       } else {
-        ref?.measure?.(onMeasure);
+        (ref as NativeMethods)?.measure?.(onMeasure);
       }
-    }, 300);
+    }, 100);
   }, [nodeRef, onMeasure]);
 
-  useEffect(() => {
-    if (Platform.OS === 'web' || !gestureContext.ref) return;
-    const interval = setInterval(() => {
-      // Trigger a rerender when gestureContext gets populated.
-      if (gestureContext.ref.current) {
-        clearInterval(interval);
-        setRender(true);
-      }
-    }, 10);
-  }, [gestureContext.ref]);
-
-  const memoizedProps = React.useMemo(() => {
-    return {
-      ref: nodeRef,
-      simultaneousHandlers: gestureContext.ref,
-      onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const {x, y} = event.nativeEvent.contentOffset;
-        const maxOffsetX =
-          event.nativeEvent.contentSize.width - layout.current.w;
-        const maxOffsetY =
-          event.nativeEvent.contentSize.height - layout.current.h;
-
-        offset.current = {
-          x: x === maxOffsetX || x > maxOffsetX - 5 ? ScrollState.END : x,
-          y: y === maxOffsetY || y > maxOffsetY - 5 ? ScrollState.END : y,
-        };
-      },
-      scrollEventThrottle: 1,
-      onLayout: () => {
+  const onLayout = React.useCallback(() => {
+    measureAndLayout();
+    subscription.current?.unsubscribe();
+    subscription.current = gestureContext.eventManager.subscribe(
+      'onoffsetchange',
+      () => {
         measureAndLayout();
-        subscription.current?.unsubscribe();
-        subscription.current = gestureContext.eventManager.subscribe(
-          'onoffsetchange',
-          () => {
-            measureAndLayout();
-          },
-        );
       },
-    };
-  }, [
-    gestureContext.eventManager,
-    gestureContext.ref,
-    layout,
-    measureAndLayout,
-    nodeRef,
-    offset,
-  ]);
+    );
+  }, []);
 
-  return memoizedProps;
+  const onScroll = React.useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const {x, y} = event.nativeEvent.contentOffset;
+      const maxOffsetX = event.nativeEvent.contentSize.width - layout.current.w;
+      const maxOffsetY =
+        event.nativeEvent.contentSize.height - layout.current.h;
+
+      offset.current = {
+        x: x === maxOffsetX || x > maxOffsetX - 5 ? ScrollState.END : x,
+        y: y === maxOffsetY || y > maxOffsetY - 5 ? ScrollState.END : y,
+      };
+    },
+    [],
+  );
+
+  return {
+    ref: nodeRef,
+    simultaneousHandlers: [gestureContext.ref],
+    onScroll,
+    scrollEventThrottle: 1,
+    onLayout,
+  };
 }

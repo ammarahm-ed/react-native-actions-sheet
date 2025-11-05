@@ -1,12 +1,5 @@
 # Handling SafeArea
 
-If you are using `react-native-safe-area-context` library in your project you can do the following to provide the sheet with device insets information:
-
-```tsx
-const insets = useSafeAreaInsets();
-return <ActionSheet safeAreaInsets={insets}></ActionSheet>;
-```
-
 There are two main props that will come in handy when dealing with `SafeArea` in the action sheet.
 
 The first one is `useBottomSafeAreaPadding`. This prop uses the top padding as a reference to calculate the bottom padding on mobile to Views do not hide under the Navigation Bar.

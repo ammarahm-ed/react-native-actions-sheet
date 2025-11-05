@@ -16,6 +16,26 @@ Provide the context of the `SheetProvider` where you want to present the action 
 | -------- | -------- |
 | `string` | false    |
 
+## `overrideProps`
+
+Override a ActionSheet's props that were defined when the component was declared.
+
+```tsx
+function ExampleSheet(props: SheetProps<'example-sheet'>) {
+  return (
+    <ActionSheet
+      disableElevation={true}
+      gestureEnabled
+      {...props.overrideProps}
+    />
+  );
+}
+```
+
+| Type                                         | Required |
+| -------------------------------------------- | -------- |
+| [`ActionSheetProps`](/reference/actionsheet) | false    |
+
 ## `onClose`
 
 A callback function that is called when the action sheet closes.

@@ -1,5 +1,70 @@
 # Migrating Guide
 
+## Migrating to v10.0.0
+
+### Dependencies
+
+v10.0.0 introduces `react-native-reanimated` and `react-native-safe-area-context` as a peer dependency. Please make sure to install it in your project if you haven't already.
+
+```
+npm install react-native-reanimated react-native-safe-area-context
+```
+
+### Registering sheets
+
+Registering sheets still works the same way as before, however I have added `[SheetRegister](/reference/sheetregister)` component to make it easier to register multiple sheets in one place.
+
+```ts
+import {SheetRegister} from 'react-native-actions-sheet';
+import ExampleSheet from 'example-sheet.tsx';
+
+export const Sheets = () => {
+  return <SheetRegister sheets={{'example-sheet': ExampleSheet}} />
+}
+```
+
+In `App.tsx` import `Sheets` component and wrap your app in `SheetProvider`.
+
+```tsx
+import {SheetProvider} from 'react-native-actions-sheet';
+import {Sheets} from 'sheets.tsx';
+
+function App() {
+  return (
+    <SheetProvider>
+      <Sheets />
+      {
+        // your app components
+      }
+    </SheetProvider>
+  );
+}
+```
+
+The way we were registering sheets earlier felt a bit hacky so this new way is much cleaner and easier to manage when you have many sheets in the app.
+
+### Removed props
+
+The following props have been removed from `ActionSheet` component:
+
+1. `safeAreaInsets`: Now the library uses `react-native-safe-area-context` internally to get the device insets so this prop is not needed anymore.
+2. `payload`: This prop has been replaced by `returnValue` prop to return data when the sheet is closed.
+
+### Changed props
+
+The following props have been changed in `ActionSheet` component:
+
+1. `openAnimationConfig` & `closeAnimationConfig`: These props now take `SpringConfig` from `react-native-reanimated` instead of custom config.
+2. `onChange`: This prop now only returns the position percentage (0-100) instead of position and height.
+
+### New props
+
+The following new props have been added to `ActionSheet` component:
+
+1. `enableElevation`: Now you can disable default elevation/shadow of the action sheet by setting this prop to false.
+2. `initialTranslateFactor`: This prop allows you to set the initial translate factor of the action sheet when it opens. Default is `1` which means the action sheet will open from bottom of the screen. You can set it to `0.5` to have it open from half way of the screen.
+3. `returnValue`: The prop replaces `payload` prop to return data when the sheet is closed.
+
 ## Migrating to v0.9.0
 
 v0.9.0 does not include any huge breaking changes to the API however there are some changes introduced to improve the overall DX of the library and ease of use.

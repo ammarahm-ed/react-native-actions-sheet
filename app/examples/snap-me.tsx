@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import ActionSheet, { useSheetRef } from 'react-native-actions-sheet';
+import ActionSheet, { SheetManager, useSheetRef } from 'react-native-actions-sheet';
 import { Button } from '../components/button';
 
 const  SnapMe = () => {
@@ -38,6 +38,17 @@ const  SnapMe = () => {
             ref.current.snapToIndex(
               ref.current?.currentSnapIndex() === 0 ? 1 : 0,
             );
+          }}
+          style={{
+            width: 250,
+          }}
+        />
+
+         <Button
+          title="Close All Opened Sheets"
+          onPress={() => {
+            SheetManager.hideAll();
+            console.log("HIDE ALL");
           }}
           style={{
             width: 250,

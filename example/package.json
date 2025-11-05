@@ -10,13 +10,15 @@
     "test": "jest"
   },
   "dependencies": {
+    "@legendapp/list": "^2.0.14",
+    "@react-native/new-app-screen": "0.81.1",
+    "@shopify/flash-list": "^2.0.3",
     "react": "19.1.0",
     "react-native": "0.81.1",
-    "@react-native/new-app-screen": "0.81.1",
-    "react-native-safe-area-context": "^5.6.1",
     "react-native-gesture-handler": "^2.28.0",
     "react-native-navigation-bar-color": "^2.0.2",
-    "@shopify/flash-list": "^2.0.3"
+    "react-native-reanimated": "^3.19.2",
+    "react-native-safe-area-context": "^5.6.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

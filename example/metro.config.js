@@ -1,6 +1,9 @@
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const path = require('path');
 const moduleRoot = path.resolve(__dirname, '..');
+const {
+  wrapWithReanimatedMetroConfig,
+} = require('react-native-reanimated/metro-config');
 
 /**
  * Metro configuration
@@ -9,15 +12,16 @@ const moduleRoot = path.resolve(__dirname, '..');
  * @type {import('metro-config').MetroConfig}
  */
 const config = {
-  watchFolders: [moduleRoot,  path.join(__dirname, '../app'),],
+  watchFolders: [moduleRoot, path.join(__dirname, '../app')],
   resolver: {
     extraNodeModules: {
       react: path.resolve(__dirname, 'node_modules/react'),
       'react-native': path.resolve(__dirname, 'node_modules/react-native'),
       'react-native-actions-sheet': path.resolve(__dirname, '../'),
+      'react-native-reanimated': path.resolve(__dirname, 'node_modules/react-native-reanimated'),
+      '@legendapp/list': path.resolve(__dirname, 'node_modules/@legendapp/list')
     },
     resolveRequest: (context, moduleName, platform) => {
-
       if (moduleName === 'react-native-safe-area-context') {
         return {
           filePath: path.resolve(
@@ -49,6 +53,7 @@ const config = {
       new RegExp(`${moduleRoot}/node_modules/react-native/.*`),
       new RegExp(`${moduleRoot}/node_modules/react-native-gesture-handler`),
       new RegExp(`${moduleRoot}/node_modules/react-native-safe-area-context`),
+      new RegExp(`${moduleRoot}/node_modules/react-native-reanimated`),
     ],
   },
   transformer: {
@@ -61,4 +66,6 @@ const config = {
   },
 };
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = wrapWithReanimatedMetroConfig(
+  mergeConfig(getDefaultConfig(__dirname), config),
+);

@@ -1,15 +1,15 @@
 # FlashList
 
-If you want to use `@shopify/flash-list` inside the `ActionSheet` you can use the `FlashList` component from the `react-native-actions-sheet`.
+If you want to use `@shopify/flash-list` inside the `ActionSheet` you need to do the following.
 
 ```tsx
-import ActionSheet from 'react-native-actions-sheet';
-import {FlashList} from 'react-native-actions-sheet/dist/src/views/FlashList';
+import ActionSheet, {ScrollView} from 'react-native-actions-sheet';
+import {FlashList} from '@shopify/flash-list';
 
 const ExampleSheet = () => {
   return (
     <ActionSheet>
-      <FlashList />
+      <FlashList renderScrollComponent={ScrollView} />
     </ActionSheet>
   );
 };

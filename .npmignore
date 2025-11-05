@@ -24,4 +24,5 @@ tsconfig.json
 .github/
 .prettierrc.js
 .eslintrc.js
+package-lock.json
 

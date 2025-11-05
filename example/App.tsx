@@ -3,7 +3,7 @@ import { SheetProvider } from 'react-native-actions-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import changeNavigationBarColor from 'react-native-navigation-bar-color';
 import MainScreen from '../app/examples';
-import '../app/sheets';
+import { Sheets } from '../app/sheets';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const App = () => {
@@ -15,6 +15,7 @@ const App = () => {
   return (
     <>
       <SafeAreaProvider>
+        <Sheets />
         <GestureHandlerRootView
           style={{
             flex: 1,

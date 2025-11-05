@@ -2,10 +2,10 @@ import { Callout } from "nextra-theme-docs";
 
 # Basic usage
 
-Import `ActionSheet`.
+Import `ActionSheet` in your project.
 
 ```tsx
-import ActionSheet from "react-native-actions-sheet";
+import ActionSheet, { ActionSheetRef } from "react-native-actions-sheet";
 ```
 
 Then create your ActionSheet inside any component and attach a `ref` to it.
@@ -15,7 +15,7 @@ function App() {
   const actionSheetRef = useRef<ActionSheetRef>(null);
 
   return (
-    <ActionSheet ref={actionSheetRef}>
+    <ActionSheet gestureEnabled ref={actionSheetRef}>
       <Text>Hi, I am here.</Text>
     </ActionSheet>
   );
