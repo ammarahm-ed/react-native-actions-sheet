@@ -7,9 +7,7 @@ ActionSheet for React Native provides a very easy way to do this by passing the 
 Define the Sheet payload data when registering your Sheet.
 
 ```ts
-import {SheetDefinition, registerSheet} from 'react-native-actions-sheet';
-
-registerSheet("example-sheet", ExampleSheet);
+import {SheetDefinition} from 'react-native-actions-sheet';
 
 declare module 'react-native-actions-sheet' {
   interface Sheets {
@@ -21,7 +19,7 @@ declare module 'react-native-actions-sheet' {
   }
 }
 ```
-
+And then you can pass the data when showing the sheet:
 ```ts
 SheetManager.show("example-sheet", {
   payload: { value: "Hello World" },

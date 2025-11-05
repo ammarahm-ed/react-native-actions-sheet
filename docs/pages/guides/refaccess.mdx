@@ -1,6 +1,6 @@
 # Ref access from anywhere
 
-You can access the [`ActionSheetRef`](/reference/actionsheetref) from anywhere in the app using [`SheetManager`](/reference/sheetmanager).
+You can access the [`ActionSheetRef`](/reference/actionsheetref) from anywhere in the app using [`SheetManager`](/reference/sheetmanager). This will return the topmost action sheet with the given id if multiple are open.
 
 ```ts
 SheetManager.get('example-sheet').snapToOffset(50);
@@ -17,7 +17,8 @@ SheetManager.get('example-sheet', 'local-context').snapToOffset(50);
 In components, ref can be accessed with [`useSheetRef`](/reference/usesheetref) hook or the `ref` prop on the `ActionSheet`.
 
 ```ts
-const ref = useSheetRef();
+const ref = useSheetRef("example-sheet");
 
 ref.snapToOffset(50);
+ref.hide();
 ```

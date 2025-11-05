@@ -4,6 +4,7 @@
   "sheetmanager": "SheetManager",
   "sheetprops": "SheetProps",
   "sheetprovider": "SheetProvider",
+  "sheetregister": "SheetRegister",
   "registersheet": "registerSheet",
   "showoptions": "ShowOptions",
   "hideoptions": "HideOptions",
