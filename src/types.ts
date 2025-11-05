@@ -153,9 +153,9 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   /**
    * Enable elevation. This will add a shadow to the ActionSheet.
    *
-   * Default: `true`
+   * Default: `false`
    */
-  enableElevation?: boolean;
+  disableElevation?: boolean;
 
   /**
    * Add elevation to the ActionSheet container.
@@ -172,7 +172,7 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * Note: It is however recommended to pass desired data via `SheetManager.hide` or `ref.hide`
    * functions intead to avoid unnecessary rerenders when closing the sheet.
    */
-  payload?: Sheets[SheetId]['returnValue'];
+  returnValue?: Sheets[SheetId]['returnValue'];
 
   /**
    * Style the top indicator bar in ActionSheet.

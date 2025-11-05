@@ -2,7 +2,7 @@
 import {RefObject} from 'react';
 import {actionSheetEventManager} from './eventmanager';
 import {providerRegistryStack, sheetsRegistry} from './provider';
-import {ActionSheetRef, Sheets} from './types';
+import {ActionSheetProps, ActionSheetRef, Sheets} from './types';
 let baseZindex = 999;
 // Array of all the ids of ActionSheets currently rendered in the app.
 const renderedSheetIds: string[] = [];
@@ -68,10 +68,7 @@ class _SheetManager {
       // to render the sheet.
       for (const context of providerRegistryStack.slice().reverse()) {
         // We only automatically select nested sheet providers.
-        if (
-          context.startsWith('$$-auto') &&
-          !context.includes(options?.id as string)
-        ) {
+        if (context.startsWith('$$-auto')) {
           options.context = context;
           break;
         }
@@ -103,6 +100,24 @@ class _SheetManager {
        * Provide `context` of the `SheetProvider` where you want to show the action sheet.
        */
       context?: string;
+
+      /**
+       * Override a ActionSheet's props that were defined when the component was declared.
+       * 
+       * You need to forward these props to the ActionSheet component manually.
+       * ```tsx
+       * function ExampleSheet(props: SheetProps<'example-sheet'>) {
+  return (
+    <ActionSheet
+      disableElevation={true}
+      gestureEnabled
+      {...props.overrideProps}
+    />
+  );
+}
+       * ```
+       */
+      overrideProps?: ActionSheetProps<SheetId>;
     },
   ): Promise<Sheets[SheetId]['returnValue']> {
     return new Promise(resolve => {
@@ -111,13 +126,7 @@ class _SheetManager {
         id: id,
       });
       const handler = (data: any, context = 'global') => {
-        if (
-          context !== 'global' &&
-          currentContext &&
-          currentContext !== context
-        )
-          return;
-
+        if (currentContext !== context) return;
         options?.onClose?.(data);
         sub?.unsubscribe();
         resolve(data);
@@ -135,6 +144,7 @@ class _SheetManager {
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
         options?.payload,
         currentContext || 'global',
+        options?.overrideProps
       );
     });
   }

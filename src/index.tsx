@@ -74,7 +74,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       closeOnPressBack = true,
       springOffset = 50,
       elevation = 5,
-      enableElevation = true,
+      disableElevation = false,
       defaultOverlayOpacity = 0.3,
       overlayColor = 'black',
       closable = true,
@@ -91,7 +91,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       zIndex = 999,
       keyboardHandlerEnabled = true,
       ExtraOverlayComponent,
-      payload,
+      returnValue,
       routes,
       initialRoute,
       onBeforeShow,
@@ -131,7 +131,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       };
     }>({});
     const hiding = useRef(false);
-    const payloadRef = useRef(payload);
+    const returnValueRef = useRef(returnValue);
     const sheetPayload = useSheetPayload();
     const panGestureRef = useRef<GestureType>(undefined);
     const closing = useRef(false);
@@ -176,7 +176,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       routeOpacity: routeOpacity,
     });
     const routerRef = useRef(router);
-    payloadRef.current = payload;
+    returnValueRef.current = returnValue;
     routerRef.current = router;
     const keyboard = useKeyboard(keyboardHandlerEnabled);
     const prevSnapIndex = useRef<number>(initialSnapIndex);
@@ -222,7 +222,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const animationSheetOpacity = React.useCallback((value: number) => {
       opacity.value = withTiming(value, {
-        duration: 150,
+        duration: 100,
         easing: Easing.in(Easing.ease),
       });
     }, []);
@@ -414,7 +414,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           return;
         }
         hiding.current = true;
-        onBeforeClose?.((data || payloadRef.current || data) as never);
+        onBeforeClose?.((data || returnValueRef.current || data) as never);
         if (closable) {
           closing.current = true;
           Keyboard.dismiss();
@@ -426,7 +426,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           if (closable || isSheetManagerOrRef) {
             setVisible(false);
             if (props.onClose) {
-              props.onClose?.((data || payloadRef.current || data) as never);
+              props.onClose?.(
+                (data || returnValueRef.current || data) as never,
+              );
               hiding.current = false;
             }
             hardwareBackPressEvent.current?.remove();
@@ -435,8 +437,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               hiding.current = false;
               actionSheetEventManager.publish(
                 `onclose_${sheetId}`,
-                data || payloadRef.current || data,
-                currentContext,
+                data || returnValueRef.current || data,
+                currentContext || 'global',
               );
             } else {
               hiding.current = false;
@@ -686,7 +688,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           !isFullOpen || (isFullOpen && !isSwipingDown),
         );
 
-        if (activeDraggableNodes.length > 0 && !isRefreshing) {
+         if (
+          enableGesturesInScrollView &&
+          activeDraggableNodes.length > 0 &&
+          !isRefreshing
+        ) {
           const nodeIsScrolling = activeDraggableNodes.some(
             node => node.node.offset.current.y !== 0,
           );
@@ -758,9 +764,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               }
             }
           }
+        } else if (
+          !enableGesturesInScrollView &&
+          activeDraggableNodes.length > 0
+        ) {
+          blockPan = true;
         } else {
           blockPan = false;
         }
+
 
         if (isRefreshing) {
           blockPan = true;
@@ -1190,7 +1202,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               borderRadius:
                                 containerStyle?.borderRadius || undefined,
                               width: containerStyle?.width || '100%',
-                              ...(enableElevation
+                              ...(!disableElevation
                                 ? getElevation(
                                     typeof elevation === 'number'
                                       ? elevation
@@ -1215,6 +1227,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                 {
                                   borderTopRightRadius: 10,
                                   borderTopLeftRadius: 10,
+                                  paddingTop:  gestureEnabled ? 16 : 0,
                                   paddingBottom: useBottomSafeAreaPadding
                                     ? insets.bottom
                                     : 0,
@@ -1258,6 +1271,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                     style={[
                                       styles.indicator,
                                       props.indicatorStyle,
+                                      {
+                                        position: 'absolute',
+                                        top: 8,
+                                      },
                                     ]}
                                   />
                                 )

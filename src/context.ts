@@ -12,7 +12,7 @@ export type LayoutRect = {
 };
 
 export const PanGestureRefContext = createContext({
-  ref: createRef(),
+  ref: createRef<any>(),
   eventManager: actionSheetEventManager,
 });
 
