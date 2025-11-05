@@ -21,6 +21,7 @@ import DrawUnderStatusBar from './examples/draw-under-statusbar';
 import ReturnData from './examples/return-data';
 import FloatingSheet from './examples/floating-sheet';
 import LegendListExample from './examples/legend-list';
+import CustomScrollHandlers from './examples/custom-scroll-handlers';
 
 /**
  * We extend some of the types here to give us great intellisense
@@ -61,6 +62,7 @@ declare module 'react-native-actions-sheet' {
       returnValue: boolean;
     }>;
     'legend-list':SheetDefinition
+    'custom-scroll-handlers': SheetDefinition
   }
 }
 
@@ -84,7 +86,8 @@ export const Sheets = () => {
         'draw-under-statusbar': DrawUnderStatusBar,
         'return-data': ReturnData,
         'floating-sheet': FloatingSheet,
-         'legend-list': LegendListExample
+         'legend-list': LegendListExample,
+         "custom-scroll-handlers": CustomScrollHandlers
       }}
     />
   );

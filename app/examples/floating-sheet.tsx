@@ -1,11 +1,11 @@
 import React from 'react';
 import {Text, View} from 'react-native';
-import ActionSheet from 'react-native-actions-sheet';
+import ActionSheet, { SheetProps } from 'react-native-actions-sheet';
 
-function FloatingSheet() {
+function FloatingSheet(props: SheetProps<"floating-sheet">) {
   return (
     <ActionSheet
-      enableElevation={false}
+      disableElevation={true}
       gestureEnabled
       indicatorStyle={{
         display: 'none',
@@ -15,7 +15,9 @@ function FloatingSheet() {
         height: '40%',
         backgroundColor: 'transparent',
         paddingBottom: 30,
-      }}>
+      }}
+      {...props.overrideProps}
+      >
       <View
         style={{
           borderRadius: 20,

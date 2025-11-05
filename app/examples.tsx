@@ -1,22 +1,33 @@
 /* eslint-disable curly */
-import React from 'react';
+import React, {act, useRef} from 'react';
 import {
+  Image,
   Linking,
   Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  View,
 } from 'react-native';
-import {SheetManager} from 'react-native-actions-sheet';
+import ActionSheet, {
+  ActionSheetRef,
+  SheetManager,
+} from 'react-native-actions-sheet';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 const MainScreen = () => {
+  const actionSheetRef = useRef<ActionSheetRef>(null);
   const examples: {
     title: string;
     onOpen: () => void;
   }[] = [
+    {
+      title: 'Simple Sheet',
+      onOpen: () => {
+        actionSheetRef.current?.show();
+      },
+    },
     {
       title: 'Hello',
       onOpen: () => {
@@ -26,7 +37,11 @@ const MainScreen = () => {
     {
       title: 'Floating Sheet',
       onOpen: () => {
-        SheetManager.show('floating-sheet');
+        SheetManager.show('floating-sheet', {
+          overrideProps: {
+            gestureEnabled: false,
+          },
+        });
       },
     },
     {
@@ -139,36 +154,66 @@ const MainScreen = () => {
         SheetManager.show('sheet-router');
       },
     },
+    {
+      title: 'Custom scroll handlers',
+      onOpen: () => {
+        SheetManager.show('custom-scroll-handlers');
+      },
+    },
   ];
-
-  // Examples left to add
-  // 5. Resize with animation on add/remove item.
 
   return (
     <>
-      <SafeAreaView style={styles.safeareview}>
+      <SafeAreaView style={[styles.safeareview, {}]}>
+        <ActionSheet
+          ref={actionSheetRef}
+          gestureEnabled
+          containerStyle={{
+            paddingHorizontal: 12,
+            height: '40%',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Text
+            style={{
+              color: 'black',
+              fontSize: 30,
+              textAlign: 'center',
+            }}>
+            I opened without SheetManager!
+          </Text>
+        </ActionSheet>
+
         <StatusBar
           translucent
           backgroundColor="transparent"
           barStyle="light-content"
         />
 
-        <Text
+        <View
           style={{
-            color: 'black',
-            fontWeight: '400',
-            fontSize: 30,
-            alignSelf: 'center',
+            paddingHorizontal: 16,
+            height: 150,
+            width:'100%'
           }}>
-          Examples
-        </Text>
+          <Image
+            style={{
+              width: '100%',
+              height: 150,
+            }}
+            resizeMode="contain"
+            src="https://raw.githubusercontent.com/ammarahm-ed/react-native-actions-sheet/master/assets/graphic.png"
+          />
+        </View>
 
         <ScrollView
+          contentContainerStyle={{
+            paddingBottom: 50,
+          }}
           style={{
             width: '100%',
             flex: 1,
-            marginTop: 20,
-            paddingHorizontal: 12,
+            paddingHorizontal: 16,
           }}>
           {examples.map(item => (
             <Pressable
@@ -181,7 +226,7 @@ const MainScreen = () => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 alignSelf: 'center',
-                backgroundColor: pressed.pressed ? '#d9d9d9' : '#f0f0f0',
+                backgroundColor: pressed.pressed ? '#d9d9d9' : 'white',
                 paddingHorizontal: 10,
                 borderRadius: 10,
                 elevation: 5,
@@ -207,10 +252,10 @@ const styles = StyleSheet.create({
   safeareview: {
     justifyContent: 'center',
     flex: 1,
-    backgroundColor: 'lightgreen',
+    backgroundColor: '#d6d6d6',
     alignItems: 'center',
     gap: 10,
-    paddingTop: 40,
+    paddingTop: 20,
   },
   btnTitle: {
     color: 'block',
