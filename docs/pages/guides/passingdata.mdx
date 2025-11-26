@@ -19,17 +19,19 @@ declare module 'react-native-actions-sheet' {
   }
 }
 ```
+
 And then you can pass the data when showing the sheet:
+
 ```ts
-SheetManager.show("example-sheet", {
-  payload: { value: "Hello World" },
+SheetManager.show('example-sheet', {
+  payload: {value: 'Hello World'},
 });
 ```
 
 And then in your `ExampleSheet` component.
 
 ```tsx
-function ExampleSheet(props: SheetProps<"example-sheet">) {
+function ExampleSheet(props: SheetProps<'example-sheet'>) {
   return (
     <ActionSheet id={props.sheetId}>
       <View>
@@ -40,4 +42,10 @@ function ExampleSheet(props: SheetProps<"example-sheet">) {
 }
 ```
 
-Simple eh?
+You can also update the ActionSheet payload after is opened to trigger a rerender with new data.
+
+```ts
+SheetManager.update('example-sheet', {
+  payload: {value: 'Happy New Year'},
+});
+```
