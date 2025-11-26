@@ -128,6 +128,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const sheetId = props.id || id;
     const panViewRef = useRef<View>(null);
     const rootViewContainerRef = useRef<View>(null);
+    const payload = useSheetPayload();
+    const payloadRef = useRef<any>(undefined);
+    payloadRef.current = payload;
     const gestureBoundaries = useRef<{
       [name: string]: LayoutRectangle & {
         scrollOffset?: number;
@@ -167,7 +170,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     });
 
     const opacity = useSharedValue(0);
-    const translateY = useSharedValue(Dimensions.get("window").height * 2);
+    const translateY = useSharedValue(Dimensions.get('window').height * 2);
     const underlayTranslateY = useSharedValue(130);
     const routeOpacity = useSharedValue(0);
     const router = useRouter({
@@ -223,15 +226,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [animated, openAnimationConfig],
     );
 
-    const animationSheetOpacity = React.useCallback(
-      (value: number) => {
-        opacity.value = withTiming(value, {
-          duration: 300,
-          easing: Easing.in(Easing.ease),
-        });
-      },
-      [],
-    );
+    const animationSheetOpacity = React.useCallback((value: number) => {
+      opacity.value = withTiming(value, {
+        duration: 300,
+        easing: Easing.in(Easing.ease),
+      });
+    }, []);
 
     const hideSheetWithAnimation = React.useCallback(
       (vy?: number, callback?: () => void) => {
@@ -983,6 +983,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           keyboard.pauseKeyboardHandler.current = enabled;
         },
         ev: internalEventManager,
+        currentPayload: () => payloadRef.current as never,
       }),
       [
         internalEventManager,

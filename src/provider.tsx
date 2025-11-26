@@ -20,7 +20,7 @@ export const sheetsRegistry: {[id: string]: React.ElementType} = {};
 export interface SheetProps<SheetId extends keyof Sheets = never> {
   sheetId: SheetId | (string & {});
   payload?: Sheets[SheetId]['payload'];
-  overrideProps?: ActionSheetProps
+  overrideProps?: ActionSheetProps;
 }
 
 // Registers your Sheet with the SheetProvider.
@@ -144,6 +144,8 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const ref = useRef<ActionSheetRef | null>(null);
   const clearPayloadTimeoutRef = useRef<NodeJS.Timeout>(null);
   const Sheet = sheetsRegistry[id] || null;
+  const visibleRef = useRef(false);
+  visibleRef.current = visible;
 
   useEffect(() => {
     if (visible) {
@@ -173,7 +175,15 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
       actionSheetEventManager.publish(`hide_${id}`, data, ctx);
     };
 
+    const onUpdate = (data: any, ctx = 'global', overrideProps) => {
+      if (ctx !== context || !visibleRef.current) return;
+      clearTimeout(clearPayloadTimeoutRef.current);
+      setPayload(data);
+      setOverrideProps(overrideProps);
+    };
+
     let subs = [
+      actionSheetEventManager.subscribe(`update_${id}`, onUpdate),
       actionSheetEventManager.subscribe(`show_wrap_${id}`, onShow),
       actionSheetEventManager.subscribe(`onclose_${id}`, onClose),
       actionSheetEventManager.subscribe(`hide_wrap_${id}`, onHide),
@@ -186,13 +196,13 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   if (!Sheet) return null;
 
   return !visible ? null : (
-      <SheetIDContext.Provider value={id}>
-        <SheetRefContext.Provider value={ref}>
-          <SheetPayloadContext.Provider value={payload}>
-            <Sheet sheetId={id} payload={payload} overrideProps={overrideProps} />
-          </SheetPayloadContext.Provider>
-        </SheetRefContext.Provider>
-      </SheetIDContext.Provider>
+    <SheetIDContext.Provider value={id}>
+      <SheetRefContext.Provider value={ref}>
+        <SheetPayloadContext.Provider value={payload}>
+          <Sheet sheetId={id} payload={payload} overrideProps={overrideProps} />
+        </SheetPayloadContext.Provider>
+      </SheetRefContext.Provider>
+    </SheetIDContext.Provider>
   );
 };
 

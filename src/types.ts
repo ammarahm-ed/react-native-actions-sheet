@@ -73,6 +73,10 @@ export type ActionSheetRef<SheetId extends keyof Sheets = never> = {
    * Disable or enable sheet keyboard handler.
    */
   keyboardHandler: (enabled?: boolean) => void;
+  /**
+   * Get the current payload of the sheet
+   */
+  currentPayload: () => Sheets[SheetId]["payload"];
 };
 
 export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
