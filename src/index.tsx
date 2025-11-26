@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 import {
   BackHandler,
+  Dimensions,
   GestureResponderEvent,
   Keyboard,
   LayoutRectangle,
@@ -17,8 +18,8 @@ import {
   NativeEventSubscription,
   PanResponder,
   Platform,
+  Pressable,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import {
@@ -66,6 +67,8 @@ import {getZIndexFromStack, SheetManager} from './sheetmanager';
 import {styles} from './styles';
 import {ActionSheetProps, ActionSheetRef} from './types';
 import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
@@ -164,7 +167,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     });
 
     const opacity = useSharedValue(0);
-    const translateY = useSharedValue(0);
+    const translateY = useSharedValue(Dimensions.get("window").height * 2);
     const underlayTranslateY = useSharedValue(130);
     const routeOpacity = useSharedValue(0);
     const router = useRouter({
@@ -220,12 +223,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [animated, openAnimationConfig],
     );
 
-    const animationSheetOpacity = React.useCallback((value: number) => {
-      opacity.value = withTiming(value, {
-        duration: 100,
-        easing: Easing.in(Easing.ease),
-      });
-    }, []);
+    const animationSheetOpacity = React.useCallback(
+      (value: number, duration = 300) => {
+        opacity.value = withTiming(value, {
+          duration: 300,
+          easing: Easing.in(Easing.ease),
+        });
+      },
+      [],
+    );
 
     const hideSheetWithAnimation = React.useCallback(
       (vy?: number, callback?: () => void) => {
@@ -234,7 +240,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           return;
         }
         const config = props.closeAnimationConfig;
-        animationSheetOpacity(0);
+        animationSheetOpacity(0, 300);
         translateY.value = withTiming(
           dimensionsRef.current.height * 1.3,
           config || {
@@ -246,7 +252,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
          * Using setTimeout to ensure onClose is triggered when sheet is off screen
          * or is close to reaching off screen.
          */
-        setTimeout(callback, 150);
+        setTimeout(callback, config?.duration || 200);
       },
       [animated, animationSheetOpacity, props.closeAnimationConfig],
     );
@@ -384,7 +390,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         minTranslateValue.current = minTranslate;
         initialValue.current = initial;
 
-        animationSheetOpacity(1);
+        animationSheetOpacity(defaultOverlayOpacity, 300);
         moveSheetWithAnimation(undefined, initial, minTranslate);
 
         if (initial > 130) {
@@ -688,7 +694,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           !isFullOpen || (isFullOpen && !isSwipingDown),
         );
 
-         if (
+        if (
           enableGesturesInScrollView &&
           activeDraggableNodes.length > 0 &&
           !isRefreshing
@@ -772,7 +778,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         } else {
           blockPan = false;
         }
-
 
         if (isRefreshing) {
           blockPan = true;
@@ -1162,21 +1167,21 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         width: '100%',
                         justifyContent: 'flex-end',
                       },
-                      animatedOpacityStyle,
                     ]}>
                     <>
                       {!props?.backgroundInteractionEnabled ? (
-                        <TouchableOpacity
+                        <AnimatedPressable
                           onPress={onTouch}
-                          activeOpacity={defaultOverlayOpacity}
                           testID={props.testIDs?.backdrop}
-                          style={{
-                            height: dimensions.height + insets.top + 100,
-                            width: '100%',
-                            position: 'absolute',
-                            backgroundColor: overlayColor,
-                            opacity: defaultOverlayOpacity,
-                          }}
+                          style={[
+                            {
+                              height: dimensions.height + insets.top + 100,
+                              width: '100%',
+                              position: 'absolute',
+                              backgroundColor: overlayColor,
+                            },
+                            animatedOpacityStyle,
+                          ]}
                           {...(props.backdropProps ? props.backdropProps : {})}
                         />
                       ) : null}
@@ -1282,7 +1287,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               ) : (
                                 props?.children
                               )}
-
                             </Animated.View>
                           </GestureMobileOnly>
 
