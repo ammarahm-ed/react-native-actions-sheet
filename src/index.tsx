@@ -224,7 +224,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const animationSheetOpacity = React.useCallback(
-      (value: number, duration = 300) => {
+      (value: number) => {
         opacity.value = withTiming(value, {
           duration: 300,
           easing: Easing.in(Easing.ease),
@@ -240,7 +240,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           return;
         }
         const config = props.closeAnimationConfig;
-        animationSheetOpacity(0, 300);
+        animationSheetOpacity(0);
         translateY.value = withTiming(
           dimensionsRef.current.height * 1.3,
           config || {
@@ -390,7 +390,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         minTranslateValue.current = minTranslate;
         initialValue.current = initial;
 
-        animationSheetOpacity(defaultOverlayOpacity, 300);
+        animationSheetOpacity(defaultOverlayOpacity);
         moveSheetWithAnimation(undefined, initial, minTranslate);
 
         if (initial > 130) {
