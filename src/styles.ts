@@ -17,6 +17,7 @@ export const styles = StyleSheet.create({
     borderRadius: 100,
     backgroundColor: "#f0f0f0",
     alignSelf: "center",
+    marginVertical: 6
   },
   parentContainer: {
     flex: 1,

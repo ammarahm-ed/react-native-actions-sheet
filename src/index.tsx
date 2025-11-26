@@ -1227,7 +1227,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                 {
                                   borderTopRightRadius: 10,
                                   borderTopLeftRadius: 10,
-                                  paddingTop:  gestureEnabled ? 16 : 0,
                                   paddingBottom: useBottomSafeAreaPadding
                                     ? insets.bottom
                                     : 0,
@@ -1271,10 +1270,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                     style={[
                                       styles.indicator,
                                       props.indicatorStyle,
-                                      {
-                                        position: 'absolute',
-                                        top: 8,
-                                      },
                                     ]}
                                   />
                                 )
@@ -1287,6 +1282,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               ) : (
                                 props?.children
                               )}
+
                             </Animated.View>
                           </GestureMobileOnly>
 
