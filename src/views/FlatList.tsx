@@ -39,4 +39,6 @@ function $FlatList<T>(props: Props<T>, ref: RefObject<RNGHFlatList>) {
   );
 }
 
-export const FlatList = React.forwardRef($FlatList);
+export const FlatList = React.forwardRef($FlatList) as <T = any>(
+  props: Props<T> & { ref?: React.Ref<RNGHFlatList> }
+) => React.ReactElement;
