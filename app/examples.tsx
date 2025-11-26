@@ -95,6 +95,10 @@ const MainScreen = () => {
             payload: {
               candy: candyNames[Math.floor(Math.random() * candyNames.length)],
             },
+            shouldUpdate: async (sheet) => {
+              console.log(sheet.id, sheet.context);
+              return true;
+            }
           });
         }, 3000);
       },

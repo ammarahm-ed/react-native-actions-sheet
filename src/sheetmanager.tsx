@@ -150,7 +150,7 @@ class _SheetManager {
   }
 
   /**
-   * Update a currently rendered ActionSheet with new payload or override it's props.
+   * Update an active ActionSheet with new payload or override it's props.
    */
   async update<SheetId extends keyof Sheets>(
     id: SheetId,
@@ -203,7 +203,7 @@ class _SheetManager {
       return;
     }
 
-    if (options.shouldUpdate && renderedSheets.length > 1) {
+    if (options.shouldUpdate) {
       for (const sheet of renderedSheets) {
         const shouldUpdate = await options.shouldUpdate?.(sheet);
         if (shouldUpdate) {
