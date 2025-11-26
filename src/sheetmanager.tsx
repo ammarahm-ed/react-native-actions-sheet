@@ -68,7 +68,7 @@ class _SheetManager {
       // to render the sheet.
       for (const context of providerRegistryStack.slice().reverse()) {
         // We only automatically select nested sheet providers.
-        if (context.startsWith('$$-auto')) {
+        if (context.startsWith('$$-auto') || context === "global") {
           options.context = context;
           break;
         }
@@ -126,6 +126,7 @@ class _SheetManager {
         id: id,
       });
       const handler = (data: any, context = 'global') => {
+        console.log(context, currentContext);
         if (currentContext !== context) return;
         options?.onClose?.(data);
         sub?.unsubscribe();
