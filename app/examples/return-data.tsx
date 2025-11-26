@@ -8,7 +8,6 @@ function ReturnData() {
   return (
     <ActionSheet
       indicatorStyle={{
-        marginTop: 10,
         width: 150,
       }}
       gestureEnabled>

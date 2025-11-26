@@ -171,8 +171,6 @@ const MainScreen = () => {
           containerStyle={{
             paddingHorizontal: 12,
             height: '40%',
-            alignItems: 'center',
-            justifyContent: 'center',
           }}>
           <Text
             style={{
