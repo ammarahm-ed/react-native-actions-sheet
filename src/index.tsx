@@ -103,8 +103,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       enableGesturesInScrollView = true,
       disableDragBeyondMinimumSnapPoint,
       useBottomSafeAreaPadding = true,
-      initialTranslateFactor = 0.9,
-      openAnimationConfig = {damping: 120, stiffness: 900, mass: 7},
+      initialTranslateFactor = 1.1,
+      openAnimationConfig = {
+        damping: 110,
+        mass: 4,
+        stiffness: 900,
+        overshootClamping: true,
+      },
       ...props
     },
     ref,
