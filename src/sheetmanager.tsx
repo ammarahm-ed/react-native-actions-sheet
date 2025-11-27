@@ -68,7 +68,7 @@ class _SheetManager {
       // to render the sheet.
       for (const context of providerRegistryStack.slice().reverse()) {
         // We only automatically select nested sheet providers.
-        if (context.startsWith('$$-auto') || context === "global") {
+        if (context.startsWith('$$-auto') || context === 'global') {
           options.context = context;
           break;
         }
@@ -126,7 +126,6 @@ class _SheetManager {
         id: id,
       });
       const handler = (data: any, context = 'global') => {
-        console.log(context, currentContext);
         if (currentContext !== context) return;
         options?.onClose?.(data);
         sub?.unsubscribe();
@@ -145,9 +144,85 @@ class _SheetManager {
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
         options?.payload,
         currentContext || 'global',
-        options?.overrideProps
+        options?.overrideProps,
       );
     });
+  }
+
+  /**
+   * Update an active ActionSheet with new payload or override it's props.
+   */
+  async update<SheetId extends keyof Sheets>(
+    id: SheetId,
+    options: {
+      /**
+       * Provide `context` of the `SheetProvider` where the action sheet is rendered.
+       */
+      context?: string;
+      /**
+       * Any data to pass to the ActionSheet. Will be available from the component `props` or in `onBeforeShow` prop on the action sheet.
+       */
+      payload: Sheets[SheetId]['payload'];
+
+      /**
+       * Override a ActionSheet's props that were defined when the component was declared.
+       * 
+       * You need to forward these props to the ActionSheet component manually.
+       * ```tsx
+       * function ExampleSheet(props: SheetProps<'example-sheet'>) {
+  return (
+    <ActionSheet
+      disableElevation={true}
+      gestureEnabled
+      {...props.overrideProps}
+    />
+  );
+}
+       * ```
+       */
+      overrideProps?: ActionSheetProps<SheetId>;
+
+      /**
+       * If there are multiple sheets active with the same id, you can provide this function to select
+       * which sheet to update based on current payload or other sheet data.
+       */
+      shouldUpdate?: (sheet: {
+        id: SheetId;
+        context: string;
+        ref: RefObject<ActionSheetRef<SheetId>>;
+      }) => Promise<boolean>;
+    },
+  ) {
+    if (!options || !id) return;
+
+    const renderedSheets = this.getActiveSheets(id);
+    if (!renderedSheets.length) {
+      if (__DEV__) {
+        console.warn('Found no sheets to update with id: ', id);
+      }
+      return;
+    }
+
+    if (options.shouldUpdate) {
+      for (const sheet of renderedSheets) {
+        const shouldUpdate = await options.shouldUpdate?.(sheet);
+        if (shouldUpdate) {
+          actionSheetEventManager.publish(
+            `update_${sheet.id}`,
+            options?.payload,
+            sheet.context || 'global',
+            options?.overrideProps,
+          );
+        }
+      }
+    } else {
+      actionSheetEventManager.publish(
+        `update_${id}`,
+        options?.payload,
+        renderedSheets.pop().context || 'global',
+        options?.overrideProps,
+      );
+    }
   }
 
   /**
@@ -259,6 +334,21 @@ class _SheetManager {
       );
     }
   };
+  /**
+   * Get all rendered sheets for a Sheet Id.
+   */
+  getActiveSheets<SheetId extends keyof Sheets>(id: SheetId) {
+    return renderedSheetIds
+      .filter(renderdId => renderdId.startsWith(id))
+      .map(renderdId => {
+        const [id, context] = renderdId.split(':');
+        return {
+          id: id as SheetId,
+          context,
+          ref: this.get<SheetId>(id, context),
+        };
+      });
+  }
 }
 
 /**

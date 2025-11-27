@@ -23,20 +23,20 @@ An id of the action sheet you want to show.
 | [`ShowOptions`](/reference/showoptions) | false    |
 
 ```ts
-SheetManager.show("example-sheet");
+SheetManager.show('example-sheet');
 ```
 
 This method is async. It resolves when the action sheet closes. It can return a result from the action sheet if needed.
 
 ```ts
-const confirmed = await SheetManager.show("confirm-sheet");
+const confirmed = await SheetManager.show('confirm-sheet');
 ```
 
 You can also send some data to the action sheet. This data will be availble in the action sheet component.
 
 ```ts
-const confirmed = await SheetManager.show("confirm-sheet", {
-  payload: { message: "Do you want to open this link?" },
+const confirmed = await SheetManager.show('confirm-sheet', {
+  payload: {message: 'Do you want to open this link?'},
 });
 ```
 
@@ -61,14 +61,42 @@ An id of the action sheet you want to hide.
 | [`HideOptions`](/reference/hideoptions) | false    |
 
 ```ts
-SheetManager.hide("example-sheet");
+SheetManager.hide('example-sheet');
 ```
 
 The hide function takes an optional `data` parameter which can be used to return some data to the caller, i.e the function that called `SheetManager.show` initially.
 
 ```ts
-SheetManager.hide("example-sheet", {
-  payload: { confirmed: true },
+SheetManager.hide('example-sheet', {
+  payload: {confirmed: true},
+});
+```
+
+## `update`
+
+Update an active ActionSheet with new payload or override it's props.
+
+Parameters:
+
+`id`
+
+An id of the action sheet.
+
+| Type   | Required |
+| ------ | -------- |
+| string | true     |
+
+`options`
+
+| Type                                        | Required |
+| ------------------------------------------- | -------- |
+| [`UpdateOptions`](/reference/updateoptions) | true     |
+
+```ts
+SheetManager.update('payload', {
+  payload: {
+    candy: 'Chocolate',
+  },
 });
 ```
 
@@ -103,7 +131,30 @@ If the action sheet you want to get exists in a specific `SheetProvider`, pass i
 | string | true     |
 
 ```ts
-SheetManager.get("example-sheet")?.snapToOffset(25);
+SheetManager.get('example-sheet')?.snapToOffset(25);
 // or inside some modal with it's own `SheetProvider`
-SheetManager.get("example-sheet", "local-context")?.snapToOffset(25);
+SheetManager.get('example-sheet', 'local-context')?.snapToOffset(25);
+```
+
+## `getActiveSheets`
+
+Get all active sheets for a given sheet id.
+
+Parameters:
+
+`id`
+
+An id of the action sheet.
+
+| Type   | Required |
+| ------ | -------- |
+| string | true     |
+
+```ts
+const activeSheets = SheetManager.getActiveSheets('example-sheet');
+for (const sheet of activeSheets) {
+  if (sheet.ref.current.currentPayload().id === 'custom-id') {
+    sheet.ref.current.hide();
+  }
+}
 ```

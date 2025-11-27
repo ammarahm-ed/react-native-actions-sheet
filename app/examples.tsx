@@ -80,11 +80,27 @@ const MainScreen = () => {
           'Ice-cream 🍦',
           'Doughnut 🍩',
         ];
+        let interval;
         SheetManager.show('payload', {
           payload: {
             candy: candyNames[Math.floor(Math.random() * candyNames.length)],
           },
+          onClose: () => {
+            clearInterval(interval);
+          },
         });
+
+        interval = setInterval(() => {
+          SheetManager.update('payload', {
+            payload: {
+              candy: candyNames[Math.floor(Math.random() * candyNames.length)],
+            },
+            shouldUpdate: async (sheet) => {
+              console.log(sheet.id, sheet.context);
+              return true;
+            }
+          });
+        }, 3000);
       },
     },
     {
@@ -192,7 +208,7 @@ const MainScreen = () => {
           style={{
             paddingHorizontal: 16,
             height: 150,
-            width:'100%'
+            width: '100%',
           }}>
           <Image
             style={{
