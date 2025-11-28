@@ -90,23 +90,15 @@ function FlatListSheet() {
   );
 
   return (
-    <ActionSheet
-      gestureEnabled
-      snapPoints={[50, 100]}>
+    <ActionSheet gestureEnabled>
       <View
         style={{
           paddingHorizontal: 12,
-          height: 400,
-          alignItems: 'center',
-          paddingTop: 20,
           gap: 10,
-          width: '100%',
+          maxHeight: '100%'
         }}>
         <FlatList
           data={vegetableNamesWithEmoji}
-          style={{
-            width: '100%',
-          }}
           ListHeaderComponent={
             <Text
               style={{
@@ -118,17 +110,13 @@ function FlatListSheet() {
               Vegetables
             </Text>
           }
-          keyExtractor={(item, index) => item + index}
+          keyExtractor={(item, index) => `${item} + ${index}`}
           renderItem={renderItem}
         />
         <Button
           title="Close"
           onPress={() => {
             ref.current.hide();
-          }}
-          style={{
-            marginTop: 10,
-            marginBottom: 10,
           }}
         />
       </View>

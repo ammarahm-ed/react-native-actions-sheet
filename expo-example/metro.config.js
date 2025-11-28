@@ -3,6 +3,9 @@ const {mergeConfig} = require('@react-native/metro-config');
 const path = require('path');
 
 const moduleRoot = path.resolve(__dirname, '..');
+const {
+  wrapWithReanimatedMetroConfig,
+} = require('react-native-reanimated/metro-config');
 
 /**
  * Metro configuration
@@ -21,6 +24,8 @@ const config = {
         'node_modules/react-native-web',
       ),
       'react-native-actions-sheet': path.resolve(__dirname, '../'),
+       'react-native-reanimated': path.resolve(__dirname, 'node_modules/react-native-reanimated'),
+       '@legendapp/list': path.resolve(__dirname, 'node_modules/@legendapp/list')
     },
     resolveRequest: (context, moduleName, platform) => {
       if (moduleName === 'react-native-safe-area-context') {
@@ -53,6 +58,7 @@ const config = {
       new RegExp(`${moduleRoot}/node_modules/react/.*`),
       new RegExp(`${moduleRoot}/node_modules/react-native/.*`),
       new RegExp(`${moduleRoot}/node_modules/react-native-gesture-handler`),
+      new RegExp(`${moduleRoot}/node_modules/react-native-reanimated`),
     ],
   },
   transformer: {
@@ -65,4 +71,4 @@ const config = {
   },
 };
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = wrapWithReanimatedMetroConfig(mergeConfig(getDefaultConfig(__dirname), config));

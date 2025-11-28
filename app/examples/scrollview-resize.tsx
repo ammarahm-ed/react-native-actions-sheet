@@ -1,5 +1,5 @@
 import React, {useCallback} from 'react';
-import {Text, TextInput, View} from 'react-native';
+import {Text, View} from 'react-native';
 import ActionSheet, {ScrollView} from 'react-native-actions-sheet';
 import {Button} from '../components/button';
 
@@ -83,36 +83,49 @@ function ResizeSheet() {
         style={{
           paddingHorizontal: 12,
           alignItems: 'center',
-          paddingTop: 20,
           gap: 10,
           width: '100%',
+          maxHeight: '100%',
         }}>
-        <Button
-          title="Add vegetable"
-          onPress={() => {
-            setVegetables([
-              ...vegetables,
-              vegetableNamesWithEmoji[
-                Math.floor(Math.random() * vegetableNamesWithEmoji.length)
-              ],
-            ]);
-          }}
-        />
-
-        <Button
-          title="Remove vegetable"
-          onPress={() => {
-            setVegetables([...vegetables.slice(0, vegetables.length - 1)]);
-          }}
-        />
-
         <ScrollView
           style={{
             width: '100%',
-            flexShrink: 1,
           }}>
           {vegetables.map(renderItem)}
         </ScrollView>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 10,
+          }}>
+          <Button
+            title="+"
+            style={{
+              width: 'auto',
+              flex: 1,
+            }}
+            onPress={() => {
+              setVegetables([
+                ...vegetables,
+                vegetableNamesWithEmoji[
+                  Math.floor(Math.random() * vegetableNamesWithEmoji.length)
+                ],
+              ]);
+            }}
+          />
+
+          <Button
+            title="-"
+            onPress={() => {
+              setVegetables([...vegetables.slice(0, vegetables.length - 1)]);
+            }}
+            style={{
+              width: 'auto',
+              flex: 1,
+            }}
+          />
+        </View>
       </View>
     </ActionSheet>
   );

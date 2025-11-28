@@ -1,4 +1,4 @@
-# ShowOptions
+# UpdateOptions
 
 ## `payload`
 
@@ -36,16 +36,16 @@ function ExampleSheet(props: SheetProps<'example-sheet'>) {
 | -------------------------------------------- | -------- |
 | [`ActionSheetProps`](/reference/actionsheet) | false    |
 
-## `onClose`
+## `shouldUpdate`
 
-A callback function that is called when the action sheet closes.
+If there are multiple sheets active with the same id, you can provide this function to select which sheet to update based on current payload or other sheet data.
 
 Parameters:
 
-`data`
+`sheet`
 
 Any data that is sent from the `hide` function of `SheetManager` can be recieved here.
 
-| Type       | Required |
-| ---------- | -------- |
-| `function` | false    |
+| Type                                                                                | Required |
+| ----------------------------------------------------------------------------------- | -------- |
+| \{id: string, context: string, ref: [`ActionSheetRef`](/reference/actionsheetref)\} | false    |

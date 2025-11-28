@@ -1,25 +1,47 @@
 /* eslint-disable curly */
-import React from 'react';
+import React, {act, useRef} from 'react';
 import {
+  Image,
   Linking,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  View,
 } from 'react-native';
-import {SheetManager} from 'react-native-actions-sheet';
+import ActionSheet, {
+  ActionSheetRef,
+  SheetManager,
+} from 'react-native-actions-sheet';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 const MainScreen = () => {
+  const actionSheetRef = useRef<ActionSheetRef>(null);
   const examples: {
     title: string;
     onOpen: () => void;
   }[] = [
     {
+      title: 'Simple Sheet',
+      onOpen: () => {
+        actionSheetRef.current?.show();
+      },
+    },
+    {
       title: 'Hello',
       onOpen: () => {
         SheetManager.show('hello');
+      },
+    },
+    {
+      title: 'Floating Sheet',
+      onOpen: () => {
+        SheetManager.show('floating-sheet', {
+          overrideProps: {
+            gestureEnabled: false,
+          },
+        });
       },
     },
     {
@@ -58,11 +80,27 @@ const MainScreen = () => {
           'Ice-cream 🍦',
           'Doughnut 🍩',
         ];
+        let interval;
         SheetManager.show('payload', {
           payload: {
             candy: candyNames[Math.floor(Math.random() * candyNames.length)],
           },
+          onClose: () => {
+            clearInterval(interval);
+          },
         });
+
+        interval = setInterval(() => {
+          SheetManager.update('payload', {
+            payload: {
+              candy: candyNames[Math.floor(Math.random() * candyNames.length)],
+            },
+            shouldUpdate: async (sheet) => {
+              console.log(sheet.id, sheet.context);
+              return true;
+            }
+          });
+        }, 3000);
       },
     },
     {
@@ -109,6 +147,12 @@ const MainScreen = () => {
       },
     },
     {
+      title: 'LegendList',
+      onOpen: () => {
+        SheetManager.show('legend-list');
+      },
+    },
+    {
       title: 'Resize',
       onOpen: () => {
         SheetManager.show('scrollview-resize');
@@ -126,46 +170,89 @@ const MainScreen = () => {
         SheetManager.show('sheet-router');
       },
     },
+    {
+      title: 'Custom scroll handlers',
+      onOpen: () => {
+        SheetManager.show('custom-scroll-handlers');
+      },
+    },
   ];
-
-  // Examples left to add
-  // 5. Resize with animation on add/remove item.
 
   return (
     <>
-      <SafeAreaView style={styles.safeareview}>
+      <SafeAreaView style={[styles.safeareview, {}]}>
+        <ActionSheet
+          ref={actionSheetRef}
+          gestureEnabled
+          containerStyle={{
+            paddingHorizontal: 12,
+            height: '40%',
+          }}>
+          <Text
+            style={{
+              color: 'black',
+              fontSize: 30,
+              textAlign: 'center',
+            }}>
+            I opened without SheetManager!
+          </Text>
+        </ActionSheet>
+
         <StatusBar
           translucent
           backgroundColor="transparent"
-          barStyle="dark-content"
+          barStyle="light-content"
         />
 
-        <Text
+        <View
           style={{
-            color: 'black',
-            fontWeight: '100',
-            fontSize: 30,
-            alignSelf: 'center',
+            paddingHorizontal: 16,
+            height: 150,
+            width: '100%',
           }}>
-          Examples
-        </Text>
+          <Image
+            style={{
+              width: '100%',
+              height: 150,
+            }}
+            resizeMode="contain"
+            src="https://raw.githubusercontent.com/ammarahm-ed/react-native-actions-sheet/master/assets/graphic.png"
+          />
+        </View>
 
         <ScrollView
+          contentContainerStyle={{
+            paddingBottom: 50,
+          }}
           style={{
             width: '100%',
             flex: 1,
-            marginTop: 20,
-            paddingHorizontal: 12,
+            paddingHorizontal: 16,
           }}>
           {examples.map(item => (
-            <TouchableOpacity
+            <Pressable
               key={item.title}
               onPress={() => {
                 item.onOpen();
               }}
-              style={styles.btn}>
+              style={pressed => ({
+                height: 50,
+                justifyContent: 'center',
+                alignItems: 'center',
+                alignSelf: 'center',
+                backgroundColor: pressed.pressed ? '#d9d9d9' : 'white',
+                paddingHorizontal: 10,
+                borderRadius: 10,
+                elevation: 5,
+                shadowColor: 'black',
+                shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
+                shadowOpacity: 0.2,
+                shadowRadius: 0.7 * 4,
+                width: '100%',
+                marginBottom: 10,
+              })}>
               <Text style={styles.btnTitle}>{item.title}</Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </ScrollView>
       </SafeAreaView>
@@ -176,32 +263,16 @@ const MainScreen = () => {
 export default MainScreen;
 
 const styles = StyleSheet.create({
-  btn: {
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    elevation: 5,
-    shadowColor: 'black',
-    shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
-    shadowOpacity: 0.2,
-    shadowRadius: 0.7 * 4,
-    width: '100%',
-    marginBottom: 10,
-  },
   safeareview: {
     justifyContent: 'center',
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#d6d6d6',
     alignItems: 'center',
     gap: 10,
-    paddingTop: 40,
+    paddingTop: 20,
   },
   btnTitle: {
-    color: 'white',
+    color: 'block',
     fontWeight: 'bold',
   },
 });

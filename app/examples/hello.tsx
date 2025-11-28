@@ -6,8 +6,7 @@ function Hello() {
   return (
     <ActionSheet
       containerStyle={{
-        paddingHorizontal: 12,
-        height: 400,
+        height: '40%',
         alignItems: 'center',
         justifyContent: 'center',
       }}>

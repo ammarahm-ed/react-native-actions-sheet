@@ -2,10 +2,10 @@
 import {RefObject} from 'react';
 import {actionSheetEventManager} from './eventmanager';
 import {providerRegistryStack, sheetsRegistry} from './provider';
-import {ActionSheetRef, Sheets} from './types';
+import {ActionSheetProps, ActionSheetRef, Sheets} from './types';
 let baseZindex = 999;
 // Array of all the ids of ActionSheets currently rendered in the app.
-const ids: string[] = [];
+const renderedSheetIds: string[] = [];
 const refs: {[name: string]: RefObject<ActionSheetRef>} = {};
 
 /**
@@ -13,10 +13,11 @@ const refs: {[name: string]: RefObject<ActionSheetRef>} = {};
  * @returns
  */
 export function getSheetStack() {
-  return ids.map(id => {
+  return renderedSheetIds.map(id => {
+    const [sheetId, context] = id.split(':');
     return {
-      id: id.split(':')[0],
-      context: id.split(':')?.[1] || 'global',
+      id: sheetId,
+      context: context || 'global',
     };
   });
 }
@@ -29,8 +30,8 @@ export function getSheetStack() {
  */
 export function isRenderedOnTop(id: string, context?: string) {
   return context
-    ? ids[ids.length - 1] === `${id}:${context}`
-    : ids[ids.length - 1].startsWith(id);
+    ? renderedSheetIds[renderedSheetIds.length - 1] === `${id}:${context}`
+    : renderedSheetIds[renderedSheetIds.length - 1].startsWith(id);
 }
 
 /**
@@ -52,7 +53,7 @@ export function setBaseZIndexForActionSheets(zIndex: number) {
  * @returns
  */
 export function getZIndexFromStack(id: string, context: string) {
-  const index = ids.indexOf(`${id}:${context}`);
+  const index = renderedSheetIds.indexOf(`${id}:${context}`);
   if (index > -1) {
     return baseZindex + index + 1;
   }
@@ -67,10 +68,7 @@ class _SheetManager {
       // to render the sheet.
       for (const context of providerRegistryStack.slice().reverse()) {
         // We only automatically select nested sheet providers.
-        if (
-          context.startsWith('$$-auto') &&
-          !context.includes(options?.id as string)
-        ) {
+        if (context.startsWith('$$-auto') || context === 'global') {
           options.context = context;
           break;
         }
@@ -102,6 +100,24 @@ class _SheetManager {
        * Provide `context` of the `SheetProvider` where you want to show the action sheet.
        */
       context?: string;
+
+      /**
+       * Override a ActionSheet's props that were defined when the component was declared.
+       * 
+       * You need to forward these props to the ActionSheet component manually.
+       * ```tsx
+       * function ExampleSheet(props: SheetProps<'example-sheet'>) {
+  return (
+    <ActionSheet
+      disableElevation={true}
+      gestureEnabled
+      {...props.overrideProps}
+    />
+  );
+}
+       * ```
+       */
+      overrideProps?: ActionSheetProps<SheetId>;
     },
   ): Promise<Sheets[SheetId]['returnValue']> {
     return new Promise(resolve => {
@@ -110,34 +126,103 @@ class _SheetManager {
         id: id,
       });
       const handler = (data: any, context = 'global') => {
-        if (
-          context !== 'global' &&
-          currentContext &&
-          currentContext !== context
-        )
-          return;
-
+        if (currentContext !== context) return;
         options?.onClose?.(data);
         sub?.unsubscribe();
         resolve(data);
       };
       var sub = actionSheetEventManager.subscribe(`onclose_${id}`, handler);
 
-      // Check if the sheet is registered with any `SheetProviders`.
+      // Check if the sheet is registered.
       let isRegisteredWithSheetProvider = false;
-      for (let ctx in sheetsRegistry) {
-        for (let _id in sheetsRegistry[ctx]) {
-          if (_id === id) {
-            isRegisteredWithSheetProvider = true;
-          }
+      for (let _id in sheetsRegistry) {
+        if (_id === id) {
+          isRegisteredWithSheetProvider = true;
         }
       }
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
         options?.payload,
         currentContext || 'global',
+        options?.overrideProps,
       );
     });
+  }
+
+  /**
+   * Update an active ActionSheet with new payload or override it's props.
+   */
+  async update<SheetId extends keyof Sheets>(
+    id: SheetId,
+    options: {
+      /**
+       * Provide `context` of the `SheetProvider` where the action sheet is rendered.
+       */
+      context?: string;
+      /**
+       * Any data to pass to the ActionSheet. Will be available from the component `props` or in `onBeforeShow` prop on the action sheet.
+       */
+      payload: Sheets[SheetId]['payload'];
+
+      /**
+       * Override a ActionSheet's props that were defined when the component was declared.
+       * 
+       * You need to forward these props to the ActionSheet component manually.
+       * ```tsx
+       * function ExampleSheet(props: SheetProps<'example-sheet'>) {
+  return (
+    <ActionSheet
+      disableElevation={true}
+      gestureEnabled
+      {...props.overrideProps}
+    />
+  );
+}
+       * ```
+       */
+      overrideProps?: ActionSheetProps<SheetId>;
+
+      /**
+       * If there are multiple sheets active with the same id, you can provide this function to select
+       * which sheet to update based on current payload or other sheet data.
+       */
+      shouldUpdate?: (sheet: {
+        id: SheetId;
+        context: string;
+        ref: RefObject<ActionSheetRef<SheetId>>;
+      }) => Promise<boolean>;
+    },
+  ) {
+    if (!options || !id) return;
+
+    const renderedSheets = this.getActiveSheets(id);
+    if (!renderedSheets.length) {
+      if (__DEV__) {
+        console.warn('Found no sheets to update with id: ', id);
+      }
+      return;
+    }
+
+    if (options.shouldUpdate) {
+      for (const sheet of renderedSheets) {
+        const shouldUpdate = await options.shouldUpdate?.(sheet);
+        if (shouldUpdate) {
+          actionSheetEventManager.publish(
+            `update_${sheet.id}`,
+            options?.payload,
+            sheet.context || 'global',
+            options?.overrideProps,
+          );
+        }
+      }
+    } else {
+      actionSheetEventManager.publish(
+        `update_${id}`,
+        options?.payload,
+        renderedSheets.pop().context || 'global',
+        options?.overrideProps,
+      );
+    }
   }
 
   /**
@@ -168,7 +253,7 @@ class _SheetManager {
       // Check if the sheet is registered with any `SheetProviders`
       // and select the nearest context where sheet is registered.
 
-      for (const _id of ids) {
+      for (const _id of renderedSheetIds) {
         if (_id === `${id}:${currentContext}`) {
           isRegisteredWithSheetProvider = true;
           break;
@@ -200,7 +285,7 @@ class _SheetManager {
    * @param id Hide all sheets for the specific id.
    */
   hideAll<SheetId extends keyof Sheets>(id?: SheetId | (string & {})) {
-    ids.forEach(_id => {
+    renderedSheetIds.forEach(_id => {
       if (id && !_id.startsWith(id)) return;
       actionSheetEventManager.publish(`hide_${_id.split(':')?.[0]}`);
     });
@@ -226,12 +311,9 @@ class _SheetManager {
     context?: string,
   ): RefObject<ActionSheetRef<SheetId>> => {
     if (!context) {
-      for (let ctx of providerRegistryStack.slice().reverse()) {
-        for (let _id in sheetsRegistry[ctx]) {
-          if (_id === id) {
-            context = ctx;
-            break;
-          }
+      for (let _id of renderedSheetIds.reverse()) {
+        if (_id.includes(`${id}:`)) {
+          context = _id.split(':')[1];
         }
       }
     }
@@ -239,16 +321,34 @@ class _SheetManager {
   };
 
   add = (id: string, context: string) => {
-    if (ids.indexOf(id) < 0) {
-      ids[ids.length] = `${id}:${context}`;
+    if (renderedSheetIds.indexOf(id) < 0) {
+      renderedSheetIds[renderedSheetIds.length] =
+        `${id}:${context || 'global'}`;
     }
   };
 
   remove = (id: string, context: string) => {
-    if (ids.indexOf(`${id}:${context}`) > -1) {
-      ids.splice(ids.indexOf(`${id}:${context}`));
+    if (renderedSheetIds.indexOf(`${id}:${context}`) > -1) {
+      renderedSheetIds.splice(
+        renderedSheetIds.indexOf(`${id}:${context || 'global'}`),
+      );
     }
   };
+  /**
+   * Get all rendered sheets for a Sheet Id.
+   */
+  getActiveSheets<SheetId extends keyof Sheets>(id: SheetId) {
+    return renderedSheetIds
+      .filter(renderdId => renderdId.startsWith(id))
+      .map(renderdId => {
+        const [id, context] = renderdId.split(':');
+        return {
+          id: id as SheetId,
+          context,
+          ref: this.get<SheetId>(id, context),
+        };
+      });
+  }
 }
 
 /**

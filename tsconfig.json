@@ -1,5 +1,5 @@
 {
-  "include": ["index.ts", "src/views/FlashList.tsx"],
+  "include": ["index.ts"],
   "compilerOptions": {
     "baseUrl": "./",
     "jsx": "react-native",
@@ -20,7 +20,8 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": false,
-    "allowJs": true
+    "allowJs": true,
+    "incremental": false
   },
   "exclude": ["./example", "./expo-example", "./dist", "./docs", "./assets"]
 }

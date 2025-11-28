@@ -1,12 +1,12 @@
 import React from 'react';
 import {
-  Animated,
   GestureResponderEvent,
   LayoutRectangle,
+  StyleProp,
   TouchableOpacityProps,
   ViewStyle,
-  StyleProp,
 } from 'react-native';
+import {SpringConfig} from 'react-native-reanimated/lib/typescript/animation/springUtils';
 import EventManager from './eventmanager';
 import {Route} from './hooks/use-router';
 
@@ -73,6 +73,10 @@ export type ActionSheetRef<SheetId extends keyof Sheets = never> = {
    * Disable or enable sheet keyboard handler.
    */
   keyboardHandler: (enabled?: boolean) => void;
+  /**
+   * Get the current payload of the sheet
+   */
+  currentPayload: () => Sheets[SheetId]["payload"];
 };
 
 export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
@@ -121,17 +125,11 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   /**
    * The open animation is a spring animation. You can modify it using the config below.
    */
-  openAnimationConfig?: Omit<
-    Omit<Animated.SpringAnimationConfig, 'toValue'>,
-    'useNativeDriver'
-  >;
+  openAnimationConfig?: SpringConfig;
   /**
    * The open animation is a spring animation. You can modify it by providing a custom config.
    */
-  closeAnimationConfig?: Omit<
-    Omit<Animated.SpringAnimationConfig, 'toValue'>,
-    'useNativeDriver'
-  >;
+  closeAnimationConfig?: SpringConfig;
   /**
    * Provide snap points ranging from 0 to 100. ActionSheet will snap between these points. If no snap points
    * are provided, the default is a single snap point set to `100` which means that the sheet will be opened
@@ -159,9 +157,9 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   /**
    * Enable elevation. This will add a shadow to the ActionSheet.
    *
-   * Default: `true`
+   * Default: `false`
    */
-  enableElevation?: boolean;
+  disableElevation?: boolean;
 
   /**
    * Add elevation to the ActionSheet container.
@@ -178,7 +176,7 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * Note: It is however recommended to pass desired data via `SheetManager.hide` or `ref.hide`
    * functions intead to avoid unnecessary rerenders when closing the sheet.
    */
-  payload?: Sheets[SheetId]['returnValue'];
+  returnValue?: Sheets[SheetId]['returnValue'];
 
   /**
    * Style the top indicator bar in ActionSheet.
@@ -288,6 +286,12 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   isModal?: boolean;
 
   /**
+   * Set the distance where the sheet should appear from. A value of 1 means sheet starts appearing from the bottom of the screen.
+   * @default 1
+   */
+  initialTranslateFactor?: number;
+
+  /**
    * The default zIndex of wrapper `View` when `isModal` is set to false or background interaction is enabled is 9999. You can change it here.
    */
 
@@ -325,6 +329,8 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
 
   /**
    * Apply padding to bottom based on device safe area insets.
+   *
+   * @default true
    */
   useBottomSafeAreaPadding?: boolean;
 
@@ -349,12 +355,14 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   onOpen?: () => void;
 
   /**
-   * Event called when the position of the ActionSheet changes. When the `position` value is 0, it means that the ActionSheet has reached top.
+   * Event called when the position of the ActionSheet changes.
+   *
+   * @param {number} percentage Sheet visible on the screen in percentage.
    */
-  onChange?: (position: number, height: number) => void;
+  onChange?: (position: number) => void;
 
   /**
-   * additional props to pass to the backdrop element. Useful for adding custom accessibility props.
+   * Additional props to pass to the backdrop element. Useful for adding custom accessibility props.
    */
   backdropProps?: Partial<TouchableOpacityProps>;
 
@@ -362,6 +370,8 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * Default safeArea insets provided through a library such as
    * react-native-safe-area-insets. This also helps in giving a tiny boost
    * in performance as the sheet does not have to calculate insets anymore.
+   *
+   * @deprecated Insets are used internally by default through react-native-safe-area-insets. This prop is no-op.
    */
   safeAreaInsets?: {top: number; left: number; right: number; bottom: number};
   /**

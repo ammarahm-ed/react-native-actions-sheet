@@ -1,0 +1,16 @@
+# FlashList
+
+If you want to use `@legendapp/list` inside the `ActionSheet` you need to do the following to make it work properly.
+
+```tsx
+import ActionSheet, {ScrollView} from 'react-native-actions-sheet';
+import {LegendList} from '@legendapp/list';
+
+const ExampleSheet = () => {
+  return (
+    <ActionSheet>
+      <LegendList renderScrollComponent={props => <ScrollView {...props} />} />
+    </ActionSheet>
+  );
+};
+```

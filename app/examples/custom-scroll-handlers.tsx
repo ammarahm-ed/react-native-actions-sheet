@@ -1,8 +1,17 @@
 import React, {useCallback} from 'react';
-import {Text, View} from 'react-native';
-import ActionSheet, {ScrollView} from 'react-native-actions-sheet';
+import {ScrollView, Text, View} from 'react-native';
+import ActionSheet, {useScrollHandlers} from 'react-native-actions-sheet';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 
-function ScrollViewSheet() {
+/**
+ * This needs to be a separate component for simultaneousHandlers to get populated properly from the PanGestureContext.
+ * @returns
+ */
+function CustomScrollView() {
+  const scrollHandlers = useScrollHandlers<ScrollView>();
+  const gesture = Gesture.Native().simultaneousWithExternalGesture(
+    ...scrollHandlers.simultaneousHandlers,
+  );
   const vegetableNamesWithEmoji = [
     '🍅 Tomato',
     '🥕 Carrot',
@@ -52,6 +61,34 @@ function ScrollViewSheet() {
   );
 
   return (
+    <GestureDetector gesture={gesture}>
+      <ScrollView
+        ref={scrollHandlers.ref}
+        onLayout={scrollHandlers.onLayout}
+        onScroll={scrollHandlers.onScroll}
+        scrollEventThrottle={scrollHandlers.scrollEventThrottle}
+        style={{
+          width: '100%',
+          flexShrink: 1,
+        }}>
+        <Text
+          style={{
+            color: 'black',
+            fontSize: 30,
+            width: '100%',
+            paddingBottom: 10,
+          }}>
+          Vegetables
+        </Text>
+
+        {vegetableNamesWithEmoji.map(renderItem)}
+      </ScrollView>
+    </GestureDetector>
+  );
+}
+
+function CustomScrollHandlers() {
+  return (
     <ActionSheet
       gestureEnabled
       snapPoints={[50, 100]}
@@ -69,26 +106,10 @@ function ScrollViewSheet() {
           width: '100%',
           height: '100%',
         }}>
-        <ScrollView
-          style={{
-            width: '100%',
-            flexShrink: 1,
-          }}>
-          <Text
-            style={{
-              color: 'black',
-              fontSize: 30,
-              width: '100%',
-              paddingBottom: 10,
-            }}>
-            Vegetables
-          </Text>
-
-          {vegetableNamesWithEmoji.map(renderItem)}
-        </ScrollView>
+        <CustomScrollView />
       </View>
     </ActionSheet>
   );
 }
 
-export default ScrollViewSheet;
+export default CustomScrollHandlers;

@@ -1,49 +1,40 @@
-/* eslint-disable curly */
 import React, {
   createContext,
-  MutableRefObject,
   ReactNode,
   RefObject,
   useContext,
   useEffect,
-  useReducer,
   useRef,
   useState,
 } from 'react';
 import {actionSheetEventManager} from './eventmanager';
-import {ActionSheetRef, Sheets} from './types';
+import {ActionSheetProps, ActionSheetRef, Sheets} from './types';
 
 export const providerRegistryStack: string[] = [];
 
 /**
  * An object that holds all the sheet components against their ids.
  */
-export const sheetsRegistry: {
-  [context: string]: {[id: string]: React.ElementType};
-} = {
-  global: {},
-};
+export const sheetsRegistry: {[id: string]: React.ElementType} = {};
 
 export interface SheetProps<SheetId extends keyof Sheets = never> {
   sheetId: SheetId | (string & {});
   payload?: Sheets[SheetId]['payload'];
+  overrideProps?: ActionSheetProps;
 }
 
 // Registers your Sheet with the SheetProvider.
 export function registerSheet<SheetId extends keyof Sheets = never>(
   id: SheetId | (string & {}),
   Sheet: React.ElementType,
-  ...contexts: string[]
+  /**
+   * @deprecated Does nothing
+   */
+  ..._contexts: string[]
 ) {
   if (!id || !Sheet) return;
-  if (!contexts || contexts.length === 0) contexts = ['global'];
-  for (let context of contexts) {
-    const registry = !sheetsRegistry[context]
-      ? (sheetsRegistry[context] = {})
-      : sheetsRegistry[context];
-    registry[id] = Sheet;
-    actionSheetEventManager.publish(`${context}-on-register`);
-  }
+  sheetsRegistry[id] = Sheet;
+  actionSheetEventManager.publish('context-on-register');
 }
 
 /**
@@ -72,21 +63,21 @@ export function SheetProvider({
   context?: string;
   children?: ReactNode;
 }) {
-  const [, forceUpdate] = useReducer(x => x + 1, 0);
-  const sheetIds = Object.keys(
-    sheetsRegistry[context] || sheetsRegistry['global'] || {},
-  );
+  const [sheetIds, setSheetIds] = useState(Object.keys(sheetsRegistry));
   const onRegister = React.useCallback(() => {
-    // Rerender when a new sheet is added.
-    forceUpdate();
-  }, [forceUpdate]);
+    setSheetIds(Object.keys(sheetsRegistry));
+  }, []);
 
   useEffect(() => {
-    providerRegistryStack.indexOf(context) > -1
-      ? providerRegistryStack.indexOf(context)
-      : providerRegistryStack.push(context) - 1;
+    if (providerRegistryStack.indexOf(context) === -1) {
+      providerRegistryStack.push(context);
+    } else {
+      throw new Error(
+        `You are trying to register multiple SheetProviders with the same context id: ${context}. Use a unique context id for each SheetProvider in your app.`,
+      );
+    }
     const unsub = actionSheetEventManager.subscribe(
-      `${context}-on-register`,
+      `context-on-register`,
       onRegister,
     );
     return () => {
@@ -95,15 +86,18 @@ export function SheetProvider({
     };
   }, [context, onRegister]);
 
-  const renderSheet = (sheetId: string) => (
-    <RenderSheet key={sheetId} id={sheetId} context={context} />
+  const renderSheet = React.useCallback(
+    (sheetId: string) => (
+      <RenderSheet key={sheetId} id={sheetId} context={context} />
+    ),
+    [context],
   );
 
   return (
-    <>
+    <ProviderContext.Provider value={context}>
       {children}
       {sheetIds.map(renderSheet)}
-    </>
+    </ProviderContext.Provider>
   );
 }
 const ProviderContext = createContext('global');
@@ -116,29 +110,21 @@ export const SheetRefContext = createContext<RefObject<ActionSheetRef | null>>(
 const SheetPayloadContext = createContext<any>(undefined);
 
 /**
- * Get id of the current context.
+ * Get id of the current context in which this component is rendered.
  */
 export const useProviderContext = () => useContext(ProviderContext);
 /**
- * Get id of the current sheet
+ * Get id of the current sheet in which the current component is rendered.
  */
 export const useSheetIDContext = () => useContext(SheetIDContext);
 /**
  * Get the current Sheet's internal ref.
  * @returns
  */
-// export const useSheetRef = <SheetId extends keyof Sheets = never>(): RefObject<
-//   ActionSheetRef<SheetId>
-// > => useContext(SheetRefContext) as RefObject<
-// ActionSheetRef<SheetId>
-// >;
-
 export function useSheetRef<SheetId extends keyof Sheets = never>(
   _id?: SheetId | (string & {}),
 ) {
-  return useContext(SheetRefContext) as MutableRefObject<
-    ActionSheetRef<SheetId>
-  >;
+  return useContext(SheetRefContext) as RefObject<ActionSheetRef<SheetId>>;
 }
 
 /**
@@ -153,43 +139,13 @@ export function useSheetPayload<SheetId extends keyof Sheets = never>(
 
 const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const [payload, setPayload] = useState();
+  const [overrideProps, setOverrideProps] = useState<ActionSheetProps>(null);
   const [visible, setVisible] = useState(false);
   const ref = useRef<ActionSheetRef | null>(null);
   const clearPayloadTimeoutRef = useRef<NodeJS.Timeout>(null);
-  const Sheet = context.startsWith('$$-auto-')
-    ? sheetsRegistry?.global?.[id]
-    : sheetsRegistry[context]
-    ? sheetsRegistry[context]?.[id]
-    : undefined;
-
-  const onShow = React.useCallback(
-    (data: any, ctx = 'global') => {
-      if (ctx !== context) return;
-      clearTimeout(clearPayloadTimeoutRef.current);
-      setPayload(data);
-      setVisible(true);
-    },
-    [context],
-  );
-
-  const onClose = React.useCallback(
-    (_data: any, ctx = 'global') => {
-      if (context !== ctx) return;
-      setVisible(false);
-      clearTimeout(clearPayloadTimeoutRef.current);
-      clearPayloadTimeoutRef.current = setTimeout(() => {
-        setPayload(undefined);
-      }, 50);
-    },
-    [context],
-  );
-
-  const onHide = React.useCallback(
-    (data: any, ctx = 'global') => {
-      actionSheetEventManager.publish(`hide_${id}`, data, ctx);
-    },
-    [id],
-  );
+  const Sheet = sheetsRegistry[id] || null;
+  const visibleRef = useRef(false);
+  visibleRef.current = visible;
 
   useEffect(() => {
     if (visible) {
@@ -198,7 +154,36 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   }, [context, id, payload, visible]);
 
   useEffect(() => {
+    const onShow = (data: any, ctx = 'global', overrideProps) => {
+      if (ctx !== context) return;
+      clearTimeout(clearPayloadTimeoutRef.current);
+      setPayload(data);
+      setOverrideProps(overrideProps);
+      setVisible(true);
+    };
+
+    const onClose = (_data: any, ctx = 'global') => {
+      if (context !== ctx) return;
+      setVisible(false);
+      clearTimeout(clearPayloadTimeoutRef.current);
+      clearPayloadTimeoutRef.current = setTimeout(() => {
+        setPayload(undefined);
+      }, 50);
+    };
+
+    const onHide = (data: any, ctx = 'global') => {
+      actionSheetEventManager.publish(`hide_${id}`, data, ctx);
+    };
+
+    const onUpdate = (data: any, ctx = 'global', overrideProps) => {
+      if (ctx !== context || !visibleRef.current) return;
+      clearTimeout(clearPayloadTimeoutRef.current);
+      setPayload(data);
+      setOverrideProps(overrideProps);
+    };
+
     let subs = [
+      actionSheetEventManager.subscribe(`update_${id}`, onUpdate),
       actionSheetEventManager.subscribe(`show_wrap_${id}`, onShow),
       actionSheetEventManager.subscribe(`onclose_${id}`, onClose),
       actionSheetEventManager.subscribe(`hide_wrap_${id}`, onHide),
@@ -206,19 +191,74 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
     return () => {
       subs.forEach(s => s.unsubscribe());
     };
-  }, [id, context, onShow, onHide, onClose]);
+  }, []);
 
   if (!Sheet) return null;
 
   return !visible ? null : (
-    <ProviderContext.Provider value={context}>
-      <SheetIDContext.Provider value={id}>
-        <SheetRefContext.Provider value={ref}>
-          <SheetPayloadContext.Provider value={payload}>
-            <Sheet sheetId={id} payload={payload} />
-          </SheetPayloadContext.Provider>
-        </SheetRefContext.Provider>
-      </SheetIDContext.Provider>
-    </ProviderContext.Provider>
+    <SheetIDContext.Provider value={id}>
+      <SheetRefContext.Provider value={ref}>
+        <SheetPayloadContext.Provider value={payload}>
+          <Sheet sheetId={id} payload={payload} overrideProps={overrideProps} />
+        </SheetPayloadContext.Provider>
+      </SheetRefContext.Provider>
+    </SheetIDContext.Provider>
   );
 };
+
+export type SheetRegisterProps = {
+  sheets: {
+    [K in keyof Sheets]: React.ElementType;
+  };
+};
+/**
+ * Registers the sheet components with the global Sheet registery allowing
+ * you to open sheets from anywhere in the app.
+ *
+ * We recommend you to use this once in your app in your `<App/>` component.
+ *
+ * @example
+ * ```tsx
+ * import {SheetProvider, SheetDefinition} from "react-native-actions-sheet";
+ *
+ * declare module 'react-native-actions-sheet' {
+ *  export interface Sheets {
+ *    'example-sheet': SheetDefinition;
+ *    }
+ * }
+ *
+ * const App = () => {
+ *  return <View>
+ *    <SheetRegister
+ *      sheets={
+ *      "example-sheet": ExampleSheet
+ *    }
+ *    />
+ * </View>
+ * }
+ * ```
+ */
+export function SheetRegister(props: SheetRegisterProps): React.JSX.Element {
+  const registered = useRef(false);
+  if (!registered.current) {
+    registered.current = true;
+    Object.keys(props.sheets).forEach(id => {
+      if (!props.sheets[id]) {
+        throw new Error(
+          `SheetRegistry trying to register ${id} that is not a React Component.`,
+        );
+      }
+      if (sheetsRegistry[id]) {
+        if (__DEV__) {
+          console.warn(
+            `SheetRegistry tried to register sheet with the same id ${id} multiple times. If you are registering Sheets will multiple SheetRegistery components, make sure the ids are unique.`,
+          );
+        }
+        return;
+      }
+      sheetsRegistry[id] = props.sheets[id];
+    });
+  }
+
+  return null;
+}

@@ -1,38 +1,44 @@
-/* eslint-disable curly */
 import React, {
   forwardRef,
+  Fragment,
   RefObject,
   useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
 } from 'react';
 import {
-  Animated,
   BackHandler,
   Dimensions,
-  Easing,
   GestureResponderEvent,
   Keyboard,
-  LayoutChangeEvent,
   LayoutRectangle,
   Modal,
   NativeEventSubscription,
   PanResponder,
   Platform,
-  SafeAreaView,
-  StatusBar,
+  Pressable,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import {
+  Gesture,
+  GestureDetector,
   GestureHandlerRootView,
-  PanGestureHandler,
-  PanGestureHandlerProps,
+  GestureType,
+  PanGesture,
 } from 'react-native-gesture-handler';
+import Animated, {
+  Easing,
+  runOnJS,
+  runOnUI,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   DraggableNodes,
   DraggableNodesContext,
@@ -47,7 +53,7 @@ import {
   RouterParamsContext,
   useRouter,
 } from './hooks/use-router';
-import {resolveScrollRef, ScrollState} from './hooks/use-scroll-handlers';
+import {resolveScrollRef} from './hooks/use-scroll-handlers';
 import useSheetManager from './hooks/use-sheet-manager';
 import {useKeyboard} from './hooks/useKeyboard';
 import {
@@ -57,18 +63,12 @@ import {
   useSheetPayload,
   useSheetRef,
 } from './provider';
-import {
-  getZIndexFromStack,
-  isRenderedOnTop,
-  SheetManager,
-} from './sheetmanager';
+import {getZIndexFromStack, SheetManager} from './sheetmanager';
 import {styles} from './styles';
-import type {ActionSheetProps, ActionSheetRef} from './types';
+import {ActionSheetProps, ActionSheetRef} from './types';
 import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
-const EVENTS_INTERNAL = {
-  safeAreaLayout: 'safeAreaLayout',
-};
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
@@ -77,7 +77,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       closeOnPressBack = true,
       springOffset = 50,
       elevation = 5,
-      enableElevation = true,
+      disableElevation = false,
       defaultOverlayOpacity = 0.3,
       overlayColor = 'black',
       closable = true,
@@ -94,8 +94,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       zIndex = 999,
       keyboardHandlerEnabled = true,
       ExtraOverlayComponent,
-      payload,
-      safeAreaInsets,
+      returnValue,
       routes,
       initialRoute,
       onBeforeShow,
@@ -103,6 +102,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       onBeforeClose,
       enableGesturesInScrollView = true,
       disableDragBeyondMinimumSnapPoint,
+      useBottomSafeAreaPadding = true,
+      initialTranslateFactor = 1.1,
+      openAnimationConfig = {
+        damping: 110,
+        mass: 4,
+        stiffness: 900,
+        overshootClamping: true,
+      },
       ...props
     },
     ref,
@@ -113,78 +120,40 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         : snapPoints;
     const initialValue = useRef(-1);
     const actionSheetHeight = useRef(0);
-    const safeAreaPaddings = useRef<{
-      top: number;
-      left: number;
-      right: number;
-      bottom: number;
-    }>(
-      safeAreaInsets || {
-        top: 0,
-        left: 0,
-        bottom: 0,
-        right: 0,
-      },
-    );
-
+    const insets = useSafeAreaInsets();
     const internalEventManager = React.useMemo(() => new EventManager(), []);
     const currentContext = useProviderContext();
     const currentSnapIndex = useRef(initialSnapIndex);
     const sheetRef = useSheetRef();
-    const dimensionsRef = useRef<{
-      width: number;
-      height: number;
-      portrait: boolean;
-      paddingBottom?: number;
-    }>({
-      width: 0,
-      height: 0,
-      portrait: true,
-    });
+    const sheetHeightRef = useRef(0);
     const minTranslateValue = useRef(0);
     const keyboardWasVisible = useRef(false);
-    const prevKeyboardHeight = useRef(0);
+    const animationListenerId = 266786;
     const id = useSheetIDContext();
     const sheetId = props.id || id;
-    const lock = useRef(false);
     const panViewRef = useRef<View>(null);
     const rootViewContainerRef = useRef<View>(null);
+    const payload = useSheetPayload();
+    const payloadRef = useRef<any>(undefined);
+    payloadRef.current = payload;
     const gestureBoundaries = useRef<{
       [name: string]: LayoutRectangle & {
         scrollOffset?: number;
       };
     }>({});
     const hiding = useRef(false);
-    const payloadRef = useRef(payload);
+    const returnValueRef = useRef(returnValue);
     const sheetPayload = useSheetPayload();
-    const panHandlerRef = useRef(null);
+    const panGestureRef = useRef<GestureType>(undefined);
     const closing = useRef(false);
     const draggableNodes = useRef<NodesRef>([]);
-    const sheetLayoutRef = useRef<LayoutRectangle>(null);
-    const [dimensions, setDimensions] = useState<{
-      width: number;
-      height: number;
-      portrait: boolean;
-      paddingBottom?: number;
-    }>({
-      width: Dimensions.get('window').width,
-      height: 0,
-      portrait: true,
-      paddingBottom: props?.useBottomSafeAreaPadding ? 25 : 0,
+    const [dimensions, setDimensions] = useState({
+      width: -1,
+      height: -1,
     });
-    const rootViewLayoutEventValues = useRef<{
-      timer?: NodeJS.Timeout;
-      sub?: {unsubscribe: () => void};
-      firstEventFired?: boolean;
-      layouTimer?: NodeJS.Timeout;
-      resizing?: boolean;
-    }>({});
-
+    const dimensionsRef = useRef(dimensions);
+    dimensionsRef.current = dimensions;
     const containerStyle = StyleSheet.flatten(props.containerStyle);
-
-    if (safeAreaInsets) {
-      safeAreaPaddings.current = safeAreaInsets;
-    }
 
     const {visible, setVisible} = useSheetManager({
       id: sheetId,
@@ -204,30 +173,21 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
       },
     });
-    const animations = useMemo(
-      () => ({
-        opacity: new Animated.Value(0),
-        translateY: new Animated.Value(0),
-        underlayTranslateY: new Animated.Value(100),
-        keyboardTranslate: new Animated.Value(0),
-        routeOpacity: new Animated.Value(0),
-      }),
-      [],
-    );
-    const animationListeners = useRef<{
-      translateY?: string;
-    }>({});
 
+    const opacity = useSharedValue(0);
+    const translateY = useSharedValue(Dimensions.get('window').height * 2);
+    const underlayTranslateY = useSharedValue(130);
+    const routeOpacity = useSharedValue(0);
     const router = useRouter({
       routes: routes,
       getRef: () => getRef(),
       initialRoute: initialRoute as string,
       onNavigate: props.onNavigate,
       onNavigateBack: props.onNavigateBack,
-      routeOpacity: animations.routeOpacity,
+      routeOpacity: routeOpacity,
     });
     const routerRef = useRef(router);
-    payloadRef.current = payload;
+    returnValueRef.current = returnValue;
     routerRef.current = router;
     const keyboard = useKeyboard(keyboardHandlerEnabled);
     const prevSnapIndex = useRef<number>(initialSnapIndex);
@@ -246,91 +206,66 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         prevSnapIndex.current = currentSnapIndex.current;
         props.onSnapIndexChange?.(currentSnapIndex.current);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.onSnapIndexChange]);
 
-    const returnAnimation = React.useCallback(
-      (velocity?: number) => {
+    const moveSheetWithAnimation = React.useCallback(
+      (velocity?: number, value?: number, min?: number) => {
+        let initial = value || initialValue.current;
+        let minTranslate = min || minTranslateValue.current;
         if (!animated) {
-          animations.translateY.setValue(initialValue.current);
+          translateY.value = initial;
           return;
         }
-        const config = props.openAnimationConfig;
 
-        const correctedValue =
-          initialValue.current > minTranslateValue.current
-            ? initialValue.current
-            : 0;
+        const config = openAnimationConfig;
+        const correctedValue = initial > minTranslate ? initial : 0;
 
         notifyOffsetChange(correctedValue as number);
-
-        if (!config) {
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            friction: 8,
-            ...config,
-            velocity: typeof velocity !== 'number' ? undefined : velocity,
-          }).start();
-        } else {
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...config,
-            velocity: typeof velocity !== 'number' ? undefined : velocity,
-          }).start();
-        }
+        translateY.value = withSpring(initial, {
+          ...config,
+          velocity: typeof velocity !== 'number' ? undefined : velocity,
+        });
 
         notifySnapIndexChanged();
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [animated, props.openAnimationConfig],
+      [animated, openAnimationConfig],
     );
 
-    const opacityAnimation = React.useCallback(
-      (opacity: number) => {
-        Animated.timing(animations.opacity, {
-          duration: 150,
-          easing: Easing.in(Easing.ease),
-          toValue: opacity,
-          useNativeDriver: true,
-        }).start();
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [],
-    );
+    const animationSheetOpacity = React.useCallback((value: number) => {
+      opacity.value = withTiming(value, {
+        duration: 300,
+        easing: Easing.in(Easing.ease),
+      });
+    }, []);
 
-    const hideAnimation = React.useCallback(
-      (vy?: number, callback?: ({finished}: {finished: boolean}) => void) => {
+    const hideSheetWithAnimation = React.useCallback(
+      (vy?: number, callback?: () => void) => {
         if (!animated) {
-          callback?.({finished: true});
+          callback?.();
           return;
         }
         const config = props.closeAnimationConfig;
-        opacityAnimation(0);
-        const animation = Animated.spring(animations.translateY, {
-          velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
-          toValue: dimensionsRef.current.height * 1.3,
-          useNativeDriver: true,
-          ...config,
-        });
-        animation.start();
-        setTimeout(() => {
-          animation.stop();
-          callback?.({finished: true});
-        }, 150);
+        animationSheetOpacity(0);
+        translateY.value = withTiming(
+          dimensionsRef.current.height * 1.3,
+          config || {
+            velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
+            duration: 200,
+          },
+        );
+        /**
+         * Using setTimeout to ensure onClose is triggered when sheet is off screen
+         * or is close to reaching off screen.
+         */
+        setTimeout(callback, config?.duration || 200);
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [animated, opacityAnimation, props.closeAnimationConfig],
+      [animated, animationSheetOpacity, props.closeAnimationConfig],
     );
 
     const getCurrentPosition = React.useCallback(() => {
-      //@ts-ignore
-      return animations.translateY._value <= minTranslateValue.current + 5
+      return translateY.value <= minTranslateValue.current + 5
         ? 0
-        : //@ts-ignore
-          (animations.translateY._value as number);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+        : (translateY.value as number);
     }, []);
 
     const getNextPosition = React.useCallback(
@@ -349,82 +284,99 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       isModal && !props?.backgroundInteractionEnabled ? Modal : Animated.View;
 
     useEffect(() => {
-      let animationListener;
       if (drawUnderStatusBar || props.onChange) {
-        animationListener = animations.translateY.addListener(value => {
+        let prevPercentage = 0;
+        const onValueChange = (value: number) => {
           const correctedValue =
-            value.value > minTranslateValue.current
-              ? value.value - minTranslateValue.current
+            value > minTranslateValue.current
+              ? value - minTranslateValue.current
               : 0;
-          props?.onChange?.(correctedValue, actionSheetHeight.current);
-          if (drawUnderStatusBar) {
-            if (lock.current) return;
-            const correctedHeight = keyboard.keyboardShown
-              ? dimensionsRef.current.height -
-                (keyboard.keyboardHeight + safeAreaPaddings.current.bottom)
-              : dimensionsRef.current.height - safeAreaPaddings.current.bottom;
 
-            if (actionSheetHeight.current >= correctedHeight - 1) {
-              if (value.value < 100) {
-                animations.underlayTranslateY.setValue(
-                  Math.max(value.value - 20, -20),
-                );
-              } else {
-                //@ts-ignore
-                if (animations.underlayTranslateY._value !== 100) {
-                  animations.underlayTranslateY.setValue(100);
-                }
-              }
-            } else {
-              //@ts-ignore
-              if (animations.underlayTranslateY._value !== 100) {
-                animations.underlayTranslateY.setValue(100);
-              }
-            }
+          const percentage =
+            ((actionSheetHeight.current - correctedValue) /
+              actionSheetHeight.current) *
+            100;
+
+          const rounded = Math.round(percentage);
+          if (rounded !== prevPercentage && rounded > -1) {
+            prevPercentage = rounded;
+            props.onChange?.(Math.round(percentage));
           }
-        });
+
+          const percentScreenCovered =
+            (actionSheetHeight.current /
+              (dimensionsRef.current.height - insets.top)) *
+            100;
+          if (drawUnderStatusBar) {
+            if (percentage > 85 && percentScreenCovered > 99) {
+              var distanceFromTop = 100 - percentage;
+              underlayTranslateY.value = Math.max(
+                (actionSheetHeight.current / 100) * distanceFromTop,
+              );
+            } else {
+              underlayTranslateY.value = 130;
+            }
+          } else {
+            underlayTranslateY.value = 130;
+          }
+        };
+        runOnUI(() => {
+          translateY.addListener(animationListenerId, value => {
+            runOnJS(onValueChange)(value);
+          });
+        })();
       }
-      animationListeners.current.translateY = animationListener;
       return () => {
-        animationListener &&
-          animations.translateY.removeListener(animationListener);
+        runOnUI((animationListener: number) => {
+          translateY.removeListener(animationListener);
+        })(animationListenerId);
       };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props?.id, keyboard.keyboardShown, keyboard.keyboardHeight]);
+    }, [
+      props?.id,
+      keyboard.keyboardShown,
+      keyboard.keyboardHeight,
+      dimensions,
+    ]);
 
     const onSheetLayout = React.useCallback(
-      (event: LayoutChangeEvent) => {
-        sheetLayoutRef.current = {...event.nativeEvent.layout};
-        if (rootViewLayoutEventValues.current.resizing) return;
+      async (height: number) => {
+        const sheetHeight = height;
+        sheetHeightRef.current = sheetHeight;
+        if (dimensionsRef.current.height === -1) {
+          return;
+        }
         if (closing.current) return;
         const rootViewHeight = dimensionsRef.current?.height;
 
         actionSheetHeight.current =
-          event.nativeEvent.layout.height > dimensionsRef.current.height
+          sheetHeight > dimensionsRef.current.height
             ? dimensionsRef.current.height
-            : event.nativeEvent.layout.height;
-        minTranslateValue.current =
-          rootViewHeight -
-          (actionSheetHeight.current + safeAreaPaddings.current.bottom);
+            : sheetHeight;
 
-        if (initialValue.current < 0) {
-          animations.translateY.setValue(rootViewHeight * 1.1);
+        let minTranslate = 0;
+        let initial = initialValue.current;
+
+        minTranslate = rootViewHeight - actionSheetHeight.current;
+
+        if (initial === -1) {
+          translateY.value = rootViewHeight * initialTranslateFactor;
         }
+
         const nextInitialValue =
           actionSheetHeight.current +
-          minTranslateValue.current -
+          minTranslate -
           (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
             100;
 
-        initialValue.current =
+        initial =
           (keyboard.keyboardShown || keyboardWasVisible.current) &&
-          initialValue.current <= nextInitialValue &&
-          initialValue.current >= minTranslateValue.current
-            ? initialValue.current
+          initial <= nextInitialValue &&
+          initial >= minTranslate
+            ? initial
             : nextInitialValue;
 
         const sheetBottomEdgePosition =
-          initialValue.current +
+          initial +
           (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
             100;
 
@@ -432,29 +384,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           sheetBottomEdgePosition -
           (dimensionsRef.current?.height - keyboard.keyboardHeight);
 
-        initialValue.current =
-          sheetPositionWithKeyboard > 0
-            ? initialValue.current - sheetPositionWithKeyboard
-            : initialValue.current;
+        initial = keyboard.keyboardShown
+          ? initial - sheetPositionWithKeyboard
+          : initial;
 
         if (keyboard.keyboardShown) {
-          minTranslateValue.current =
-            minTranslateValue.current -
-            (keyboard.keyboardHeight + safeAreaPaddings.current.bottom);
-
-          keyboardWasVisible.current = true;
-          prevKeyboardHeight.current = keyboard.keyboardHeight;
-        } else {
-          keyboardWasVisible.current = false;
+          minTranslate = minTranslate - keyboard.keyboardHeight;
         }
-        opacityAnimation(1);
-        setTimeout(() => {
-          returnAnimation();
-        }, 1);
 
-        if (initialValue.current > 100) {
-          if (lock.current) return;
-          animations.underlayTranslateY.setValue(100);
+        minTranslateValue.current = minTranslate;
+        initialValue.current = initial;
+
+        animationSheetOpacity(defaultOverlayOpacity);
+        moveSheetWithAnimation(undefined, initial, minTranslate);
+
+        if (initial > 130) {
+          underlayTranslateY.value = 130;
         }
         if (Platform.OS === 'web') {
           document.body.style.overflowY = 'hidden';
@@ -465,147 +410,69 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         snapPoints,
         keyboard.keyboardShown,
         keyboard.keyboardHeight,
-        opacityAnimation,
-        animations.translateY,
-        animations.underlayTranslateY,
-        returnAnimation,
+        animationSheetOpacity,
+        translateY,
+        underlayTranslateY,
+        moveSheetWithAnimation,
       ],
-    );
-
-    const onRootViewLayout = React.useCallback(
-      (event: LayoutChangeEvent) => {
-        if (keyboard.keyboardShown && !isModal) {
-          return;
-        }
-
-        rootViewLayoutEventValues.current.resizing = true;
-
-        let rootViewHeight = event.nativeEvent.layout.height;
-        let rootViewWidth = event.nativeEvent.layout.width;
-
-        rootViewLayoutEventValues.current.sub?.unsubscribe();
-        rootViewLayoutEventValues.current.sub = internalEventManager.subscribe(
-          EVENTS_INTERNAL.safeAreaLayout,
-          () => {
-            rootViewLayoutEventValues.current.sub?.unsubscribe();
-            const safeMarginFromTop =
-              Platform.OS === 'ios'
-                ? safeAreaPaddings.current.top < 20
-                  ? 20
-                  : safeAreaPaddings.current.top
-                : StatusBar.currentHeight || 0;
-
-            let height = rootViewHeight - safeMarginFromTop;
-            let width = rootViewWidth;
-
-            dimensionsRef.current = {
-              width: width,
-              height: height,
-              portrait: width < height,
-            };
-
-            setDimensions({...dimensionsRef.current});
-            rootViewLayoutEventValues.current.resizing = false;
-
-            if (sheetLayoutRef.current) {
-              onSheetLayout({
-                nativeEvent: {
-                  layout: sheetLayoutRef.current,
-                },
-              } as any);
-            }
-          },
-        );
-
-        clearTimeout(rootViewLayoutEventValues.current.timer);
-        clearTimeout(rootViewLayoutEventValues.current.layouTimer);
-
-        if (
-          safeAreaPaddings.current.top !== undefined ||
-          Platform.OS !== 'ios'
-        ) {
-          rootViewLayoutEventValues.current.layouTimer = setTimeout(
-            () => {
-              internalEventManager.publish(EVENTS_INTERNAL.safeAreaLayout);
-            },
-            Platform.OS === 'ios' ||
-              rootViewLayoutEventValues.current.firstEventFired
-              ? 0
-              : 300,
-          );
-        }
-
-        if (!rootViewLayoutEventValues.current?.firstEventFired) {
-          rootViewLayoutEventValues.current.firstEventFired = true;
-        }
-      },
-      [keyboard.keyboardShown, isModal, internalEventManager, onSheetLayout],
     );
 
     const hideSheet = React.useCallback(
       (vy?: number, data?: any, isSheetManagerOrRef?: boolean) => {
         if (hiding.current) return;
         if (!closable && !isSheetManagerOrRef) {
-          returnAnimation(vy);
+          moveSheetWithAnimation(vy);
           return;
         }
         hiding.current = true;
-        onBeforeClose?.((data || payloadRef.current || data) as never);
-        setTimeout(() => {
-          if (closable) {
-            closing.current = true;
-            Keyboard.dismiss();
-            animationListeners.current.translateY &&
-              animations.translateY.removeListener(
-                animationListeners.current.translateY,
+        onBeforeClose?.((data || returnValueRef.current || data) as never);
+        if (closable) {
+          closing.current = true;
+          Keyboard.dismiss();
+          runOnUI((animationListener: number) => {
+            translateY.removeListener(animationListener);
+          })(animationListenerId);
+        }
+        hideSheetWithAnimation(vy, () => {
+          if (closable || isSheetManagerOrRef) {
+            setVisible(false);
+            if (props.onClose) {
+              props.onClose?.(
+                (data || returnValueRef.current || data) as never,
               );
-            animationListeners.current.translateY = undefined;
-          }
-          hideAnimation(vy, ({finished}) => {
-            if (finished) {
-              if (closable || isSheetManagerOrRef) {
-                setVisible(false);
-                if (props.onClose) {
-                  props.onClose?.(
-                    (data || payloadRef.current || data) as never,
-                  );
-                  hiding.current = false;
-                }
-                hardwareBackPressEvent.current?.remove();
-                if (sheetId) {
-                  SheetManager.remove(sheetId, currentContext);
-                  hiding.current = false;
-                  actionSheetEventManager.publish(
-                    `onclose_${sheetId}`,
-                    data || payloadRef.current || data,
-                    currentContext,
-                  );
-                } else {
-                  hiding.current = false;
-                }
-                currentSnapIndex.current = initialSnapIndex;
-                closing.current = false;
-                setTimeout(() => {
-                  keyboard.reset();
-                });
-              } else {
-                animations.opacity.setValue(1);
-                returnAnimation();
-              }
+              hiding.current = false;
             }
-          });
-        }, 1);
+            hardwareBackPressEvent.current?.remove();
+            if (sheetId) {
+              SheetManager.remove(sheetId, currentContext);
+              hiding.current = false;
+              actionSheetEventManager.publish(
+                `onclose_${sheetId}`,
+                data || returnValueRef.current || data,
+                currentContext || 'global',
+              );
+            } else {
+              hiding.current = false;
+            }
+            currentSnapIndex.current = initialSnapIndex;
+            closing.current = false;
+            initialValue.current = -1;
+            keyboard.reset();
+          } else {
+            opacity.value = 1;
+            moveSheetWithAnimation();
+          }
+        });
         if (Platform.OS === 'web') {
           document.body.style.overflowY = 'auto';
           document.documentElement.style.overflowY = 'auto';
         }
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       [
         closable,
-        hideAnimation,
+        hideSheetWithAnimation,
         props.onClose,
-        returnAnimation,
+        moveSheetWithAnimation,
         setVisible,
         keyboard,
       ],
@@ -639,8 +506,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const snapForward = React.useCallback(
       (vy: number) => {
         if (currentSnapIndex.current === snapPoints.length - 1) {
-          initialValue.current = getNextPosition(currentSnapIndex.current);
-          returnAnimation(vy);
+          const next = getNextPosition(currentSnapIndex.current);
+          moveSheetWithAnimation(vy, next);
+          initialValue.current = next;
           return;
         }
         let nextSnapPoint = 0;
@@ -658,15 +526,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
         if (nextSnapPoint > 100) {
           console.warn('Snap points should range between 0 to 100.');
-          returnAnimation(vy);
+          moveSheetWithAnimation(vy);
           return;
         }
         currentSnapIndex.current = nextSnapIndex;
-        initialValue.current = getNextPosition(currentSnapIndex.current);
-
-        returnAnimation(vy);
+        const next = getNextPosition(currentSnapIndex.current);
+        initialValue.current = next;
+        moveSheetWithAnimation(vy, next);
       },
-      [getCurrentPosition, getNextPosition, returnAnimation, snapPoints],
+      [getCurrentPosition, getNextPosition, moveSheetWithAnimation, snapPoints],
     );
     /**
      * Snap towards the bottom
@@ -678,8 +546,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             initialValue.current = dimensionsRef.current.height * 1.3;
             hideSheet(vy);
           } else {
-            initialValue.current = getNextPosition(currentSnapIndex.current);
-            returnAnimation(vy);
+            const next = getNextPosition(currentSnapIndex.current);
+            moveSheetWithAnimation(vy, next);
+            initialValue.current = next;
           }
           return;
         }
@@ -691,23 +560,32 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             nextSnapPoint = snapPoints[(nextSnapIndex = i)];
             break;
           }
+
+          if (i === 0 && getCurrentPosition() > getNextPosition(i)) {
+            if (closable) {
+              initialValue.current = dimensionsRef.current.height * 1.3;
+              hideSheet(vy);
+              return;
+            }
+          }
         }
 
         if (nextSnapPoint < 0) {
           console.warn('Snap points should range between 0 to 100.');
-          returnAnimation(vy);
+          moveSheetWithAnimation(vy);
           return;
         }
         currentSnapIndex.current = nextSnapIndex;
-        initialValue.current = getNextPosition(currentSnapIndex.current);
-        returnAnimation(vy);
+        const next = getNextPosition(currentSnapIndex.current);
+        initialValue.current = next;
+        moveSheetWithAnimation(vy);
       },
       [
         closable,
         getCurrentPosition,
         getNextPosition,
         hideSheet,
-        returnAnimation,
+        moveSheetWithAnimation,
         snapPoints,
       ],
     );
@@ -717,25 +595,32 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         const {w, h, px, py} = rect;
         return {...rect, boundryX: px + w, boundryY: py + h};
       }
-
       return {w: 0, h: 0, px: 0, py: 0, x: 0, y: 0, boundryX: 0, boundryY: 0};
     }
 
     const getActiveDraggableNodes = React.useCallback(
-      (absoluteX: number, absoluteY: number) => {
+      (absoluteX: number, absoluteY: number, returnAllNodes?: boolean) => {
         if (draggableNodes.current?.length === 0) return [];
-        const activeNodes = [];
+        const activeNodes: {
+          rectWithBoundary: LayoutRect;
+          node: NodesRef['0'];
+        }[] = [];
         for (let node of draggableNodes.current) {
           const rect = getRectBoundary(node.rect.current);
           if (rect.boundryX === 0 && rect.boundryY === 0) continue;
-          if (
+          if (returnAllNodes) {
+            activeNodes.push({
+              rectWithBoundary: rect,
+              node: node,
+            });
+          } else if (
             absoluteX > rect.px &&
             absoluteY > rect.py &&
             absoluteX < rect.boundryX &&
             absoluteY < rect.boundryY
           ) {
             activeNodes.push({
-              rectWithBoundry: rect,
+              rectWithBoundary: rect,
               node: node,
             });
           }
@@ -745,273 +630,230 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [],
     );
 
-    const panHandlers: PanGestureHandlerProps = React.useMemo(() => {
-      let velocity = 0;
+    const panGesture = React.useMemo(() => {
       let prevDeltaY = 0;
-      let offsets: number[] = [];
-      let lockGesture = false;
-      let gestureEventCounter = 0;
-      let isScrollingGesture = false;
       let deltaYOnGestureStart = 0;
+      let velocity = 0;
       let start: {
         x: number;
         y: number;
       };
+      let oldValue = 0;
+      let isRefreshing = false;
+      const offsets: number[] = [];
 
       function scrollable(value: boolean) {
-        if (Platform.OS === 'ios') return;
         for (let i = 0; i < draggableNodes.current.length; i++) {
           const node = draggableNodes.current[i];
           const scrollRef = resolveScrollRef(node.ref);
-          scrollRef?.setNativeProps({
-            scrollEnabled: value,
-          });
+          if (Platform.OS === 'ios' || Platform.OS === 'web') {
+            if (!value) {
+              if (!offsets[i] || node.offset.current?.y === 0) {
+                offsets[i] = node.offset.current?.y || 0;
+              }
+              if (Platform.OS === 'web') {
+                (scrollRef as HTMLDivElement).scrollTop = offsets[i];
+              } else {
+                scrollRef.scrollTo({
+                  x: 0,
+                  y: offsets[i],
+                  animated: false,
+                });
+              }
+            } else {
+              offsets[i] = node.offset.current?.y || 0;
+            }
+          } else if (Platform.OS === 'android') {
+            scrollRef?.setNativeProps({
+              scrollEnabled: value,
+            });
+          }
         }
       }
 
-      return Platform.OS === 'web'
-        ? {enabled: false}
-        : ({
-            onBegan: () => {
-              if (Platform.OS === 'android') {
-                scrollable(false);
-              }
-            },
-            onGestureEvent(event) {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext)) return;
+      let blockPan = false;
 
-              const gesture = event.nativeEvent;
-              let deltaY = gesture.translationY;
-              const swipingDown = prevDeltaY < deltaY;
+      const onChange = (
+        absoluteX: number,
+        absoluteY: number,
+        translationY: number,
+      ) => {
+        if (!gestureEnabled) return;
+        let deltaY = translationY;
+        let isSwipingDown = prevDeltaY < deltaY;
 
-              prevDeltaY = deltaY;
+        prevDeltaY = deltaY;
 
-              if (!start) {
-                start = {
-                  x: event.nativeEvent.absoluteX,
-                  y: event.nativeEvent.absoluteY,
-                };
-              }
-              const activeDraggableNodes = getActiveDraggableNodes(
-                start.x,
-                start.y,
-              );
-              const isFullOpen = getCurrentPosition() === 0;
-              let blockSwipeGesture = false;
+        if (!start) {
+          start = {
+            x: absoluteX,
+            y: absoluteY,
+          };
+        }
 
-              if (activeDraggableNodes.length > 0) {
-                if (isFullOpen) {
-                  if (swipingDown) {
-                    for (const node of activeDraggableNodes) {
-                      if (!node.node.offset.current) continue;
-                      const {y} = node.node.offset.current;
-                      if (y === ScrollState.END) {
-                        blockSwipeGesture = true;
-                        continue;
-                      }
-                      if (y < 1 && node.node.handlerConfig.hasRefreshControl) {
-                        // Refresh Control will work in to 15% area of the DraggableNode.
-                        const refreshControlBounds =
-                          node.rectWithBoundry.py +
-                          node.rectWithBoundry.h *
-                            node.node.handlerConfig.refreshControlBoundary;
-                        if (!refreshControlBounds) continue;
-                        if (
-                          event.nativeEvent.absoluteY < refreshControlBounds
-                        ) {
-                          lockGesture = true;
-                          blockSwipeGesture = false;
-                          continue;
-                        } else {
-                          blockSwipeGesture = false;
-                          continue;
-                        }
-                      }
+        const isFullOpen = getCurrentPosition() === 0;
 
-                      if (y > 1) {
-                        blockSwipeGesture = true;
-                        continue;
-                      }
-                    }
-                  } else {
-                    for (const node of activeDraggableNodes) {
-                      if (!node.node.offset.current) continue;
-                      const {y} = node.node.offset.current;
+        const activeDraggableNodes = getActiveDraggableNodes(
+          start.x,
+          start.y,
+          !isFullOpen || (isFullOpen && !isSwipingDown),
+        );
 
-                      // Swiping up
-                      // 1. Scroll if the scroll container has not reached end
-                      // 2. Don't scroll if sheet has not reached the top
-                      if (
-                        // Scroll has not reached end
-                        y !== ScrollState.END
-                      ) {
-                        blockSwipeGesture = true;
-                        continue;
-                      }
-                    }
-                  }
-                }
-              }
+        if (
+          enableGesturesInScrollView &&
+          activeDraggableNodes.length > 0 &&
+          !isRefreshing
+        ) {
+          const nodeIsScrolling = activeDraggableNodes.some(
+            node => node.node.offset.current.y !== 0,
+          );
 
-              gestureEventCounter++;
-              if (isFullOpen && (blockSwipeGesture || lockGesture)) {
-                isScrollingGesture = true;
-                scrollable(true);
-                return;
-              }
+          /**
+           * Draggable nodes handling cases:
+           *
+           * 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
+           * 2. Sheet fully open, swiping up, scrolling: true, panning: false
+           * 3. Sheet not fully open, swiping down, scrolling: false, panning: true
+           * 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
+           * 5. Add support for pull to refresh
+           */
 
-              const startY =
-                event.nativeEvent.y - event.nativeEvent.translationY;
-              if (!enableGesturesInScrollView && startY > 100) {
-                return;
-              }
+          // 1. Sheet not fully open, swiping up, scrolling: false panning: true (will transition to scrolling once sheet reaches top position)
+          if (!isFullOpen && !isSwipingDown) {
+            scrollable(false);
+            blockPan = false;
+          }
 
-              if (gestureEventCounter < 2) {
-                return;
-              }
+          // 2. Sheet fully open, swiping up, scrolling: true, panning: false
+          if (isFullOpen && !isSwipingDown) {
+            scrollable(true);
+            blockPan = true;
+          }
+          //  3. Sheet not fully open, swiping down, scrolling: false, panning: true
+          if (!isFullOpen && isSwipingDown) {
+            if (nodeIsScrolling) {
+              scrollable(true);
+              blockPan = true;
+            } else {
+              scrollable(false);
+              blockPan = false;
+            }
+          }
 
-              if (swipingDown || !isFullOpen) {
-                if (Platform.OS === 'ios') {
-                  for (let i = 0; i < draggableNodes.current.length; i++) {
-                    const node = draggableNodes.current[i];
-                    const scrollRef = resolveScrollRef(node.ref);
-                    if (!offsets[i] || node.offset.current?.y === 0) {
-                      offsets[i] = node.offset.current?.y || 0;
-                    }
-                    scrollRef.scrollTo({
-                      x: 0,
-                      y: offsets[i],
-                      animated: false,
-                    });
-                  }
-                }
-              }
-
-              if (!isFullOpen) {
-                isScrollingGesture = false;
-                blockSwipeGesture = false;
-              }
-
-              if (isScrollingGesture && !swipingDown) {
-                return scrollable(true);
-              } else {
-                scrollable(false);
-              }
-
-              isScrollingGesture = false;
-
-              if (!deltaYOnGestureStart) {
+          // 4. Sheet fully open, scroll offset > 0, scrolling: true, panning: false will transition into scrolling: false, panning: true, once scroll reaches offset=0
+          if (isFullOpen && isSwipingDown) {
+            if (nodeIsScrolling) {
+              scrollable(true);
+              blockPan = true;
+            } else {
+              if (!deltaYOnGestureStart && deltaY > 0) {
                 deltaYOnGestureStart = deltaY;
               }
-              deltaY = deltaY - deltaYOnGestureStart;
+              const hasRefreshControl = activeDraggableNodes.some(
+                node => node.node.handlerConfig.hasRefreshControl,
+              );
+              if (hasRefreshControl) {
+                for (const node of activeDraggableNodes) {
+                  if (node.node.handlerConfig.hasRefreshControl) {
+                    // Refresh Control will work in to 15% area of the DraggableNode.
+                    const refreshControlBounds =
+                      node.rectWithBoundary.py +
+                      node.rectWithBoundary.h *
+                        node.node.handlerConfig.refreshControlBoundary;
 
-              const value = initialValue.current + deltaY;
-
-              velocity = 1;
-
-              const correctedValue =
-                //@ts-ignore
-                value <= minTranslateValue.current
-                  ? //@ts-ignore
-                    minTranslateValue.current - value
-                  : //@ts-ignore
-                    value;
-
-              if (
-                //@ts-ignore
-                correctedValue / overdrawFactor >= overdrawSize &&
-                deltaY <= 0
-              ) {
-                return;
-              }
-
-              const minSnapPoint = getNextPosition(0);
-              const translateYValue =
-                value <= minTranslateValue.current
-                  ? overdrawEnabled
-                    ? minTranslateValue.current -
-                      correctedValue / overdrawFactor
-                    : minTranslateValue.current
-                  : value;
-
-              if (!closable && disableDragBeyondMinimumSnapPoint) {
-                animations.translateY.setValue(
-                  translateYValue >= minSnapPoint
-                    ? minSnapPoint
-                    : translateYValue,
-                );
+                    if (!refreshControlBounds) continue;
+                    if (absoluteY < refreshControlBounds) {
+                      scrollable(true);
+                      blockPan = true;
+                      isRefreshing = true;
+                    }
+                  }
+                }
               } else {
-                animations.translateY.setValue(translateYValue);
+                scrollable(false);
+                blockPan = false;
               }
-            },
-            failOffsetX: [-20, 20],
-            activeOffsetY: [-5, 5],
-            onEnded() {
-              deltaYOnGestureStart = 0;
-              offsets = [];
-              start = undefined;
-              isScrollingGesture = false;
-              gestureEventCounter = 0;
-              lockGesture = false;
-              const isMovingUp = getCurrentPosition() < initialValue.current;
+            }
+          }
+        } else if (
+          !enableGesturesInScrollView &&
+          activeDraggableNodes.length > 0
+        ) {
+          blockPan = true;
+        } else {
+          blockPan = false;
+        }
 
-              // When finger is lifted, we enable scrolling on all
-              // scrollable nodes again
-              scrollable(true);
+        if (isRefreshing) {
+          blockPan = true;
+          scrollable(true);
+        }
 
-              if (
-                (!isMovingUp &&
-                  getCurrentPosition() < initialValue.current + springOffset) ||
-                (isMovingUp &&
-                  getCurrentPosition() > initialValue.current - springOffset)
-              ) {
-                returnAnimation(1);
-                velocity = 0;
-                return;
-              }
+        let value = oldValue;
 
-              if (!isMovingUp) {
-                snapBackward(velocity);
-              } else {
-                snapForward(velocity);
-              }
-              velocity = 0;
-            },
-            enabled: gestureEnabled,
-          } as PanGestureHandlerProps);
-    }, [
-      animations.translateY,
-      closable,
-      currentContext,
-      disableDragBeyondMinimumSnapPoint,
-      enableGesturesInScrollView,
-      gestureEnabled,
-      getActiveDraggableNodes,
-      getCurrentPosition,
-      getNextPosition,
-      overdrawEnabled,
-      overdrawFactor,
-      overdrawSize,
-      returnAnimation,
-      sheetId,
-      snapBackward,
-      snapForward,
-      springOffset,
-    ]);
+        deltaY = deltaY - deltaYOnGestureStart;
+        if (!blockPan) {
+          value = initialValue.current + deltaY;
+          oldValue = value;
+        }
 
-    const handlers = React.useMemo(() => {
-      let prevDeltaY = 0;
-      let lockGesture = false;
-      let offsets: number[] = [];
-      let start: {x: number; y: number} | undefined;
-      let deltaYOnGestureStart = 0;
+        if (blockPan) return;
 
-      return !gestureEnabled || Platform.OS !== 'web'
-        ? {panHandlers: {}}
-        : PanResponder.create({
+        velocity = 1;
+        const correctedValue =
+          value <= minTranslateValue.current
+            ? minTranslateValue.current - value
+            : value;
+
+        if (correctedValue / overdrawFactor >= overdrawSize && deltaY <= 0) {
+          return;
+        }
+
+        const minSnapPoint = getNextPosition(0);
+        const translateYValue =
+          value <= minTranslateValue.current
+            ? overdrawEnabled
+              ? minTranslateValue.current - correctedValue / overdrawFactor
+              : minTranslateValue.current
+            : value;
+
+        if (!closable && disableDragBeyondMinimumSnapPoint) {
+          translateY.value =
+            translateYValue >= minSnapPoint ? minSnapPoint : translateYValue;
+        } else {
+          translateY.value = translateYValue;
+        }
+      };
+
+      const onEnd = () => {
+        if (!gestureEnabled) return;
+        deltaYOnGestureStart = 0;
+        const isMovingUp = getCurrentPosition() < initialValue.current;
+
+        scrollable(true);
+
+        if (
+          (!isMovingUp &&
+            getCurrentPosition() < initialValue.current + springOffset) ||
+          (isMovingUp &&
+            getCurrentPosition() > initialValue.current - springOffset)
+        ) {
+          moveSheetWithAnimation(1);
+          velocity = 0;
+          return;
+        }
+
+        if (!isMovingUp) {
+          snapBackward(velocity);
+        } else {
+          snapForward(velocity);
+        }
+        velocity = 0;
+      };
+
+      return Platform.OS === 'web'
+        ? PanResponder.create({
             onMoveShouldSetPanResponder: (_event, gesture) => {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext))
-                return false;
               let vy = gesture.vy < 0 ? gesture.vy * -1 : gesture.vy;
               let vx = gesture.vx < 0 ? gesture.vx * -1 : gesture.vx;
               if (vy < 0.05 || vx > 0.05) {
@@ -1029,8 +871,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               return true;
             },
             onStartShouldSetPanResponder: (_event, _gesture) => {
-              if (sheetId && !isRenderedOnTop(sheetId, currentContext))
-                return false;
               const activeDraggableNodes = getActiveDraggableNodes(
                 _event.nativeEvent.pageX,
                 _event.nativeEvent.pageY,
@@ -1042,173 +882,24 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               return true;
             },
             onPanResponderMove: (_event, gesture) => {
-              let deltaY = gesture.dy;
-              const swipingDown = prevDeltaY < deltaY;
-              prevDeltaY = deltaY;
-              const isFullOpen = getCurrentPosition() === 0;
-              let blockSwipeGesture = false;
-              if (!start) {
-                start = {
-                  x: _event.nativeEvent.pageX,
-                  y: _event.nativeEvent.pageY,
-                };
-              }
-              const activeDraggableNodes = getActiveDraggableNodes(
-                start.x,
-                start.y,
+              onChange(
+                _event.nativeEvent.pageX,
+                _event.nativeEvent.pageY,
+                gesture.dy,
               );
-
-              if (activeDraggableNodes.length > 0) {
-                if (isFullOpen) {
-                  if (swipingDown) {
-                    for (let i = 0; i < activeDraggableNodes.length; i++) {
-                      const node = activeDraggableNodes[i];
-                      if (!node.node.offset.current) continue;
-                      const {y} = node.node.offset.current;
-                      if (y === ScrollState.END) {
-                        blockSwipeGesture = true;
-                        const scrollRef = resolveScrollRef(node.node.ref);
-                        offsets[i] = (scrollRef as HTMLDivElement).scrollTop;
-                        continue;
-                      }
-                      if (
-                        y === 0 &&
-                        node.node.handlerConfig.hasRefreshControl
-                      ) {
-                        // Refresh Control will work in to 15% area of the DraggableNode.
-                        const refreshControlBounds =
-                          node.rectWithBoundry.py +
-                          node.rectWithBoundry.h *
-                            node.node.handlerConfig.refreshControlBoundary;
-                        if (!refreshControlBounds) continue;
-                        if (_event.nativeEvent.pageY < refreshControlBounds) {
-                          lockGesture = true;
-                          blockSwipeGesture = false;
-                          continue;
-                        } else {
-                          blockSwipeGesture = false;
-                          continue;
-                        }
-                      }
-                      if (y > 5) {
-                        blockSwipeGesture = true;
-                        const scrollRef = resolveScrollRef(node.node.ref);
-                        offsets[i] = (scrollRef as HTMLDivElement).scrollTop;
-
-                        continue;
-                      }
-                    }
-                  } else {
-                    for (let i = 0; i < activeDraggableNodes.length; i++) {
-                      const node = activeDraggableNodes[i];
-                      if (!node.node.offset.current) continue;
-                      const {y} = node.node.offset.current;
-                      if (y > -1) {
-                        blockSwipeGesture = true;
-                        continue;
-                      }
-                    }
-                  }
-                } else {
-                  for (let i = 0; i < activeDraggableNodes.length; i++) {
-                    const node = activeDraggableNodes[i];
-                    const scrollRef = resolveScrollRef(node.node.ref);
-                    (scrollRef as HTMLDivElement).scrollTop = offsets[i];
-                  }
-                }
-              }
-              if (blockSwipeGesture || lockGesture) {
-                return;
-              }
-
-              const startY = gesture.moveY - gesture.dy;
-              if (!enableGesturesInScrollView && startY > 100) {
-                return;
-              }
-
-              if (!deltaYOnGestureStart) {
-                deltaYOnGestureStart = deltaY;
-              }
-
-              deltaY = deltaY - deltaYOnGestureStart;
-
-              const value = initialValue.current + deltaY;
-              const correctedValue =
-                //@ts-ignore
-                value <= minTranslateValue.current
-                  ? //@ts-ignore
-                    minTranslateValue.current - value
-                  : //@ts-ignore
-                    value;
-              if (
-                //@ts-ignore
-                correctedValue / overdrawFactor >= overdrawSize &&
-                gesture.dy <= 0
-              ) {
-                return;
-              }
-
-              const minSnapPoint = getNextPosition(0);
-              const translateYValue =
-                value <= minTranslateValue.current
-                  ? overdrawEnabled
-                    ? minTranslateValue.current -
-                      correctedValue / overdrawFactor
-                    : minTranslateValue.current
-                  : value;
-
-              if (!closable && disableDragBeyondMinimumSnapPoint) {
-                animations.translateY.setValue(
-                  translateYValue >= minSnapPoint
-                    ? minSnapPoint
-                    : translateYValue,
-                );
-              } else {
-                animations.translateY.setValue(translateYValue);
-              }
             },
-            onPanResponderEnd: (_event, gesture) => {
-              start = undefined;
-              offsets = [];
-              prevDeltaY = 0;
-              deltaYOnGestureStart = 0;
-              const isMovingUp = getCurrentPosition() < initialValue.current;
-              if (
-                (!isMovingUp &&
-                  getCurrentPosition() < initialValue.current + springOffset) ||
-                (isMovingUp &&
-                  getCurrentPosition() > initialValue.current - springOffset)
-              ) {
-                returnAnimation(gesture.vy);
-                return;
-              }
-
-              if (!isMovingUp) {
-                snapBackward(gesture.vy);
-              } else {
-                snapForward(gesture.vy);
-              }
-            },
-          });
-    }, [
-      gestureEnabled,
-      sheetId,
-      currentContext,
-      getActiveDraggableNodes,
-      getCurrentPosition,
-      enableGesturesInScrollView,
-      overdrawFactor,
-      overdrawSize,
-      getNextPosition,
-      overdrawEnabled,
-      closable,
-      disableDragBeyondMinimumSnapPoint,
-      animations.translateY,
-      springOffset,
-      returnAnimation,
-      snapBackward,
-      snapForward,
-    ]);
+            onPanResponderEnd: onEnd,
+          })
+        : Gesture.Pan()
+            .withRef(panGestureRef)
+            .onChange(event =>
+              onChange(event.absoluteX, event.absoluteY, event.translationY),
+            )
+            .runOnJS(true)
+            .activeOffsetY([-5, 5])
+            .failOffsetX([-5, 5])
+            .onEnd(onEnd);
+    }, [gestureEnabled]);
 
     const onTouch = (event: GestureResponderEvent) => {
       onTouchBackdrop?.(event);
@@ -1246,11 +937,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             actionSheetHeight.current +
             minTranslateValue.current -
             (actionSheetHeight.current * offset) / 100;
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...props.openAnimationConfig,
-          }).start();
+          translateY.value = withSpring(
+            initialValue.current,
+            openAnimationConfig,
+          );
         },
         snapToRelativeOffset: (offset: number) => {
           if (offset === 0) {
@@ -1265,22 +955,19 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             getRef().snapToOffset(100);
             return;
           }
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...props.openAnimationConfig,
-          }).start();
+          translateY.value = withSpring(
+            initialValue.current,
+            openAnimationConfig,
+          );
         },
         snapToIndex: (index: number) => {
           if (index > snapPoints.length || index < 0) return;
           currentSnapIndex.current = index;
           initialValue.current = getNextPosition(index);
-
-          Animated.spring(animations.translateY, {
-            toValue: initialValue.current,
-            useNativeDriver: true,
-            ...props.openAnimationConfig,
-          }).start();
+          translateY.value = withSpring(
+            initialValue.current,
+            openAnimationConfig,
+          );
           notifySnapIndexChanged();
         },
         handleChildScrollEnd: () => {
@@ -1289,7 +976,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           );
         },
         modifyGesturesForLayout: (_id, layout, scrollOffset) => {
-          //@ts-ignore
           gestureBoundaries.current[_id] = {
             ...layout,
             scrollOffset: scrollOffset,
@@ -1302,14 +988,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           keyboard.pauseKeyboardHandler.current = enabled;
         },
         ev: internalEventManager,
+        currentPayload: () => payloadRef.current as never,
       }),
       [
         internalEventManager,
         onBeforeShow,
         setVisible,
         hideSheet,
-        animations.translateY,
-        props.openAnimationConfig,
+        translateY,
+        openAnimationConfig,
         snapPoints.length,
         getNextPosition,
         notifySnapIndexChanged,
@@ -1369,8 +1056,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 zIndex: zIndex
                   ? zIndex
                   : sheetId
-                  ? getZIndexFromStack(sheetId, currentContext)
-                  : 999,
+                    ? getZIndexFromStack(sheetId, currentContext)
+                    : 999,
                 width: '100%',
                 height: '100%',
               },
@@ -1398,7 +1085,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             style={{
               display:
                 route.name !== router.currentRoute?.name ? 'none' : 'flex',
-              opacity: animations.routeOpacity,
+              opacity: routeOpacity,
             }}>
             <RouterParamsContext.Provider value={route?.params}>
               <RouteComponent
@@ -1410,70 +1097,45 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           </Animated.View>
         );
       },
-      [animations.routeOpacity, router, sheetPayload],
+      [routeOpacity, router, sheetPayload],
     );
 
     const context = {
-      ref: panHandlerRef,
+      ref: panGestureRef,
       eventManager: internalEventManager,
     };
 
+    const animatedOpacityStyle = useAnimatedStyle(() => {
+      return {
+        opacity: opacity.value,
+      };
+    }, [opacity]);
+
+    const animatedTranslateStyle = useAnimatedStyle(() => {
+      return {
+        transform: [
+          {
+            translateY: translateY.value,
+          },
+        ],
+      };
+    }, [translateY]);
+
+    const animatedUnderlayTranslateStyle = useAnimatedStyle(() => {
+      return {
+        transform: [
+          {
+            translateY: underlayTranslateY.value,
+          },
+        ],
+      };
+    }, [underlayTranslateY]);
+
+    const GestureMobileOnly =
+      Platform.OS === 'web' ? Fragment : GestureDetector;
+
     return (
       <>
-        {Platform.OS === 'ios' && !safeAreaInsets ? (
-          <SafeAreaView
-            pointerEvents="none"
-            collapsable={false}
-            onLayout={event => {
-              let height = event.nativeEvent.layout.height;
-
-              if (height !== undefined) {
-                safeAreaPaddings.current.top = height;
-                clearTimeout(rootViewLayoutEventValues.current.timer);
-                rootViewLayoutEventValues.current.timer = setTimeout(() => {
-                  internalEventManager.publish(EVENTS_INTERNAL.safeAreaLayout);
-                }, 0);
-              }
-            }}
-            style={{
-              position: 'absolute',
-              width: 1,
-              height: 0,
-              top: 0,
-              left: 0,
-              backgroundColor: 'transparent',
-            }}>
-            <View />
-          </SafeAreaView>
-        ) : null}
-
-        {Platform.OS === 'ios' && !safeAreaInsets ? (
-          <SafeAreaView
-            pointerEvents="none"
-            collapsable={false}
-            onLayout={event => {
-              let height = event.nativeEvent.layout.height;
-
-              if (height !== undefined) {
-                safeAreaPaddings.current.bottom = height;
-                clearTimeout(rootViewLayoutEventValues.current.timer);
-                rootViewLayoutEventValues.current.timer = setTimeout(() => {
-                  internalEventManager.publish(EVENTS_INTERNAL.safeAreaLayout);
-                }, 0);
-              }
-            }}
-            style={{
-              position: 'absolute',
-              width: 1,
-              height: 1,
-              bottom: 0,
-              left: 0,
-              backgroundColor: 'transparent',
-            }}>
-            <View />
-          </SafeAreaView>
-        ) : null}
-
         {visible ? (
           <Root {...rootProps}>
             <GestureHandlerRoot
@@ -1485,7 +1147,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               <PanGestureRefContext.Provider value={context}>
                 <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
-                    onLayout={onRootViewLayout}
+                    onLayout={event => {
+                      if (event.nativeEvent.layout.height < 10) return;
+                      setDimensions({
+                        width: event.nativeEvent.layout.width,
+                        height: event.nativeEvent.layout.height,
+                      });
+                      if (sheetHeightRef.current) {
+                        /**
+                         * Android has a bug where it will fire multiple onLayout events with
+                         * different values. Here we ensure that sheet is rendered at correct position
+                         */
+                        setTimeout(() => {
+                          onSheetLayout(sheetHeightRef.current);
+                        });
+                      }
+                    }}
                     ref={rootViewContainerRef}
                     pointerEvents={
                       props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
@@ -1493,129 +1170,122 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                     style={[
                       styles.parentContainer,
                       {
-                        opacity: animations.opacity,
                         width: '100%',
                         justifyContent: 'flex-end',
-                        transform: [
-                          {
-                            translateY: animations.keyboardTranslate,
-                          },
-                        ],
                       },
                     ]}>
-                    {!props?.backgroundInteractionEnabled ? (
-                      <TouchableOpacity
-                        onPress={onTouch}
-                        activeOpacity={defaultOverlayOpacity}
-                        testID={props.testIDs?.backdrop}
-                        style={{
-                          height:
-                            dimensions.height +
-                            (safeAreaPaddings.current.top || 0) +
-                            100,
-                          width: '100%',
-                          position: 'absolute',
-                          backgroundColor: overlayColor,
-                          opacity: defaultOverlayOpacity,
-                        }}
-                        {...(props.backdropProps ? props.backdropProps : {})}
-                      />
-                    ) : null}
+                    <>
+                      {!props?.backgroundInteractionEnabled ? (
+                        <AnimatedPressable
+                          onPress={onTouch}
+                          testID={props.testIDs?.backdrop}
+                          style={[
+                            {
+                              height: dimensions.height + insets.top + 100,
+                              width: '100%',
+                              position: 'absolute',
+                              backgroundColor: overlayColor,
+                            },
+                            animatedOpacityStyle,
+                          ]}
+                          {...(props.backdropProps ? props.backdropProps : {})}
+                        />
+                      ) : null}
 
-                    <Animated.View
-                      pointerEvents="box-none"
-                      style={{
-                        borderTopRightRadius:
-                          containerStyle?.borderTopRightRadius || 10,
-                        borderTopLeftRadius:
-                          containerStyle?.borderTopLeftRadius || 10,
-                        backgroundColor:
-                          containerStyle?.backgroundColor || 'white',
-                        borderBottomLeftRadius:
-                          containerStyle?.borderBottomLeftRadius || undefined,
-                        borderBottomRightRadius:
-                          props.containerStyle?.borderBottomRightRadius ||
-                          undefined,
-                        borderRadius:
-                          props.containerStyle?.borderRadius || undefined,
-                        width: props.containerStyle?.width || '100%',
-                        ...(enableElevation
-                          ? getElevation(
-                              typeof elevation === 'number' ? elevation : 5,
-                            )
-                          : {}),
-                        flex: undefined,
-                        height: dimensions.height,
-                        maxHeight: dimensions.height,
-                        paddingBottom: keyboard.keyboardShown
-                          ? keyboard.keyboardHeight || 0
-                          : safeAreaPaddings.current.bottom,
-                        //zIndex: 10,
-                        transform: [
-                          {
-                            translateY: animations.translateY,
-                          },
-                        ],
-                      }}>
-                      {dimensions.height === 0 ? null : (
-                        <PanGestureHandler {...panHandlers} ref={panHandlerRef}>
-                          <Animated.View
-                            {...handlers.panHandlers}
-                            onLayout={onSheetLayout}
-                            ref={panViewRef}
-                            testID={props.testIDs?.sheet}
-                            style={[
-                              styles.container,
-                              {
-                                borderTopRightRadius: 10,
-                                borderTopLeftRadius: 10,
-                              },
-                              props.containerStyle,
-                              {
-                                maxHeight: keyboard.keyboardShown
-                                  ? dimensions.height - keyboard.keyboardHeight
-                                  : dimensions.height,
-                                marginTop: keyboard.keyboardShown ? 0.5 : 0,
-                              },
-                            ]}>
-                            {drawUnderStatusBar ? (
-                              <Animated.View
-                                style={{
-                                  height: 100,
-                                  position: 'absolute',
-                                  top: -50,
-                                  backgroundColor:
-                                    containerStyle?.backgroundColor || 'white',
-                                  width: '100%',
-                                  borderTopRightRadius:
-                                    containerStyle?.borderRadius || 10,
-                                  borderTopLeftRadius:
-                                    containerStyle?.borderRadius || 10,
-                                  transform: [
-                                    {
-                                      translateY: animations.underlayTranslateY,
-                                    },
-                                  ],
-                                }}
-                              />
-                            ) : null}
-                            {gestureEnabled || props.headerAlwaysVisible ? (
-                              props.CustomHeaderComponent ? (
-                                props.CustomHeaderComponent
-                              ) : (
+                      {dimensions.height === -1 &&
+                      Platform.OS === 'web' ? null : (
+                        <Animated.View
+                          pointerEvents="box-none"
+                          style={[
+                            {
+                              borderTopRightRadius:
+                                containerStyle?.borderTopRightRadius || 10,
+                              borderTopLeftRadius:
+                                containerStyle?.borderTopLeftRadius || 10,
+                              backgroundColor:
+                                containerStyle?.backgroundColor || 'white',
+                              borderBottomLeftRadius:
+                                containerStyle?.borderBottomLeftRadius ||
+                                undefined,
+                              borderBottomRightRadius:
+                                containerStyle?.borderBottomRightRadius ||
+                                undefined,
+                              borderRadius:
+                                containerStyle?.borderRadius || undefined,
+                              width: containerStyle?.width || '100%',
+                              ...(!disableElevation
+                                ? getElevation(
+                                    typeof elevation === 'number'
+                                      ? elevation
+                                      : 5,
+                                  )
+                                : {}),
+                              height: dimensions.height,
+                              maxHeight: dimensions.height,
+                            },
+                            animatedTranslateStyle,
+                          ]}>
+                          <GestureMobileOnly gesture={panGesture as PanGesture}>
+                            <Animated.View
+                              {...((panGesture as any)?.panHandlers || {})}
+                              onLayout={event =>
+                                onSheetLayout(event.nativeEvent.layout.height)
+                              }
+                              ref={panViewRef}
+                              testID={props.testIDs?.sheet}
+                              style={[
+                                styles.container,
+                                {
+                                  borderTopRightRadius: 10,
+                                  borderTopLeftRadius: 10,
+                                  paddingBottom: useBottomSafeAreaPadding
+                                    ? insets.bottom
+                                    : 0,
+                                },
+                                props.containerStyle,
+                                {
+                                  maxHeight: keyboard.keyboardShown
+                                    ? dimensions.height -
+                                      insets.top -
+                                      keyboard.keyboardHeight
+                                    : dimensions.height - insets.top,
+                                  // Using this to trigger layout when keyboard is shown
+                                  marginTop: keyboard.keyboardShown ? 0.5 : 0,
+                                },
+                              ]}>
+                              {drawUnderStatusBar ? (
                                 <Animated.View
                                   style={[
-                                    styles.indicator,
-                                    props.indicatorStyle,
+                                    {
+                                      height: 130,
+                                      position: 'absolute',
+                                      top: -80,
+                                      backgroundColor:
+                                        containerStyle?.backgroundColor ||
+                                        'white',
+                                      width: '100%',
+                                      borderTopRightRadius:
+                                        containerStyle?.borderRadius || 10,
+                                      borderTopLeftRadius:
+                                        containerStyle?.borderRadius || 10,
+                                    },
+                                    animatedUnderlayTranslateStyle,
                                   ]}
                                 />
-                              )
-                            ) : null}
+                              ) : null}
+                              {gestureEnabled || props.headerAlwaysVisible ? (
+                                props.CustomHeaderComponent ? (
+                                  props.CustomHeaderComponent
+                                ) : (
+                                  <Animated.View
+                                    style={[
+                                      styles.indicator,
+                                      props.indicatorStyle,
+                                    ]}
+                                  />
+                                )
+                              ) : null}
 
-                            <View
-                              style={{
-                                flexShrink: 1,
-                              }}>
                               {router?.hasRoutes() ? (
                                 <RouterContext.Provider value={router}>
                                   {router?.stack.map(renderRoute)}
@@ -1623,32 +1293,33 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               ) : (
                                 props?.children
                               )}
-                            </View>
-                          </Animated.View>
-                        </PanGestureHandler>
+                            </Animated.View>
+                          </GestureMobileOnly>
+
+                          {overdrawEnabled ? (
+                            <Animated.View
+                              style={{
+                                position: 'absolute',
+                                height: overdrawSize,
+                                bottom: -overdrawSize,
+                                backgroundColor:
+                                  containerStyle?.backgroundColor || 'white',
+                                width:
+                                  containerStyle?.width || dimensions.width,
+                              }}
+                            />
+                          ) : null}
+                        </Animated.View>
                       )}
 
-                      {overdrawEnabled ? (
-                        <Animated.View
-                          style={{
-                            position: 'absolute',
-                            height: overdrawSize,
-                            bottom: -overdrawSize,
-                            backgroundColor:
-                              containerStyle?.backgroundColor || 'white',
-                            width: containerStyle?.width || dimensions.width,
-                          }}
+                      {ExtraOverlayComponent}
+                      {props.withNestedSheetProvider}
+                      {sheetId ? (
+                        <SheetProvider
+                          context={`$$-auto-${sheetId}-${currentContext}-provider`}
                         />
                       ) : null}
-                    </Animated.View>
-
-                    {ExtraOverlayComponent}
-                    {props.withNestedSheetProvider}
-                    {sheetId ? (
-                      <SheetProvider
-                        context={`$$-auto-${sheetId}-${currentContext}-provider`}
-                      />
-                    ) : null}
+                    </>
                   </Animated.View>
                 </DraggableNodesContext.Provider>
               </PanGestureRefContext.Provider>

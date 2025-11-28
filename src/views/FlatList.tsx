@@ -1,17 +1,10 @@
 /* eslint-disable curly */
-import React, {
-  RefObject,
-  useImperativeHandle
-} from 'react';
-import { FlatListProps, Platform, FlatList as RNFlatList } from 'react-native';
-import {
-  NativeViewGestureHandlerProps,
-  FlatList as RNGHFlatList,
-} from 'react-native-gesture-handler';
-import { useScrollHandlers } from '../hooks/use-scroll-handlers';
+import React, {RefObject, useImperativeHandle} from 'react';
+import {FlatList as RNGHFlatList} from 'react-native-gesture-handler';
+import {useScrollHandlers} from '../hooks/use-scroll-handlers';
+import {FlatListProps} from 'react-native';
 type Props<T = any> = FlatListProps<T> &
-  Partial<NativeViewGestureHandlerProps> &
-  React.RefAttributes<RNFlatList> & {
+  React.RefAttributes<RNGHFlatList> & {
     /**
      * By default refresh control gesture will work in top 15% area of the ScrollView. You can set a different value here.
      *
@@ -20,36 +13,32 @@ type Props<T = any> = FlatListProps<T> &
     refreshControlGestureArea?: number;
   };
 
-function $FlatList<T>(
-  props: Props<T>,
-  ref: React.ForwardedRef<RefObject<RNFlatList>>,
-) {
-  const handlers = useScrollHandlers<RNFlatList>({
+function $FlatList<T>(props: Props<T>, ref: RefObject<RNGHFlatList>) {
+  const handlers = useScrollHandlers<any>({
     hasRefreshControl: !!props.refreshControl,
     refreshControlBoundary: props.refreshControlGestureArea || 0.15,
   });
-  useImperativeHandle(ref, () => handlers.ref);
-  const ScrollComponent = Platform.OS === 'web' ? RNFlatList : RNGHFlatList;
+  useImperativeHandle(ref, () => handlers.ref.current);
 
   return (
-    //@ts-ignore
-    <ScrollComponent
+    <RNGHFlatList
       {...props}
-      {...handlers}
+      ref={handlers.ref}
+      simultaneousHandlers={handlers.simultaneousHandlers}
+      scrollEventThrottle={handlers.scrollEventThrottle}
       onScroll={event => {
         handlers.onScroll(event);
         props.onScroll?.(event);
       }}
-      bounces={false}
       onLayout={event => {
         handlers.onLayout();
         props.onLayout?.(event);
       }}
-      scrollEventThrottle={1}
+      bounces={false}
     />
   );
 }
 
-export const FlatList = React.forwardRef(
-  $FlatList,
-) as unknown as typeof RNFlatList;
+export const FlatList = React.forwardRef($FlatList) as <T = any>(
+  props: Props<T> & { ref?: React.Ref<RNGHFlatList> }
+) => React.ReactElement;

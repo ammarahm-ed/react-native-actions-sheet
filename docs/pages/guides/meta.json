@@ -6,6 +6,7 @@
   "refaccess": "Ref access from anywhere",
   "scrolling": "Scrolling",
   "flashlist": "FlashList",
+  "legendlist": "LegendList",
   "background": "Background Interaction",
   "position": "Position tracking",
   "safearea": "Handling SafeArea",

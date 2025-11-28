@@ -13,6 +13,9 @@ export {
   useSheetIDContext,
   useSheetRef,
   useSheetPayload,
+  SheetRegister,
+  SheetRegisterProps,
+  SheetRefContext
 } from './src/provider';
 export {
   ActionSheetProps,

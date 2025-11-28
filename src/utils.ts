@@ -38,6 +38,12 @@ export const SUPPORTED_ORIENTATIONS: (
   'landscape-right',
 ];
 
+export function debug(key: string, data: any) {
+  //@ts-ignore
+  if (!globalThis.__DEV__) return;
+  console.log('action-sheet', 'debug', key, ':', data);
+}
+
 export const waitAsync = (ms: number): Promise<null> =>
   new Promise(resolve => {
     setTimeout(() => {
