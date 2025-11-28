@@ -15,8 +15,9 @@ export default function Snack() {
     <>
       <Script src="https://snack.expo.dev/embed.js" async />
 
+   
       <div
-        data-snack-id="@ammarahmed/github.com-ammarahm-ed-react-native-actions-sheet:expo-example"
+        data-snack-id="@ammarahmed/github.com-ammarahm-ed-react-native-actions-sheet:expo-example@develop"
         data-snack-platform="web"
         data-snack-preview="true"
         data-snack-theme={currentTheme}
