@@ -1,9 +1,9 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   EmitterSubscription,
   Keyboard,
   KeyboardEventListener,
-  Platform,
+  Platform
 } from 'react-native';
 
 type ScreenRect = {
@@ -73,7 +73,10 @@ export function useKeyboard(enabled: boolean) {
   }, [enabled, handleKeyboardDidHide, handleKeyboardDidShow]);
   return {
     keyboardShown: !enabled ? false : shown,
-    coordinates: !enabled || !shown ? emptyCoordinates : coordinates,
+    coordinates: {
+      start: !enabled || !shown ? emptyCoordinates : coordinates.start,
+      end: !enabled || !shown ? emptyCoordinates : coordinates.end
+    },
     keyboardHeight: !enabled || !shown ? 0 : keyboardHeight,
     pauseKeyboardHandler,
     reset: () => {
