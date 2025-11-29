@@ -1,5 +1,5 @@
 /* eslint-disable curly */
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {actionSheetEventManager} from '../eventmanager';
 import {useProviderContext} from '../provider';
 
@@ -16,7 +16,10 @@ const useSheetManager = ({
 }) => {
   const [visible, setVisible] = useState(false);
   const currentContext = useProviderContext();
-
+  const visibleRef = useRef({
+    value: visible,
+  });
+  visibleRef.current.value = visible;
   useEffect(() => {
     if (!id) return undefined;
 
@@ -44,6 +47,7 @@ const useSheetManager = ({
   return {
     visible,
     setVisible,
+    visibleRef: visibleRef,
   };
 };
 

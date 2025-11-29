@@ -155,7 +155,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     dimensionsRef.current = dimensions;
     const containerStyle = StyleSheet.flatten(props.containerStyle);
 
-    const {visible, setVisible} = useSheetManager({
+    const {visible, setVisible, visibleRef} = useSheetManager({
       id: sheetId,
       onHide: data => {
         hideSheet(undefined, data, true);
@@ -257,9 +257,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
          * Using setTimeout to ensure onClose is triggered when sheet is off screen
          * or is close to reaching off screen.
          */
-        setTimeout(callback, config?.duration || 200);
+        setTimeout(() => callback(), config?.duration || 200);
       },
-      [animated, animationSheetOpacity, props.closeAnimationConfig],
+      [animated, animationSheetOpacity, props.closeAnimationConfig, setVisible],
     );
 
     const getCurrentPosition = React.useCallback(() => {
@@ -433,9 +433,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             translateY.removeListener(animationListener);
           })(animationListenerId);
         }
-        hideSheetWithAnimation(vy, () => {
+        const onCompleteAnimation = () => {
           if (closable || isSheetManagerOrRef) {
             setVisible(false);
+            visibleRef.current.value = false;
             if (props.onClose) {
               props.onClose?.(
                 (data || returnValueRef.current || data) as never,
@@ -462,7 +463,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             opacity.value = 1;
             moveSheetWithAnimation();
           }
-        });
+        };
+        hideSheetWithAnimation(vy, onCompleteAnimation);
         if (Platform.OS === 'web') {
           document.body.style.overflowY = 'auto';
           document.documentElement.style.overflowY = 'auto';
@@ -473,8 +475,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         hideSheetWithAnimation,
         props.onClose,
         moveSheetWithAnimation,
-        setVisible,
         keyboard,
+        setVisible,
       ],
     );
 
@@ -983,7 +985,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         },
         currentSnapIndex: () => currentSnapIndex.current,
         isGestureEnabled: () => gestureEnabled,
-        isOpen: () => visible,
+        isOpen: () => visibleRef.current.value,
         keyboardHandler: (enabled?: boolean) => {
           keyboard.pauseKeyboardHandler.current = enabled;
         },
