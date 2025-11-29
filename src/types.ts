@@ -76,7 +76,7 @@ export type ActionSheetRef<SheetId extends keyof Sheets = never> = {
   /**
    * Get the current payload of the sheet
    */
-  currentPayload: () => Sheets[SheetId]["payload"];
+  currentPayload: () => Sheets[SheetId]['payload'];
 };
 
 export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
@@ -203,7 +203,17 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   CustomHeaderComponent?: React.ReactNode;
 
   /**
-   * Any custom styles for the container.
+   * Styles for the ActionSheet container.
+   *
+   * Note: You can set most styles here except `maxHeight`, `marginBottom` and `paddingBottom`. These are used internally. You can do this instead:
+   *
+   * ```tsx
+   * <ActionSheet>
+   *  <View style={{
+   *      paddingBottom: 50
+   *   }} />
+   * </ActionSheet>
+   * ```
    * */
   containerStyle?: StyleProp<ViewStyle>;
 

@@ -6,7 +6,10 @@ import { TextInput } from 'react-native-gesture-handler';
 function Input() {
 
   return (
-    <ActionSheet gestureEnabled>
+    <ActionSheet containerStyle={{
+      borderWidth: 1,
+      borderColor: 'red'
+    }}  gestureEnabled>
       <View
         style={{
           paddingHorizontal: 12,
@@ -14,6 +17,7 @@ function Input() {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 10,
+          borderWidth: 1
         }}>
         <TextInput
           style={{
