@@ -1238,9 +1238,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                 {
                                   borderTopRightRadius: 10,
                                   borderTopLeftRadius: 10,
-                                  paddingBottom: useBottomSafeAreaPadding
-                                    ? insets.bottom
-                                    : 0,
                                 },
                                 props.containerStyle,
                                 {
@@ -1251,6 +1248,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                     : dimensions.height - insets.top,
                                   // Using this to trigger layout when keyboard is shown
                                   marginTop: keyboard.keyboardShown ? 0.5 : 0,
+                                  paddingBottom:
+                                    (Platform.OS === 'ios' &&
+                                      keyboard.keyboardShown) ||
+                                    !useBottomSafeAreaPadding
+                                      ? 0
+                                      : insets.bottom,
                                 },
                               ]}>
                               {drawUnderStatusBar ? (

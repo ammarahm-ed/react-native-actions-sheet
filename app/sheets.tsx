@@ -61,8 +61,8 @@ declare module 'react-native-actions-sheet' {
     'return-data': SheetDefinition<{
       returnValue: boolean;
     }>;
-    'legend-list':SheetDefinition
-    'custom-scroll-handlers': SheetDefinition
+    'legend-list': SheetDefinition;
+    'custom-scroll-handlers': SheetDefinition;
   }
 }
 
@@ -86,8 +86,8 @@ export const Sheets = () => {
         'draw-under-statusbar': DrawUnderStatusBar,
         'return-data': ReturnData,
         'floating-sheet': FloatingSheet,
-         'legend-list': LegendListExample,
-         "custom-scroll-handlers": CustomScrollHandlers
+        'legend-list': LegendListExample,
+        'custom-scroll-handlers': CustomScrollHandlers,
       }}
     />
   );
