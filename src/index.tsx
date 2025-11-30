@@ -473,10 +473,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }
         }
 
-        console.log(closeRequestResult);
-
         if ((!closable || !closeRequestResult) && !isSheetManagerOrRef) {
-          console.log('MOVE SHEET');
           const next = getNextPosition(currentSnapIndex.current);
           moveSheetWithAnimation(vy, next, undefined, gestureEnd);
           initialValue.current = next;
