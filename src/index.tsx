@@ -66,7 +66,7 @@ import {
 } from './provider';
 import {getZIndexFromStack, SheetManager} from './sheetmanager';
 import {styles} from './styles';
-import {ActionSheetProps, ActionSheetRef} from './types';
+import {ActionSheetProps, ActionSheetRef, CloseRequestType} from './types';
 import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -110,6 +110,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         stiffness: 900,
         overshootClamping: true,
       },
+      onRequestClose,
       ...props
     },
     ref,
@@ -464,10 +465,21 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         gestureEnd?: boolean,
       ) => {
         if (hiding.current) return;
-        if (!closable && !isSheetManagerOrRef) {
-          moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
+
+        let closeRequestResult = true;
+        if (gestureEnd) {
+          if (onRequestClose) {
+            closeRequestResult = onRequestClose?.(CloseRequestType.SWIPE);
+          }
+        }
+
+        if ((!closable || !closeRequestResult) && !isSheetManagerOrRef) {
+          const next = getNextPosition(currentSnapIndex.current);
+          moveSheetWithAnimation(vy, next, undefined, gestureEnd);
+          initialValue.current = next;
           return;
         }
+
         hiding.current = true;
         onBeforeClose?.((data || returnValueRef.current || data) as never);
         if (closable) {
@@ -533,7 +545,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         routerRef.current?.goBack();
         return true;
       }
-      if (visible && closable && closeOnPressBack) {
+
+      let closeRequestResult = true;
+      if (onRequestClose) {
+        closeRequestResult = onRequestClose?.(CloseRequestType.BACK_PRESS);
+      }
+
+      if (visible && closable && closeOnPressBack && closeRequestResult) {
         hideSheet();
         return true;
       }
@@ -624,7 +642,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         currentSnapIndex.current = nextSnapIndex;
         const next = getNextPosition(currentSnapIndex.current);
         initialValue.current = next;
-        moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
+        moveSheetWithAnimation(vy, next, undefined, gestureEnd);
       },
       [
         closable,
@@ -953,7 +971,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         router.goBack();
         return;
       }
-      if (closeOnTouchBackdrop && closable) {
+
+      let closeRequestResult = true;
+      if (onRequestClose) {
+        closeRequestResult = onRequestClose?.(CloseRequestType.TOUCH_BACKDROP);
+      }
+
+      if (closeOnTouchBackdrop && closable && closeRequestResult) {
         hideSheet();
       }
     };
@@ -1063,12 +1087,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       sheetRef.current = getRef();
     }, [currentContext, getRef, sheetId, sheetRef]);
 
-    const onRequestClose = React.useCallback(() => {
+    const onModalRequestClose = React.useCallback(() => {
       if (enableRouterBackNavigation && routerRef.current?.canGoBack()) {
         routerRef.current?.goBack();
         return;
       }
-      if (visible && closeOnPressBack) {
+
+      let closeRequestResult = true;
+      if (onRequestClose) {
+        closeRequestResult = onRequestClose?.(CloseRequestType.BACK_PRESS);
+      }
+
+      if (visible && closable && closeOnPressBack && closeRequestResult) {
         hideSheet();
       }
     }, [hideSheet, enableRouterBackNavigation, closeOnPressBack, visible]);
@@ -1081,7 +1111,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               testID: props.testIDs?.modal || props.testID,
               supportedOrientations: SUPPORTED_ORIENTATIONS,
               onShow: props.onOpen,
-              onRequestClose: onRequestClose,
+              onRequestClose: onModalRequestClose,
               transparent: true,
               /**
                * Always true, it causes issue with keyboard handling.
@@ -1115,7 +1145,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         currentContext,
         isModal,
         onHardwareBackPress,
-        onRequestClose,
+        onModalRequestClose,
         props,
         zIndex,
         sheetId,

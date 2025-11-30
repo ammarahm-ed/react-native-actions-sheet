@@ -2,8 +2,8 @@ import React from 'react';
 import {
   GestureResponderEvent,
   LayoutRectangle,
+  PressableProps,
   StyleProp,
-  TouchableOpacityProps,
   ViewStyle,
 } from 'react-native';
 import {SpringConfig} from 'react-native-reanimated/lib/typescript/animation/springUtils';
@@ -12,11 +12,17 @@ import {Route} from './hooks/use-router';
 
 export interface Sheets {}
 
-type DefaultSheetDefinition = {
+export type DefaultSheetDefinition = {
   payload?: any;
   returnValue?: any;
   routes?: any;
 };
+
+export enum CloseRequestType {
+  SWIPE,
+  BACK_PRESS,
+  TOUCH_BACKDROP,
+}
 
 export type SheetDefinition<T extends DefaultSheetDefinition = any> = T;
 
@@ -374,7 +380,7 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   /**
    * Additional props to pass to the backdrop element. Useful for adding custom accessibility props.
    */
-  backdropProps?: Partial<TouchableOpacityProps>;
+  backdropProps?: Partial<PressableProps>;
 
   /**
    * Default safeArea insets provided through a library such as
@@ -418,4 +424,15 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * sheet to go beyond minimum snap point position with drag.
    */
   disableDragBeyondMinimumSnapPoint?: boolean;
+
+  /**
+   * Called when the ActionSheet is closing based on some user actions:
+   *
+   * 1. Touching backdrop
+   * 2. System back navigation
+   * 3. Swiping down to close the ActionSheet
+   *
+   * Return `false` to cancel closing the ActionSheet.
+   */
+  onRequestClose?: (type: CloseRequestType) => boolean;
 };
