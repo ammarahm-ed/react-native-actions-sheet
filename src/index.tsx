@@ -162,8 +162,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       onHide: data => {
         hideSheet(undefined, data, true);
       },
-      onBeforeShow: data => {
+      onBeforeShow: (data, snapIndex) => {
         routerRef.current?.initialNavigation();
+        currentSnapIndex.current = snapIndex;
         onBeforeShow?.(data as never);
       },
       onContextUpdate: () => {
@@ -1032,6 +1033,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         },
         snapToIndex: (index: number) => {
           if (index > snapPoints.length || index < 0) return;
+          if (!visibleRef.current.value) {
+            getRef().show(index);
+            return;
+          }
           currentSnapIndex.current = index;
           initialValue.current = getNextPosition(index);
           translateY.value = withSpring(
@@ -1302,11 +1307,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             },
                             animatedActionSheetStyle,
                           ]}>
-                          <GestureMobileOnly 
-                            {...(Platform.OS === "web" ? {} as any : {
-                              gesture: panGesture as PanGesture
-                            })}
-                          >
+                          <GestureMobileOnly
+                            {...(Platform.OS === 'web'
+                              ? ({} as any)
+                              : {
+                                  gesture: panGesture as PanGesture,
+                                })}>
                             <Animated.View
                               {...((panGesture as any)?.panHandlers || {})}
                               onLayout={event =>

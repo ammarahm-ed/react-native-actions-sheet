@@ -149,19 +149,21 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const Sheet = sheetsRegistry[id] || null;
   const visibleRef = useRef(false);
   visibleRef.current = visible;
+  const snapIndex = useRef<number>(undefined);
 
   useEffect(() => {
     if (visible) {
-      actionSheetEventManager.publish(`show_${id}`, payload, context);
+      actionSheetEventManager.publish(`show_${id}`, payload, context, snapIndex.current);
     }
   }, [context, id, payload, visible]);
 
   useEffect(() => {
-    const onShow = (data: any, ctx = 'global', overrideProps) => {
+    const onShow = (data: any, ctx = 'global', overrideProps: ActionSheetProps, snapIndexValue: number) => {
       if (ctx !== context) return;
       clearTimeout(clearPayloadTimeoutRef.current);
       setPayload(data);
       setOverrideProps(overrideProps);
+      snapIndex.current = snapIndexValue
       setVisible(true);
     };
 
