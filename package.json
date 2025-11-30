@@ -1,6 +1,6 @@
 {
   "name": "react-native-actions-sheet",
-  "version": "10.0.1",
+  "version": "10.1.0",
   "description": "A Cross Platform(Android & iOS) ActionSheet with a robust and flexible api, native performance and zero dependency code for react native. Create anything you want inside ActionSheet.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
