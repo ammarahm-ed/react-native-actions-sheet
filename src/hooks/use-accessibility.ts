@@ -7,6 +7,7 @@ let accessibilityInfo = {
 };
 
 export async function getAccessibilityInfo() {
+  if (Platform.OS !== "ios") return accessibilityInfo;
   try {
     accessibilityInfo.isReduceMotionEnabled =
       await AccessibilityInfo.isReduceMotionEnabled();
@@ -41,7 +42,7 @@ export function useAccessibility() {
     }
 
     return () => {
-      subscription.remove();
+      subscription?.remove?.();
     };
   }, []);
 
