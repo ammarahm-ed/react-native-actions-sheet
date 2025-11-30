@@ -164,7 +164,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       },
       onBeforeShow: (data, snapIndex) => {
         routerRef.current?.initialNavigation();
-        currentSnapIndex.current = snapIndex;
+        if (snapIndex !== undefined) {
+          currentSnapIndex.current = snapIndex;
+        }
         onBeforeShow?.(data as never);
       },
       onContextUpdate: () => {
