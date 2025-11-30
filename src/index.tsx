@@ -47,6 +47,7 @@ import {
   PanGestureRefContext,
 } from './context';
 import EventManager, {actionSheetEventManager} from './eventmanager';
+import {useAccessibility} from './hooks/use-accessibility';
 import {
   Route,
   RouterContext,
@@ -69,7 +70,6 @@ import {ActionSheetProps, ActionSheetRef} from './types';
 import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
     {
@@ -124,6 +124,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const internalEventManager = React.useMemo(() => new EventManager(), []);
     const currentContext = useProviderContext();
     const currentSnapIndex = useRef(initialSnapIndex);
+    const accessibilityInfo = useAccessibility();
     const sheetRef = useSheetRef();
     const sheetHeightRef = useRef(0);
     const minTranslateValue = useRef(0);
@@ -175,6 +176,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     });
 
     const opacity = useSharedValue(0);
+    const actionSheetOpacity = useSharedValue(1);
     const translateY = useSharedValue(Dimensions.get('window').height * 2);
     const underlayTranslateY = useSharedValue(130);
     const routeOpacity = useSharedValue(0);
@@ -209,7 +211,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     }, [props.onSnapIndexChange]);
 
     const moveSheetWithAnimation = React.useCallback(
-      (velocity?: number, value?: number, min?: number) => {
+      (
+        velocity?: number,
+        value?: number,
+        min?: number,
+        gestureEnd?: boolean,
+      ) => {
         let initial = value || initialValue.current;
         let minTranslate = min || minTranslateValue.current;
         if (!animated) {
@@ -221,10 +228,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         const correctedValue = initial > minTranslate ? initial : 0;
 
         notifyOffsetChange(correctedValue as number);
-        translateY.value = withSpring(initial, {
-          ...config,
-          velocity: typeof velocity !== 'number' ? undefined : velocity,
-        });
+        if (
+          accessibilityInfo.current.prefersCrossFadeTransitions &&
+          !gestureEnd
+        ) {
+          actionSheetOpacity.value = 0;
+          translateY.value = initial;
+          actionSheetOpacity.value = withTiming(1, {
+            duration: 150,
+            easing: Easing.in(Easing.ease),
+          });
+        } else {
+          translateY.value = withSpring(initial, {
+            ...config,
+            velocity: typeof velocity !== 'number' ? undefined : velocity,
+          });
+        }
 
         notifySnapIndexChanged();
       },
@@ -239,20 +258,40 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     }, []);
 
     const hideSheetWithAnimation = React.useCallback(
-      (vy?: number, callback?: () => void) => {
+      (vy?: number, callback?: () => void, gestureEnd?: boolean) => {
         if (!animated) {
           callback?.();
           return;
         }
         const config = props.closeAnimationConfig;
         animationSheetOpacity(0);
-        translateY.value = withTiming(
-          dimensionsRef.current.height * 1.3,
-          config || {
-            velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
-            duration: 200,
-          },
-        );
+        const endTranslateValue = dimensionsRef.current.height * 1.3;
+        if (
+          accessibilityInfo.current.prefersCrossFadeTransitions &&
+          !gestureEnd
+        ) {
+          actionSheetOpacity.value = withTiming(
+            0,
+            {
+              duration: 200,
+              easing: Easing.in(Easing.ease),
+            },
+            finished => {
+              if (finished) {
+                translateY.value = endTranslateValue;
+              }
+            },
+          );
+        } else {
+          translateY.value = withTiming(
+            endTranslateValue,
+            config || {
+              velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
+              duration: 200,
+            },
+          );
+        }
+
         /**
          * Using setTimeout to ensure onClose is triggered when sheet is off screen
          * or is close to reaching off screen.
@@ -418,10 +457,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     );
 
     const hideSheet = React.useCallback(
-      (vy?: number, data?: any, isSheetManagerOrRef?: boolean) => {
+      (
+        vy?: number,
+        data?: any,
+        isSheetManagerOrRef?: boolean,
+        gestureEnd?: boolean,
+      ) => {
         if (hiding.current) return;
         if (!closable && !isSheetManagerOrRef) {
-          moveSheetWithAnimation(vy);
+          moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
           return;
         }
         hiding.current = true;
@@ -461,10 +505,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             keyboard.reset();
           } else {
             opacity.value = 1;
-            moveSheetWithAnimation();
+            moveSheetWithAnimation(1, undefined, undefined, gestureEnd);
           }
         };
-        hideSheetWithAnimation(vy, onCompleteAnimation);
+        hideSheetWithAnimation(vy, onCompleteAnimation, gestureEnd);
         if (Platform.OS === 'web') {
           document.body.style.overflowY = 'auto';
           document.documentElement.style.overflowY = 'auto';
@@ -506,10 +550,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
      * Snap towards the top
      */
     const snapForward = React.useCallback(
-      (vy: number) => {
+      (vy: number, gestureEnd?: boolean) => {
         if (currentSnapIndex.current === snapPoints.length - 1) {
           const next = getNextPosition(currentSnapIndex.current);
-          moveSheetWithAnimation(vy, next);
+          moveSheetWithAnimation(vy, next, undefined, gestureEnd);
           initialValue.current = next;
           return;
         }
@@ -528,13 +572,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
         if (nextSnapPoint > 100) {
           console.warn('Snap points should range between 0 to 100.');
-          moveSheetWithAnimation(vy);
+          moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
           return;
         }
         currentSnapIndex.current = nextSnapIndex;
         const next = getNextPosition(currentSnapIndex.current);
         initialValue.current = next;
-        moveSheetWithAnimation(vy, next);
+        moveSheetWithAnimation(vy, next, undefined, gestureEnd);
       },
       [getCurrentPosition, getNextPosition, moveSheetWithAnimation, snapPoints],
     );
@@ -542,14 +586,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
      * Snap towards the bottom
      */
     const snapBackward = React.useCallback(
-      (vy: number) => {
+      (vy: number, gestureEnd?: boolean) => {
         if (currentSnapIndex.current === 0) {
           if (closable) {
             initialValue.current = dimensionsRef.current.height * 1.3;
-            hideSheet(vy);
+            hideSheet(vy, undefined, false, gestureEnd);
           } else {
             const next = getNextPosition(currentSnapIndex.current);
-            moveSheetWithAnimation(vy, next);
+            moveSheetWithAnimation(vy, next, undefined, gestureEnd);
             initialValue.current = next;
           }
           return;
@@ -566,7 +610,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           if (i === 0 && getCurrentPosition() > getNextPosition(i)) {
             if (closable) {
               initialValue.current = dimensionsRef.current.height * 1.3;
-              hideSheet(vy);
+              hideSheet(vy, undefined, undefined, gestureEnd);
               return;
             }
           }
@@ -574,13 +618,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
         if (nextSnapPoint < 0) {
           console.warn('Snap points should range between 0 to 100.');
-          moveSheetWithAnimation(vy);
+          moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
           return;
         }
         currentSnapIndex.current = nextSnapIndex;
         const next = getNextPosition(currentSnapIndex.current);
         initialValue.current = next;
-        moveSheetWithAnimation(vy);
+        moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
       },
       [
         closable,
@@ -840,15 +884,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           (isMovingUp &&
             getCurrentPosition() > initialValue.current - springOffset)
         ) {
-          moveSheetWithAnimation(1);
+          moveSheetWithAnimation(1, undefined, undefined, true);
           velocity = 0;
           return;
         }
 
         if (!isMovingUp) {
-          snapBackward(velocity);
+          snapBackward(velocity, true);
         } else {
-          snapForward(velocity);
+          snapForward(velocity, true);
         }
         velocity = 0;
       };
@@ -1113,13 +1157,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       };
     }, [opacity]);
 
-    const animatedTranslateStyle = useAnimatedStyle(() => {
+    const animatedActionSheetStyle = useAnimatedStyle(() => {
       return {
         transform: [
           {
             translateY: translateY.value,
           },
         ],
+        opacity: actionSheetOpacity.value,
       };
     }, [translateY]);
 
@@ -1225,7 +1270,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               height: dimensions.height,
                               maxHeight: dimensions.height,
                             },
-                            animatedTranslateStyle,
+                            animatedActionSheetStyle,
                           ]}>
                           <GestureMobileOnly gesture={panGesture as PanGesture}>
                             <Animated.View
