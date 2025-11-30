@@ -1302,7 +1302,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             },
                             animatedActionSheetStyle,
                           ]}>
-                          <GestureMobileOnly gesture={panGesture as PanGesture}>
+                          <GestureMobileOnly 
+                            {...(Platform.OS === "web" ? {} as any : {
+                              gesture: panGesture as PanGesture
+                            })}
+                          >
                             <Animated.View
                               {...((panGesture as any)?.panHandlers || {})}
                               onLayout={event =>
