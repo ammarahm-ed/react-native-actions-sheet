@@ -126,17 +126,19 @@ Style the main container in the action sheet that wraps your content.
 
 Note: You can set most styles here except `maxHeight`, `marginBottom` and `paddingBottom`. These are used internally. You can do this instead:
 
-````tsx
+```tsx
 <ActionSheet>
-   <View style={{
-      paddingBottom: 50
-      }} />
+  <View
+    style={{
+      paddingBottom: 50,
+    }}
+  />
 </ActionSheet>
 ```
 
-| Type   | Required |
-| ------ | -------- |
-| StyleProp<ViewStyle> | no       |
+| Type                   | Required |
+| ---------------------- | -------- |
+| `StyleProp<ViewStyle>` | no       |
 
 ## `openAnimationConfig`
 
@@ -456,19 +458,33 @@ Callback invoked when the snap position of the sheet changes.
 | -------- | -------- |
 | function | no       |
 
-
 ## `initialTranslateFactor`
+
 Set the initial translate factor of the action sheet when it opens. Default is `1` which means the action sheet will open from bottom of the screen. You can set it to `0.5` to have it open from half way of the screen.
 
-| Type     | Required |
-| -------- | -------- |
-| number   | no       |
+| Type   | Required |
+| ------ | -------- |
+| number | no       |
 
 Default: `1`
 
 ## `disableElevation`
+
 Disable elevation/shadow of the action sheet.
-| Type      | Required |
+| Type | Required |
 | --------- | -------- |
-| `boolean` | no       |
-````
+| `boolean` | no |
+
+## `onRequestClose`
+
+Called when the ActionSheet is closing based on some user actions:
+
+Touching backdrop
+System back navigation
+Swiping down to close the ActionSheet
+
+Return `false` to cancel closing the ActionSheet.
+
+| Type                                  | Required |
+| ------------------------------------- | -------- |
+| `(type: CloseRequestType) => boolean` | no       |
