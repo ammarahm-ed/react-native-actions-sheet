@@ -28,16 +28,17 @@ export function useAccessibility() {
   const accessibilityRef = useRef(accessibilityInfo);
 
   useEffect(() => {
-    if (Platform.OS !== 'ios') return;
     let subscription: {remove: () => void};
-    const handler = () => {
-      getAccessibilityInfo().then(
-        result => (accessibilityRef.current = result),
-      );
-    };
+    if (Platform.OS === 'ios') {
+      const handler = () => {
+        getAccessibilityInfo().then(
+          result => (accessibilityRef.current = result),
+        );
+      };
 
-    subscription = AccessibilityInfo.addEventListener?.('change', handler);
-    handler();
+      subscription = AccessibilityInfo.addEventListener?.('change', handler);
+      handler();
+    }
 
     return () => {
       subscription.remove();
