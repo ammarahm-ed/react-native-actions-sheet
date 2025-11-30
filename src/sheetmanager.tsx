@@ -118,6 +118,8 @@ class _SheetManager {
        * ```
        */
       overrideProps?: ActionSheetProps<SheetId>;
+
+      snapIndex?: number;
     },
   ): Promise<Sheets[SheetId]['returnValue']> {
     return new Promise(resolve => {
@@ -145,6 +147,7 @@ class _SheetManager {
         options?.payload,
         currentContext || 'global',
         options?.overrideProps,
+        options?.snapIndex
       );
     });
   }

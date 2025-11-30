@@ -11,7 +11,7 @@ const useSheetManager = ({
 }: {
   id?: string;
   onHide: (data?: any) => void;
-  onBeforeShow?: (data?: any) => void;
+  onBeforeShow?: (data?: any, snapIndex?: number) => void;
   onContextUpdate: () => void;
 }) => {
   const [visible, setVisible] = useState(false);
@@ -26,11 +26,11 @@ const useSheetManager = ({
     const subscriptions = [
       actionSheetEventManager.subscribe(
         `show_${id}`,
-        (data: any, context?: string) => {
+        (data: any, context?: string, snapIndex?: number) => {
           if (currentContext !== context) return;
           if (visible) return;
           onContextUpdate?.();
-          onBeforeShow?.(data);
+          onBeforeShow?.(data, snapIndex);
           setVisible(true);
         },
       ),
