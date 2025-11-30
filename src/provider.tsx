@@ -64,31 +64,34 @@ export function SheetProvider({
   children?: ReactNode;
 }) {
   const [sheetIds, setSheetIds] = useState(Object.keys(sheetsRegistry));
-  const onRegister = React.useCallback(() => {
-    setSheetIds(Object.keys(sheetsRegistry));
-  }, []);
 
   useEffect(() => {
     if (providerRegistryStack.indexOf(context) === -1) {
       providerRegistryStack.push(context);
     } else {
-      throw new Error(
-        `You are trying to register multiple SheetProviders with the same context id: ${context}. Use a unique context id for each SheetProvider in your app.`,
-      );
+      if (__DEV__) {
+        console.warn(
+          `You are trying to register multiple SheetProviders with the same context id: ${context}. Use a unique context id for each SheetProvider in your app.`,
+        );
+      }
     }
-    const unsub = actionSheetEventManager.subscribe(
+    const onRegister = () => {
+      setSheetIds(Object.keys(sheetsRegistry));
+    };
+    const sub = actionSheetEventManager.subscribe(
       `context-on-register`,
       onRegister,
     );
+    setSheetIds(Object.keys(sheetsRegistry));
     return () => {
       providerRegistryStack.splice(providerRegistryStack.indexOf(context), 1);
-      unsub?.unsubscribe();
+      sub?.unsubscribe();
     };
-  }, [context, onRegister]);
+  }, [context]);
 
   const renderSheet = React.useCallback(
     (sheetId: string) => (
-      <RenderSheet key={sheetId} id={sheetId} context={context} />
+      <RenderSheet key={sheetId + context} id={sheetId} context={context} />
     ),
     [context],
   );
@@ -146,19 +149,21 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   const Sheet = sheetsRegistry[id] || null;
   const visibleRef = useRef(false);
   visibleRef.current = visible;
+  const snapIndex = useRef<number>(undefined);
 
   useEffect(() => {
     if (visible) {
-      actionSheetEventManager.publish(`show_${id}`, payload, context);
+      actionSheetEventManager.publish(`show_${id}`, payload, context, snapIndex.current);
     }
   }, [context, id, payload, visible]);
 
   useEffect(() => {
-    const onShow = (data: any, ctx = 'global', overrideProps) => {
+    const onShow = (data: any, ctx = 'global', overrideProps: ActionSheetProps, snapIndexValue: number) => {
       if (ctx !== context) return;
       clearTimeout(clearPayloadTimeoutRef.current);
       setPayload(data);
       setOverrideProps(overrideProps);
+      snapIndex.current = snapIndexValue
       setVisible(true);
     };
 
@@ -206,6 +211,7 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
   );
 };
 
+
 export type SheetRegisterProps = {
   sheets: {
     [K in keyof Sheets]: React.ElementType;
@@ -239,9 +245,7 @@ export type SheetRegisterProps = {
  * ```
  */
 export function SheetRegister(props: SheetRegisterProps): React.JSX.Element {
-  const registered = useRef(false);
-  if (!registered.current) {
-    registered.current = true;
+  useEffect(() => {
     Object.keys(props.sheets).forEach(id => {
       if (!props.sheets[id]) {
         throw new Error(
@@ -258,7 +262,14 @@ export function SheetRegister(props: SheetRegisterProps): React.JSX.Element {
       }
       sheetsRegistry[id] = props.sheets[id];
     });
-  }
+    actionSheetEventManager.publish('context-on-register');
+    return () => {
+      Object.keys(props.sheets).forEach(id => {
+        delete sheetsRegistry[id];
+      });
+      actionSheetEventManager.publish('context-on-register');
+    };
+  }, [props.sheets]);
 
   return null;
 }

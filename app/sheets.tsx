@@ -1,27 +1,27 @@
 import {
   RouteDefinition,
   SheetDefinition,
-  registerSheet,
   SheetRegister,
+  SheetRegisterProps
 } from 'react-native-actions-sheet';
-import Hello from './examples/hello';
-import Gestures from './examples/gestures';
-import SnapMe from './examples/snap-me';
-import Input from './examples/input';
-import Payload from './examples/payload';
-import BackgroundInteraction from './examples/background-interaction';
 import AlwaysOpen from './examples/always-open';
-import ScrollViewSheet from './examples/scrollview';
-import FlatListSheet from './examples/flatlist';
-import FlashListSheet from './examples/flashlist';
-import ResizeSheet from './examples/scrollview-resize';
-import NestedSheet from './examples/nested';
-import RouterSheet from './examples/router';
-import DrawUnderStatusBar from './examples/draw-under-statusbar';
-import ReturnData from './examples/return-data';
-import FloatingSheet from './examples/floating-sheet';
-import LegendListExample from './examples/legend-list';
+import BackgroundInteraction from './examples/background-interaction';
 import CustomScrollHandlers from './examples/custom-scroll-handlers';
+import DrawUnderStatusBar from './examples/draw-under-statusbar';
+import FlashListSheet from './examples/flashlist';
+import FlatListSheet from './examples/flatlist';
+import FloatingSheet from './examples/floating-sheet';
+import Gestures from './examples/gestures';
+import Hello from './examples/hello';
+import Input from './examples/input';
+import LegendListExample from './examples/legend-list';
+import NestedSheet from './examples/nested';
+import Payload from './examples/payload';
+import ReturnData from './examples/return-data';
+import RouterSheet from './examples/router';
+import ScrollViewSheet from './examples/scrollview';
+import ResizeSheet from './examples/scrollview-resize';
+import SnapMe from './examples/snap-me';
 
 /**
  * We extend some of the types here to give us great intellisense
@@ -66,29 +66,27 @@ declare module 'react-native-actions-sheet' {
   }
 }
 
-export const Sheets = () => {
-  return (
-    <SheetRegister
-      sheets={{
-        hello: Hello,
-        gestures: Gestures,
-        'snap-me': SnapMe,
-        input: Input,
-        payload: Payload,
-        'background-interaction': BackgroundInteraction,
-        'always-open': AlwaysOpen,
-        scrollview: ScrollViewSheet,
-        flashlist: FlashListSheet,
-        flatlist: FlatListSheet,
-        'scrollview-resize': ResizeSheet,
-        'nested-sheets': NestedSheet,
-        'sheet-router': RouterSheet,
-        'draw-under-statusbar': DrawUnderStatusBar,
-        'return-data': ReturnData,
-        'floating-sheet': FloatingSheet,
-        'legend-list': LegendListExample,
-        'custom-scroll-handlers': CustomScrollHandlers,
-      }}
-    />
-  );
+const sheets: SheetRegisterProps['sheets'] = {
+  hello: Hello,
+  gestures: Gestures,
+  'snap-me': SnapMe,
+  input: Input,
+  payload: Payload,
+  'background-interaction': BackgroundInteraction,
+  'always-open': AlwaysOpen,
+  scrollview: ScrollViewSheet,
+  flashlist: FlashListSheet,
+  flatlist: FlatListSheet,
+  'scrollview-resize': ResizeSheet,
+  'nested-sheets': NestedSheet,
+  'sheet-router': RouterSheet,
+  'draw-under-statusbar': DrawUnderStatusBar,
+  'return-data': ReturnData,
+  'floating-sheet': FloatingSheet,
+  'legend-list': LegendListExample,
+  'custom-scroll-handlers': CustomScrollHandlers,
+};
+
+export const AppSheets = () => {
+  return <SheetRegister sheets={sheets} />;
 };

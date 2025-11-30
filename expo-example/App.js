@@ -1,5 +1,5 @@
 import React from 'react';
-import {Sheets} from '../app/sheets';
+import {AppSheets} from '../app/sheets';
 import {SheetProvider} from 'react-native-actions-sheet';
 import MainScreen from '../app/examples';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
@@ -9,7 +9,7 @@ const App = () => {
   return (
     <>
       <SafeAreaProvider>
-        <Sheets />
+        <AppSheets />
         <GestureHandlerRootView
           style={{
             flex: 1,
