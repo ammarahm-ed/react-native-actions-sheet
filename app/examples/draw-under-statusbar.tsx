@@ -1,17 +1,14 @@
 import React from 'react';
 import {Text, View} from 'react-native';
 import ActionSheet from 'react-native-actions-sheet';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function DrawUnderStatusBar() {
-  const insets = useSafeAreaInsets();
   return (
     <ActionSheet
       indicatorStyle={{
         width: 150,
       }}
       gestureEnabled
-      safeAreaInsets={insets}
       drawUnderStatusBar
       containerStyle={{
         height: '100%',
