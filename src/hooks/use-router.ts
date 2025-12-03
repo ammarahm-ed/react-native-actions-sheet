@@ -100,7 +100,7 @@ export const useRouter = ({
 
   const navigate = useCallback(
     (name: string, params?: any, snap?: number) => {
-      animate(snap || 20, 0);
+      animate(snap || -4, 0);
       setTimeout(() => {
         setStack((state: any) => {
           const next = routes?.find(route => route.name === name);
@@ -141,8 +141,7 @@ export const useRouter = ({
   };
 
   const goBack = (name?: string, snap?: number) => {
-    getRef?.().snapToRelativeOffset(snap || -10);
-    animate(snap || -10, 0);
+    animate(snap || -4, 0);
     setTimeout(() => {
       setStack(state => {
         const next = routes?.find(route => route.name === name);
