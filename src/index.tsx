@@ -180,7 +180,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     });
 
     const opacity = useSharedValue(0);
-    const actionSheetOpacity = useSharedValue(1);
+    const actionSheetOpacity = useSharedValue(0);
     const translateY = useSharedValue(Dimensions.get('window').height * 2);
     const underlayTranslateY = useSharedValue(130);
     const routeOpacity = useSharedValue(0);
@@ -224,6 +224,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         let initial = value || initialValue.current;
         let minTranslate = min || minTranslateValue.current;
         if (!animated) {
+          actionSheetOpacity.value = 1;
           translateY.value = initial;
           return;
         }
@@ -243,6 +244,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             easing: Easing.in(Easing.ease),
           });
         } else {
+          actionSheetOpacity.value = 1;
           translateY.value = withSpring(initial, {
             ...config,
             velocity: typeof velocity !== 'number' ? undefined : velocity,
@@ -517,6 +519,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             currentSnapIndex.current = initialSnapIndex;
             closing.current = false;
             initialValue.current = -1;
+            actionSheetOpacity.value = 0;
+            translateY.value = Dimensions.get('window').height * 2;
             keyboard.reset();
           } else {
             opacity.value = 1;
