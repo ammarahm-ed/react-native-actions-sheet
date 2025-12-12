@@ -12,7 +12,7 @@ import FlashListSheet from './examples/flashlist';
 import FlatListSheet from './examples/flatlist';
 import FloatingSheet from './examples/floating-sheet';
 import Gestures from './examples/gestures';
-import Hello from './examples/hello';
+import Hello, { Hello_Two } from './examples/hello';
 import Input from './examples/input';
 import LegendListExample from './examples/legend-list';
 import NestedSheet from './examples/nested';
@@ -33,6 +33,7 @@ declare module 'react-native-actions-sheet' {
      * A simple sheet example
      */
     hello: SheetDefinition;
+    hello_two: SheetDefinition;
     gestures: SheetDefinition;
     'snap-me': SheetDefinition;
     input: SheetDefinition;
@@ -85,6 +86,7 @@ const sheets: SheetRegisterProps['sheets'] = {
   'floating-sheet': FloatingSheet,
   'legend-list': LegendListExample,
   'custom-scroll-handlers': CustomScrollHandlers,
+  "hello_two": Hello_Two
 };
 
 export const AppSheets = () => {
