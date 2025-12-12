@@ -149,6 +149,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const panGestureRef = useRef<GestureType>(undefined);
     const closing = useRef(false);
     const draggableNodes = useRef<NodesRef>([]);
+    const layoutTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [dimensions, setDimensions] = useState({
       width: -1,
       height: -1,
@@ -385,73 +386,90 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const onSheetLayout = React.useCallback(
       async (height: number) => {
-        const sheetHeight = height;
-        sheetHeightRef.current = sheetHeight;
-        if (dimensionsRef.current.height === -1) {
+        const processLayout = () => {
+          const sheetHeight = height;
+          sheetHeightRef.current = sheetHeight;
+          if (dimensionsRef.current.height === -1) {
+            return;
+          }
+          if (closing.current) return;
+          const rootViewHeight = dimensionsRef.current?.height;
+
+          actionSheetHeight.current =
+            sheetHeight > dimensionsRef.current.height
+              ? dimensionsRef.current.height
+              : sheetHeight;
+
+          let minTranslate = 0;
+          let initial = initialValue.current;
+
+          minTranslate = rootViewHeight - actionSheetHeight.current;
+
+          if (initial === -1) {
+            translateY.value = rootViewHeight * initialTranslateFactor;
+          }
+
+          const nextInitialValue =
+            actionSheetHeight.current +
+            minTranslate -
+            (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
+              100;
+
+          initial =
+            (keyboard.keyboardShown || keyboardWasVisible.current) &&
+            initial <= nextInitialValue &&
+            initial >= minTranslate
+              ? initial
+              : nextInitialValue;
+
+          const sheetBottomEdgePosition =
+            initial +
+            (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
+              100;
+
+          const sheetPositionWithKeyboard =
+            sheetBottomEdgePosition -
+            (dimensionsRef.current?.height - keyboard.keyboardHeight);
+
+          initial = keyboard.keyboardShown
+            ? initial - sheetPositionWithKeyboard
+            : initial;
+
+          if (keyboard.keyboardShown) {
+            minTranslate = minTranslate - keyboard.keyboardHeight;
+          }
+
+          minTranslateValue.current = minTranslate;
+          initialValue.current = initial;
+
+          animationSheetOpacity(defaultOverlayOpacity);
+          moveSheetWithAnimation(undefined, initial, minTranslate);
+
+          if (initial > 130) {
+            underlayTranslateY.value = 130;
+          }
+          if (Platform.OS === 'web') {
+            document.body.style.overflowY = 'hidden';
+            document.documentElement.style.overflowY = 'hidden';
+          }
+        };
+
+        // Debounce layout updates to prevent jumps
+        if (Platform.OS === 'android' && !animated) {
+          if (layoutTimeoutRef.current) {
+            clearTimeout(layoutTimeoutRef.current);
+          }
+          layoutTimeoutRef.current = setTimeout(() => {
+            processLayout();
+            layoutTimeoutRef.current = null;
+          }, 32);
           return;
         }
-        if (closing.current) return;
-        const rootViewHeight = dimensionsRef.current?.height;
 
-        actionSheetHeight.current =
-          sheetHeight > dimensionsRef.current.height
-            ? dimensionsRef.current.height
-            : sheetHeight;
-
-        let minTranslate = 0;
-        let initial = initialValue.current;
-
-        minTranslate = rootViewHeight - actionSheetHeight.current;
-
-        if (initial === -1) {
-          translateY.value = rootViewHeight * initialTranslateFactor;
-        }
-
-        const nextInitialValue =
-          actionSheetHeight.current +
-          minTranslate -
-          (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-            100;
-
-        initial =
-          (keyboard.keyboardShown || keyboardWasVisible.current) &&
-          initial <= nextInitialValue &&
-          initial >= minTranslate
-            ? initial
-            : nextInitialValue;
-
-        const sheetBottomEdgePosition =
-          initial +
-          (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-            100;
-
-        const sheetPositionWithKeyboard =
-          sheetBottomEdgePosition -
-          (dimensionsRef.current?.height - keyboard.keyboardHeight);
-
-        initial = keyboard.keyboardShown
-          ? initial - sheetPositionWithKeyboard
-          : initial;
-
-        if (keyboard.keyboardShown) {
-          minTranslate = minTranslate - keyboard.keyboardHeight;
-        }
-
-        minTranslateValue.current = minTranslate;
-        initialValue.current = initial;
-
-        animationSheetOpacity(defaultOverlayOpacity);
-        moveSheetWithAnimation(undefined, initial, minTranslate);
-
-        if (initial > 130) {
-          underlayTranslateY.value = 130;
-        }
-        if (Platform.OS === 'web') {
-          document.body.style.overflowY = 'hidden';
-          document.documentElement.style.overflowY = 'hidden';
-        }
+        processLayout();
       },
       [
+        animated,
         snapPoints,
         keyboard.keyboardShown,
         keyboard.keyboardHeight,
@@ -1241,15 +1259,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         width: event.nativeEvent.layout.width,
                         height: event.nativeEvent.layout.height,
                       });
-                      if (sheetHeightRef.current) {
-                        /**
-                         * Android has a bug where it will fire multiple onLayout events with
-                         * different values. Here we ensure that sheet is rendered at correct position
-                         */
-                        setTimeout(() => {
-                          onSheetLayout(sheetHeightRef.current);
-                        });
-                      }
                     }}
                     ref={rootViewContainerRef}
                     pointerEvents={
