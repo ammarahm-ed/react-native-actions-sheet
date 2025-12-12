@@ -123,10 +123,19 @@ class _SheetManager {
     },
   ): Promise<Sheets[SheetId]['returnValue']> {
     return new Promise(resolve => {
-      let currentContext = this.context({
-        ...options,
-        id: id,
-      });
+      let currentContext = options?.context;
+      if (!currentContext) {
+        // If no context is provided, use to current top most context
+        // to render the sheet.
+        for (const context of providerRegistryStack.slice().reverse()) {
+          // We only automatically select nested sheet providers.
+          if (context.startsWith('$$-auto') || context === 'global') {
+            currentContext = context;
+            break;
+          }
+        }
+      }
+
       const handler = (data: any, context = 'global') => {
         if (currentContext !== context) return;
         options?.onClose?.(data);
@@ -147,7 +156,7 @@ class _SheetManager {
         options?.payload,
         currentContext || 'global',
         options?.overrideProps,
-        options?.snapIndex
+        options?.snapIndex,
       );
     });
   }
@@ -247,19 +256,15 @@ class _SheetManager {
       context?: string;
     },
   ): Promise<Sheets[SheetId]['returnValue']> {
-    let currentContext = this.context({
-      ...options,
-      id: id,
-    });
     return new Promise(resolve => {
-      let isRegisteredWithSheetProvider = false;
-      // Check if the sheet is registered with any `SheetProviders`
-      // and select the nearest context where sheet is registered.
-
-      for (const _id of renderedSheetIds) {
-        if (_id === `${id}:${currentContext}`) {
-          isRegisteredWithSheetProvider = true;
-          break;
+      let currentContext = options?.context;
+      if (!currentContext) {
+        for (const context of providerRegistryStack.slice().reverse()) {
+          if (context.startsWith('$$-auto') || context === 'global') {
+            if (renderedSheetIds.indexOf(`${id}:${context}`) === -1) continue;
+            currentContext = context;
+            break;
+          }
         }
       }
 
@@ -275,9 +280,9 @@ class _SheetManager {
       };
       var sub = actionSheetEventManager.subscribe(`onclose_${id}`, hideHandler);
       actionSheetEventManager.publish(
-        isRegisteredWithSheetProvider ? `hide_wrap_${id}` : `hide_${id}`,
+        `hide_wrap_${id}`,
         options?.payload,
-        !isRegisteredWithSheetProvider ? 'global' : currentContext,
+        currentContext,
       );
     });
   }
