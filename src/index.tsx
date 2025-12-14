@@ -1310,6 +1310,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               borderRadius:
                                 containerStyle?.borderRadius || undefined,
                               width: containerStyle?.width || '100%',
+                              maxWidth: containerStyle?.maxWidth || '100%',
                               ...(!disableElevation
                                 ? getElevation(
                                     typeof elevation === 'number'
