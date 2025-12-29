@@ -58,6 +58,7 @@ import {resolveScrollRef} from './hooks/use-scroll-handlers';
 import useSheetManager from './hooks/use-sheet-manager';
 import {useKeyboard} from './hooks/useKeyboard';
 import {
+  providerRegistryStack,
   SheetProvider,
   useProviderContext,
   useSheetIDContext,
@@ -157,6 +158,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const dimensionsRef = useRef(dimensions);
     dimensionsRef.current = dimensions;
     const containerStyle = StyleSheet.flatten(props.containerStyle);
+    const providerId = useRef(`$$-auto-${sheetId}-${currentContext}-provider`);
+    providerId.current = `$$-auto-${sheetId}-${currentContext}-provider`;
 
     const {visible, setVisible, visibleRef} = useSheetManager({
       id: sheetId,
@@ -514,6 +517,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
         const onCompleteAnimation = () => {
           if (closable || isSheetManagerOrRef) {
+            const providerIndex = providerRegistryStack.indexOf(providerId.current);
+
+            console.log(providerRegistryStack);
+            console.log(providerIndex, 'index',providerId.current);
+            if (providerIndex > -1) {
+              providerRegistryStack.splice(providerIndex, 1);
+            }
             setVisible(false);
             visibleRef.current.value = false;
             if (props.onClose) {
@@ -1422,7 +1432,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       {props.withNestedSheetProvider}
                       {sheetId ? (
                         <SheetProvider
-                          context={`$$-auto-${sheetId}-${currentContext}-provider`}
+                          context={providerId.current}
                         />
                       ) : null}
                     </>

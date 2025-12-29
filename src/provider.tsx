@@ -84,7 +84,11 @@ export function SheetProvider({
     );
     setSheetIds(Object.keys(sheetsRegistry));
     return () => {
-      providerRegistryStack.splice(providerRegistryStack.indexOf(context), 1);
+      const providerIndex = providerRegistryStack.indexOf(context);
+      if (providerIndex > -1) {
+        providerRegistryStack.splice(providerRegistryStack.indexOf(context), 1);
+      }
+
       sub?.unsubscribe();
     };
   }, [context]);
@@ -153,17 +157,27 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
 
   useEffect(() => {
     if (visible) {
-      actionSheetEventManager.publish(`show_${id}`, payload, context, snapIndex.current);
+      actionSheetEventManager.publish(
+        `show_${id}`,
+        payload,
+        context,
+        snapIndex.current,
+      );
     }
   }, [context, id, payload, visible]);
 
   useEffect(() => {
-    const onShow = (data: any, ctx = 'global', overrideProps: ActionSheetProps, snapIndexValue: number) => {
+    const onShow = (
+      data: any,
+      ctx = 'global',
+      overrideProps: ActionSheetProps,
+      snapIndexValue: number,
+    ) => {
       if (ctx !== context) return;
       clearTimeout(clearPayloadTimeoutRef.current);
       setPayload(data);
       setOverrideProps(overrideProps);
-      snapIndex.current = snapIndexValue
+      snapIndex.current = snapIndexValue;
       setVisible(true);
     };
 
@@ -210,7 +224,6 @@ const RenderSheet = ({id, context}: {id: string; context: string}) => {
     </SheetIDContext.Provider>
   );
 };
-
 
 export type SheetRegisterProps = {
   sheets: {
