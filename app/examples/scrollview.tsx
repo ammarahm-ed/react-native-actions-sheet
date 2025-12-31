@@ -1,8 +1,23 @@
-import React, {useCallback} from 'react';
-import {Text, View} from 'react-native';
+import React, {useCallback, useEffect} from 'react';
+import {Text, View, ScrollView as RNScrollView, TextInput} from 'react-native';
 import ActionSheet, {ScrollView} from 'react-native-actions-sheet';
+import Animated, {
+  DerivedValue,
+  runOnUI,
+  useAnimatedProps,
+  useAnimatedRef,
+  useDerivedValue,
+  useScrollOffset,
+} from 'react-native-reanimated';
 
 function ScrollViewSheet() {
+  const scrollRef = useAnimatedRef<RNScrollView>();
+  const offset = useScrollOffset(scrollRef);
+
+  const text = useDerivedValue(
+    () => `Scroll offset: ${offset.value.toFixed(1)}`,
+  );
+
   const vegetableNamesWithEmoji = [
     '🍅 Tomato',
     '🥕 Carrot',
@@ -69,7 +84,9 @@ function ScrollViewSheet() {
           width: '100%',
           height: '100%',
         }}>
+        <AnimatedText text={text} />
         <ScrollView
+          ref={scrollRef}
           style={{
             width: '100%',
             flexShrink: 1,
@@ -88,6 +105,23 @@ function ScrollViewSheet() {
         </ScrollView>
       </View>
     </ActionSheet>
+  );
+}
+
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+
+function AnimatedText(props: {text: DerivedValue<string>}) {
+  const text = props.text;
+  const animatedProps = useAnimatedProps(() => ({
+    text: text.value,
+    defaultValue: text.value,
+  }));
+  return (
+    <AnimatedTextInput
+      {...props}
+      editable={false}
+      animatedProps={animatedProps}
+    />
   );
 }
 

@@ -6,7 +6,8 @@
     "paths": {
       "react-native-actions-sheet": ["../"],
       "react-native-safe-area-context": ["../example/node_modules/react-native-safe-area-context"],
-      "@legendapp/list": ["../example/node_modules/@legendapp/list"]
+      "@legendapp/list": ["../example/node_modules/@legendapp/list"],
+      "react-native-worklets": ["../example/node_modules/react-native-worklets"]
     }
   }
 }
