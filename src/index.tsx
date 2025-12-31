@@ -518,9 +518,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         const onCompleteAnimation = () => {
           if (closable || isSheetManagerOrRef) {
             const providerIndex = providerRegistryStack.indexOf(providerId.current);
-
-            console.log(providerRegistryStack);
-            console.log(providerIndex, 'index',providerId.current);
             if (providerIndex > -1) {
               providerRegistryStack.splice(providerIndex, 1);
             }
