@@ -290,9 +290,9 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
 
   /**
    * Allow ActionSheet to draw under the StatusBar.
-   * This is enabled by default.
+   * This is disabled by default.
    *
-   * Default: `true`
+   * Default: `false`
    */
   drawUnderStatusBar?: boolean;
 

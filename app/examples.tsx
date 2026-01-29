@@ -28,6 +28,12 @@ const MainScreen = () => {
         actionSheetRef.current?.show();
       },
     },
+     {
+      title: 'Custom Background',
+      onOpen: () => {
+          SheetManager.show('custom-background');
+      },
+    },
     {
       title: 'Hello',
       onOpen: () => {

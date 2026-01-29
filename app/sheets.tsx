@@ -22,6 +22,7 @@ import RouterSheet from './examples/router';
 import ScrollViewSheet from './examples/scrollview';
 import ResizeSheet from './examples/scrollview-resize';
 import SnapMe from './examples/snap-me';
+import { CustomBackground } from './examples/custom-background';
 
 /**
  * We extend some of the types here to give us great intellisense
@@ -64,6 +65,7 @@ declare module 'react-native-actions-sheet' {
     }>;
     'legend-list': SheetDefinition;
     'custom-scroll-handlers': SheetDefinition;
+    "custom-background": SheetDefinition
   }
 }
 
@@ -86,7 +88,8 @@ const sheets: SheetRegisterProps['sheets'] = {
   'floating-sheet': FloatingSheet,
   'legend-list': LegendListExample,
   'custom-scroll-handlers': CustomScrollHandlers,
-  "hello_two": Hello_Two
+  "hello_two": Hello_Two,
+  "custom-background": CustomBackground
 };
 
 export const AppSheets = () => {
