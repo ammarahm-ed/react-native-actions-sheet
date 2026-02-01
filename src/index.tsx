@@ -183,8 +183,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       },
     });
 
+    // NOTE: Opacity of 0 breaks Liquid Glass views on iOS, so we set it to 0.02 to workaround this bug.
+    // See https://developer.apple.com/documentation/uikit/uivisualeffectview#Set-the-correct-alpha-value
+    // (more context at https://github.com/expo/expo/issues/41024).
+    const lowestActionSheetOpacity = Platform.OS === "ios" ? 0.02 : 0;
+    
     const opacity = useSharedValue(0);
-    const actionSheetOpacity = useSharedValue(0);
+    const actionSheetOpacity = useSharedValue(lowestActionSheetOpacity);
     const translateY = useSharedValue(Dimensions.get('window').height * 2);
     const underlayTranslateY = useSharedValue(130);
     const routeOpacity = useSharedValue(0);
@@ -241,7 +246,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           accessibilityInfo.current.prefersCrossFadeTransitions &&
           !gestureEnd
         ) {
-          actionSheetOpacity.value = 0;
+          actionSheetOpacity.value = lowestActionSheetOpacity;
           translateY.value = initial;
           actionSheetOpacity.value = withTiming(1, {
             duration: 150,
@@ -281,7 +286,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           !gestureEnd
         ) {
           actionSheetOpacity.value = withTiming(
-            0,
+            lowestActionSheetOpacity,
             {
               duration: 200,
               easing: Easing.in(Easing.ease),
@@ -544,7 +549,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             currentSnapIndex.current = initialSnapIndex;
             closing.current = false;
             initialValue.current = -1;
-            actionSheetOpacity.value = 0;
+            actionSheetOpacity.value = lowestActionSheetOpacity;
             translateY.value = Dimensions.get('window').height * 2;
             keyboard.reset();
           } else {
