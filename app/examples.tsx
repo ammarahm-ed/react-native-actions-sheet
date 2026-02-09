@@ -28,10 +28,10 @@ const MainScreen = () => {
         actionSheetRef.current?.show();
       },
     },
-     {
+    {
       title: 'Custom Background',
       onOpen: () => {
-          SheetManager.show('custom-background');
+        SheetManager.show('custom-background');
       },
     },
     {
@@ -60,6 +60,12 @@ const MainScreen = () => {
       title: 'Gestures',
       onOpen: () => {
         SheetManager.show('gestures');
+      },
+    },
+    {
+      title: 'Animated Position',
+      onOpen: () => {
+        SheetManager.show('animated-position');
       },
     },
     {
@@ -101,10 +107,10 @@ const MainScreen = () => {
             payload: {
               candy: candyNames[Math.floor(Math.random() * candyNames.length)],
             },
-            shouldUpdate: async (sheet) => {
+            shouldUpdate: async sheet => {
               console.log(sheet.id, sheet.context);
               return true;
-            }
+            },
           });
         }, 3000);
       },

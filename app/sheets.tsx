@@ -23,6 +23,7 @@ import ScrollViewSheet from './examples/scrollview';
 import ResizeSheet from './examples/scrollview-resize';
 import SnapMe from './examples/snap-me';
 import { CustomBackground } from './examples/custom-background';
+import AnimatedPositionSheet from './examples/animated-position';
 
 /**
  * We extend some of the types here to give us great intellisense
@@ -65,7 +66,8 @@ declare module 'react-native-actions-sheet' {
     }>;
     'legend-list': SheetDefinition;
     'custom-scroll-handlers': SheetDefinition;
-    "custom-background": SheetDefinition
+    "custom-background": SheetDefinition;
+    'animated-position': SheetDefinition;
   }
 }
 
@@ -89,7 +91,8 @@ const sheets: SheetRegisterProps['sheets'] = {
   'legend-list': LegendListExample,
   'custom-scroll-handlers': CustomScrollHandlers,
   "hello_two": Hello_Two,
-  "custom-background": CustomBackground
+  "custom-background": CustomBackground,
+  'animated-position': AnimatedPositionSheet
 };
 
 export const AppSheets = () => {

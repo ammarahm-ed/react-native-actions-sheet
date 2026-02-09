@@ -101,6 +101,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       onBeforeShow,
       enableRouterBackNavigation,
       onBeforeClose,
+      animatedPosition,
       enableGesturesInScrollView = true,
       disableDragBeyondMinimumSnapPoint,
       useBottomSafeAreaPadding = true,
@@ -185,7 +186,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const opacity = useSharedValue(0);
     const actionSheetOpacity = useSharedValue(0);
-    const translateY = useSharedValue(Dimensions.get('window').height * 2);
+    const internalTranslateY = useSharedValue(Dimensions.get('window').height * 2);
     const underlayTranslateY = useSharedValue(130);
     const routeOpacity = useSharedValue(0);
     const router = useRouter({
@@ -210,6 +211,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const notifyOffsetChange = (value: number) => {
       internalEventManager.publish('onoffsetchange', value);
     };
+
+    const translateY = animatedPosition ?? internalTranslateY;
 
     const notifySnapIndexChanged = React.useCallback(() => {
       if (prevSnapIndex.current !== currentSnapIndex.current) {
@@ -1428,9 +1431,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       {ExtraOverlayComponent}
                       {props.withNestedSheetProvider}
                       {sheetId ? (
-                        <SheetProvider
-                          context={providerId.current}
-                        />
+                        <SheetProvider context={providerId.current} />
                       ) : null}
                     </>
                   </Animated.View>
