@@ -994,7 +994,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             .runOnJS(true)
             .activeOffsetY([-5, 5])
             .failOffsetX([-5, 5])
-            .onEnd(onEnd);
+            .onEnd(() => onEnd());
     }, [gestureEnabled]);
 
     const onTouch = (event: GestureResponderEvent) => {
