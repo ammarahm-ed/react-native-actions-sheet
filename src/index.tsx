@@ -13,6 +13,7 @@ import {
   Dimensions,
   GestureResponderEvent,
   Keyboard,
+  LayoutChangeEvent,
   LayoutRectangle,
   Modal,
   NativeEventSubscription,
@@ -481,6 +482,32 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         underlayTranslateY,
         moveSheetWithAnimation,
       ],
+    );
+
+    const onRootContainerLayout = React.useCallback(
+      (event: LayoutChangeEvent) => {
+        const {width, height} = event.nativeEvent.layout;
+        if (height < 10) return;
+        if (
+          width === dimensionsRef.current.width &&
+          height === dimensionsRef.current.height
+        ) {
+          return;
+        }
+        dimensionsRef.current = {width, height};
+        setDimensions(dimensionsRef.current);
+        /**
+         * The container can be measured again with a different height after
+         * the sheet has positioned itself, e.g. on android the modal window
+         * expands to cover the navigation bar area shortly after it is shown
+         * for the first time. translateY is relative to the container height,
+         * so reposition the sheet to keep it anchored to the bottom edge.
+         */
+        if (sheetHeightRef.current > 0) {
+          onSheetLayout(sheetHeightRef.current);
+        }
+      },
+      [onSheetLayout],
     );
 
     const hideSheet = React.useCallback(
@@ -1260,13 +1287,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               <PanGestureRefContext.Provider value={context}>
                 <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
-                    onLayout={event => {
-                      if (event.nativeEvent.layout.height < 10) return;
-                      setDimensions({
-                        width: event.nativeEvent.layout.width,
-                        height: event.nativeEvent.layout.height,
-                      });
-                    }}
+                    onLayout={onRootContainerLayout}
                     ref={rootViewContainerRef}
                     pointerEvents={
                       props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
