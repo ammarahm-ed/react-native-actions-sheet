@@ -1546,7 +1546,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         getNextPosition,
         notifySnapIndexChanged,
         gestureEnabled,
-        visible,
+        // NOTE: open state is read through `visibleRef.current`, not `visible`,
+        // so `visible` is intentionally not a dependency (keeps the ref stable
+        // across open/close).
         keyboard.pauseKeyboardHandler,
       ],
     );
