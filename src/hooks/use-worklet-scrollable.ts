@@ -92,7 +92,9 @@ export function useSheetScrollable(
     },
     onScroll: event => {
       scrollY.value = event.contentOffset.y;
-      // When the sheet is mid-drag (not fully open) the list must stay put.
+      // When the sheet is mid-drag (not fully open) the list must stay put at the
+      // offset it had when the sheet started moving; while the sheet is fully
+      // open the list scrolls freely and we keep that frozen offset up to date.
       if (
         sheetTranslateY &&
         sheetMinTranslate &&
@@ -100,6 +102,8 @@ export function useSheetScrollable(
         !sheetIsRefreshing?.value
       ) {
         scrollTo(animatedRef, 0, lockedOffsetY.value, false);
+      } else {
+        lockedOffsetY.value = event.contentOffset.y;
       }
       if (userOnScroll) {
         runOnJS(forwardScroll)(

@@ -1120,23 +1120,30 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       // rebuilds whenever registryVersion changes so this stays current.
       const regions = gestureRegions.current.slice();
       // activeKind: 0 = none/sheet, 1 = scrollable, 2 = gesture-blocking region.
+      // dragging: whether the sheet is currently being moved by the finger. The
+      // drag anchors to the sheet's actual position when it starts (dragBaseSheetY
+      // / dragBaseTranslationY), so a frame that briefly hands back to the
+      // scrollable (at the offset==0 boundary) freezes the sheet in place and the
+      // next frame resumes seamlessly instead of snapping back to fully-open.
       const ctx = {
-        deltaYOnStart: 0,
         activeKind: 0,
         activeIndex: -1,
         hasRefresh: false,
         refreshBoundaryY: 0,
+        dragging: false,
+        dragBaseSheetY: 0,
+        dragBaseTranslationY: 0,
       };
 
       return Gesture.Pan()
         .withRef(panGestureRef)
         .onBegin(event => {
           'worklet';
-          ctx.deltaYOnStart = 0;
           ctx.activeKind = 0;
           ctx.activeIndex = -1;
           ctx.hasRefresh = false;
           ctx.refreshBoundaryY = 0;
+          ctx.dragging = false;
 
           let bestScrollIndex = -1;
           let bestScrollArea = Number.MAX_VALUE;
@@ -1174,7 +1181,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           'worklet';
           if (!gestureEnabled) return;
           // Gesture-blocking region: never move the sheet.
-          if (ctx.activeKind === 2) return;
+          if (ctx.activeKind === 2) {
+            ctx.dragging = false;
+            return;
+          }
 
           const swipingDown = event.changeY > 0;
           const minTranslate = minTranslateValueSV.value;
@@ -1204,22 +1214,37 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               isRefreshingSV.value = true;
               block = true;
             }
-            if (block) {
-              // Re-baseline so the eventual handoff to sheet-drag is seamless.
-              ctx.deltaYOnStart = event.translationY;
-            }
           } else if (ctx.activeKind === 1 && !enableInScrollC) {
             block = true;
           }
 
-          if (block || isRefreshingSV.value) return;
+          if (block || isRefreshingSV.value) {
+            // Hand the frame to the scrollable: freeze the sheet where it is so
+            // the next drag frame resumes from here instead of jumping.
+            ctx.dragging = false;
+            return;
+          }
 
-          const deltaY = event.translationY - ctx.deltaYOnStart;
-          const value = initialValueSV.value + deltaY;
+          // Anchor the drag to the sheet's current position the moment it starts
+          // moving. Captured once — a stray blocked frame just re-anchors here,
+          // with no visible jump.
+          if (!ctx.dragging) {
+            ctx.dragging = true;
+            ctx.dragBaseSheetY = translateY.value;
+            ctx.dragBaseTranslationY = event.translationY;
+          }
+
+          const value =
+            ctx.dragBaseSheetY + (event.translationY - ctx.dragBaseTranslationY);
           const correctedValue =
             value <= minTranslate ? minTranslate - value : value;
 
-          if (correctedValue / overdrawFactorC >= overdrawSizeC && deltaY <= 0) {
+          // When overdrawn to the limit, keep absorbing upward movement but let
+          // the user drag back down immediately.
+          if (
+            correctedValue / overdrawFactorC >= overdrawSizeC &&
+            event.changeY <= 0
+          ) {
             return;
           }
 
@@ -1245,7 +1270,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         .onEnd(event => {
           'worklet';
           if (!gestureEnabled) return;
-          ctx.deltaYOnStart = 0;
+          ctx.dragging = false;
           isRefreshingSV.value = false;
           if (ctx.activeKind === 2) return;
           runOnJS(handleGestureEnd)(event.velocityY);
