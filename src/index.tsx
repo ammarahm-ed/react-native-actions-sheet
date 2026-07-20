@@ -806,6 +806,17 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const handleGestureEnd = React.useCallback(
       (vy: number) => {
         if (!gestureEnabled) return;
+        // Released while rubber-banded above the fully-open position (overdraw).
+        // The finger velocity here is in un-compressed space (the sheet only moved
+        // ~1/overdrawFactor of the finger), so feeding it straight into the spring
+        // over-springs and looks like a jump. Spring back to the top gently.
+        if (translateY.value < minTranslateValue.current) {
+          const top = getNextPosition(snapPoints.length - 1);
+          setCurrentSnapIndex(snapPoints.length - 1);
+          setInitialValue(top);
+          moveSheetWithAnimation(1, top, undefined, true);
+          return;
+        }
         const current = getCurrentPosition();
         const isMovingUp = current < initialValue.current;
         if (
@@ -823,6 +834,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       },
       [
         gestureEnabled,
+        getNextPosition,
+        setCurrentSnapIndex,
+        setInitialValue,
+        snapPoints,
         getCurrentPosition,
         moveSheetWithAnimation,
         snapBackward,
