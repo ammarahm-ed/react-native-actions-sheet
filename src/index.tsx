@@ -87,6 +87,11 @@ const LAYOUT_SETTLE_MS = 32;
 // Distance (px) over which the draw-under-status-bar effect blends in as the
 // sheet's top approaches the top of the screen.
 const STATUS_BAR_REVEAL_DISTANCE = 64;
+
+// How far a release velocity (px/s) "throws" the sheet when picking the snap
+// point to settle on. Higher = a flick carries further before snapping. Tuned to
+// feel like a native scroll-view fling.
+const VELOCITY_PROJECTION = 0.08;
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
     {
@@ -834,50 +839,32 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [],
     );
 
-    // Snap decision at the end of a worklet-driven drag. Runs once on the JS
-    // thread (via runOnJS) at gesture release — not per frame — and reuses the
-    // existing snap logic. The spring animation itself still runs on the UI
-    // thread inside moveSheetWithAnimation/snapForward/snapBackward.
-    const handleGestureEnd = React.useCallback(
-      (vy: number) => {
+    // Settles a worklet-driven drag to a target snap index (chosen by velocity
+    // projection in the gesture's onEnd) or closes the sheet. Runs once on the JS
+    // thread at release — not per frame. The target already accounts for fling
+    // velocity, so the spring itself uses a gentle velocity (no double-counting,
+    // no overdraw over-spring).
+    const handleGestureSettle = React.useCallback(
+      (targetIndex: number, shouldClose: boolean) => {
         if (!gestureEnabled) return;
-        // Released while rubber-banded above the fully-open position (overdraw).
-        // The finger velocity here is in un-compressed space (the sheet only moved
-        // ~1/overdrawFactor of the finger), so feeding it straight into the spring
-        // over-springs and looks like a jump. Spring back to the top gently.
-        if (translateY.value < minTranslateValue.current) {
-          const top = getNextPosition(snapPoints.length - 1);
-          setCurrentSnapIndex(snapPoints.length - 1);
-          setInitialValue(top);
-          moveSheetWithAnimation(1, top, undefined, true);
+        if (shouldClose && closable) {
+          setInitialValue(dimensionsRef.current.height * 1.3);
+          hideSheet(undefined, undefined, false, true);
           return;
         }
-        const current = getCurrentPosition();
-        const isMovingUp = current < initialValue.current;
-        if (
-          (!isMovingUp && current < initialValue.current + springOffset) ||
-          (isMovingUp && current > initialValue.current - springOffset)
-        ) {
-          moveSheetWithAnimation(1, undefined, undefined, true);
-          return;
-        }
-        if (!isMovingUp) {
-          snapBackward(vy, true);
-        } else {
-          snapForward(vy, true);
-        }
+        const target = getNextPosition(targetIndex);
+        setCurrentSnapIndex(targetIndex);
+        setInitialValue(target);
+        moveSheetWithAnimation(1, target, undefined, true);
       },
       [
         gestureEnabled,
+        closable,
+        hideSheet,
         getNextPosition,
         setCurrentSnapIndex,
         setInitialValue,
-        snapPoints,
-        getCurrentPosition,
         moveSheetWithAnimation,
-        snapBackward,
-        snapForward,
-        springOffset,
       ],
     );
 
@@ -1166,6 +1153,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       const closableC = closable;
       const disableBeyondC = disableDragBeyondMinimumSnapPoint;
       const enableInScrollC = enableGesturesInScrollView;
+      const springOffsetC = springOffset;
       // Snapshot of the registry captured for this gesture instance. The memo
       // rebuilds whenever registryVersion changes so this stays current.
       const regions = gestureRegions.current.slice();
@@ -1323,7 +1311,37 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           ctx.dragging = false;
           isRefreshingSV.value = false;
           if (ctx.activeKind === 2) return;
-          runOnJS(handleGestureEnd)(event.velocityY);
+
+          // Project where the sheet would coast to given the release velocity,
+          // then settle on the nearest snap point. This is what makes a quick
+          // flick carry to the next detent (or dismiss) rather than depending
+          // only on how far the finger travelled.
+          const projected = translateY.value + event.velocityY * VELOCITY_PROJECTION;
+          const sheetHeight = actionSheetHeightSV.value;
+          const minT = minTranslateValueSV.value;
+          const points = snapPointsSV.value;
+
+          let bestIndex = 0;
+          let bestDistance = Number.MAX_VALUE;
+          let lowestOffset = 0;
+          for (let i = 0; i < points.length; i++) {
+            const offset = sheetHeight + minT - (sheetHeight * points[i]) / 100;
+            if (i === 0) lowestOffset = offset;
+            const distance = Math.abs(projected - offset);
+            if (distance < bestDistance) {
+              bestDistance = distance;
+              bestIndex = i;
+            }
+          }
+
+          // Close when the throw carries past the lowest snap by more than the
+          // spring-back threshold (index 0 is the lowest / most-closed position).
+          const shouldClose =
+            closableC &&
+            bestIndex === 0 &&
+            projected - lowestOffset > springOffsetC;
+
+          runOnJS(handleGestureSettle)(bestIndex, shouldClose);
         })
         .activeOffsetY([-5, 5])
         .failOffsetX([-5, 5]);
@@ -1335,7 +1353,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       closable,
       disableDragBeyondMinimumSnapPoint,
       enableGesturesInScrollView,
-      handleGestureEnd,
+      springOffset,
+      handleGestureSettle,
       registryVersion,
     ]);
 
