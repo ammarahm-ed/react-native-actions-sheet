@@ -44,13 +44,19 @@ export function resolveScrollRef(ref: any) {
   return ref.current;
 }
 
-export function useDraggable<T>(options?: DraggableNodeOptions) {
+export function useDraggable<T>(
+  options?: DraggableNodeOptions,
+  active: boolean = true,
+) {
   const gestureContext = usePanGestureContext();
   const draggableNodes = useDraggableNodesContext();
   const nodeRef = useRef<T>(null);
   const offset = useRef({x: 0, y: 0});
   const layout = useRef<LayoutRect>(InitialLayoutRect);
   useEffect(() => {
+    // Skip registering with the legacy JS gesture engine when the worklet engine
+    // is driving this scrollable.
+    if (!active) return undefined;
     const pushNode = () => {
       const index = draggableNodes.nodes.current?.findIndex(
         node => node.ref === nodeRef,
@@ -78,7 +84,7 @@ export function useDraggable<T>(options?: DraggableNodeOptions) {
     return () => {
       popNode();
     };
-  }, [draggableNodes.nodes, options]);
+  }, [draggableNodes.nodes, options, active]);
 
   return {
     nodeRef,
@@ -111,9 +117,15 @@ export function useDraggable<T>(options?: DraggableNodeOptions) {
   </NativeViewGestureHandler>
  * ```
  */
-export function useScrollHandlers<T>(options?: DraggableNodeOptions) {
+export function useScrollHandlers<T>(
+  options?: DraggableNodeOptions,
+  active: boolean = true,
+) {
   const [_render, _setRender] = useState(false);
-  const {nodeRef, gestureContext, offset, layout} = useDraggable<T>(options);
+  const {nodeRef, gestureContext, offset, layout} = useDraggable<T>(
+    options,
+    active,
+  );
   const timer = useRef<NodeJS.Timeout>(null);
   const subscription = useRef<EventHandlerSubscription>(null);
   const onMeasure = useCallback(

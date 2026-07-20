@@ -163,7 +163,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const sheetRef = useSheetRef();
     const sheetHeightRef = useRef(0);
     const minTranslateValue = useRef(0);
-    const keyboardWasVisible = useRef(false);
     const id = useSheetIDContext();
     const sheetId = props.id || id;
     const panViewRef = useRef<View>(null);
@@ -534,7 +533,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) / 100;
 
       initial =
-        (keyboard.keyboardShown || keyboardWasVisible.current) &&
+        keyboard.keyboardShown &&
         initial <= nextInitialValue &&
         initial >= minTranslate
           ? initial

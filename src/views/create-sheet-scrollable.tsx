@@ -22,8 +22,10 @@ export function createSheetScrollable<T>(
       hasRefreshControl: !!props.refreshControl,
       refreshControlBoundary: props.refreshControlGestureArea || 0.15,
     };
-    const handlers = useScrollHandlers<any>(options);
     const worklet = useSheetScrollable(options, props.onScroll ?? undefined);
+    // Only register with the legacy JS gesture engine when the worklet engine is
+    // not the one handling this scrollable.
+    const handlers = useScrollHandlers<any>(options, !worklet.enabled);
     useImperativeHandle(ref, () =>
       worklet.enabled ? worklet.ref.current : handlers.ref.current,
     );
