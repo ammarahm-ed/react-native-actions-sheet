@@ -1,5 +1,9 @@
 import {useContext} from 'react';
+import {NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
 import {
+  measure,
+  runOnJS,
+  runOnUI,
   scrollTo,
   useAnimatedRef,
   useAnimatedScrollHandler,
@@ -10,6 +14,10 @@ import {
   PanGestureRefContext,
   useWorkletScrollContext,
 } from '../context';
+
+type ScrollEventHandler = (
+  event: NativeSyntheticEvent<NativeScrollEvent>,
+) => void;
 
 /**
  * Wires a scrollable into the experimental worklet gesture engine.
@@ -23,7 +31,10 @@ import {
  *
  * Spread the return value onto an Animated version of the scrollable.
  */
-export function useSheetScrollable(_options?: DraggableNodeOptions) {
+export function useSheetScrollable(
+  options?: DraggableNodeOptions,
+  userOnScroll?: ScrollEventHandler,
+) {
   const sheet = useWorkletScrollContext();
   const gestureContext = useContext(PanGestureRefContext);
   const animatedRef = useAnimatedRef<any>();
@@ -36,6 +47,20 @@ export function useSheetScrollable(_options?: DraggableNodeOptions) {
   const sheetIsRefreshing = sheet?.isRefreshing;
   const sheetScrollY = sheet?.scrollY;
   const sheetScrollableActive = sheet?.scrollableActive;
+
+  const forwardScroll = (
+    y: number,
+    contentHeight: number,
+    layoutHeight: number,
+  ) => {
+    userOnScroll?.({
+      nativeEvent: {
+        contentOffset: {x: 0, y},
+        contentSize: {height: contentHeight, width: 0},
+        layoutMeasurement: {height: layoutHeight, width: 0},
+      },
+    } as NativeSyntheticEvent<NativeScrollEvent>);
+  };
 
   const onScroll = useAnimatedScrollHandler({
     onBeginDrag: () => {
@@ -57,6 +82,13 @@ export function useSheetScrollable(_options?: DraggableNodeOptions) {
       ) {
         scrollTo(animatedRef, 0, lockedOffsetY.value, false);
       }
+      if (userOnScroll) {
+        runOnJS(forwardScroll)(
+          y,
+          event.contentSize.height,
+          event.layoutMeasurement.height,
+        );
+      }
     },
   });
 
@@ -66,6 +98,19 @@ export function useSheetScrollable(_options?: DraggableNodeOptions) {
     // Publish the current offset immediately so the first drag frame arbitrates
     // correctly even before a scroll event fires.
     sheet.scrollY.value = localScrollY.value;
+
+    const hasRefresh = !!options?.hasRefreshControl;
+    sheet.activeHasRefresh.value = hasRefresh;
+    if (hasRefresh) {
+      const boundaryFraction = options?.refreshControlBoundary ?? 0.15;
+      const boundarySV = sheet.activeRefreshBoundaryY;
+      runOnUI(() => {
+        const m = measure(animatedRef);
+        if (m) {
+          boundarySV.value = m.pageY + m.height * boundaryFraction;
+        }
+      })();
+    }
   };
 
   return {

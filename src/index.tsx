@@ -105,7 +105,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       enableRouterBackNavigation,
       onBeforeClose,
       enableGesturesInScrollView = true,
-      experimentalWorkletGestures = false,
+      experimentalWorkletGestures = true,
+      legacyGestures = false,
       disableDragBeyondMinimumSnapPoint,
       useBottomSafeAreaPadding = true,
       initialTranslateFactor = 1.1,
@@ -216,6 +217,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const isRefreshingSV = useSharedValue(false);
     const scrollableOffsetY = useSharedValue(0);
     const scrollableActiveSV = useSharedValue(false);
+    const activeHasRefreshSV = useSharedValue(false);
+    const activeRefreshBoundaryYSV = useSharedValue(0);
 
     // Keeps a ref and its mirror shared value in sync in one place.
     const setInitialValue = React.useCallback(
@@ -532,6 +535,16 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         moveSheetWithAnimation,
       ],
     );
+
+    // Recompute the sheet position when the keyboard shows/hides. Previously this
+    // was forced with a `marginTop: 0.5` style toggle that triggered a layout
+    // pass; now we recompute directly from the last measured sheet height.
+    useEffect(() => {
+      if (!visibleRef.current.value) return;
+      if (!sheetHeightRef.current) return;
+      onSheetLayout(sheetHeightRef.current);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [keyboard.keyboardShown, keyboard.keyboardHeight]);
 
     const hideSheet = React.useCallback(
       (
@@ -1116,6 +1129,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             else if (swipingDown && nodeScrolling) {
               block = true;
             }
+            // Case 5: pull-to-refresh. Fully open, pulling down from the top of a
+            // list that has a RefreshControl, within its trigger zone.
+            else if (
+              fullOpen &&
+              swipingDown &&
+              !nodeScrolling &&
+              activeHasRefreshSV.value &&
+              event.absoluteY < activeRefreshBoundaryYSV.value
+            ) {
+              isRefreshingSV.value = true;
+              block = true;
+            }
             if (block) {
               // Re-baseline so the eventual handoff to sheet-drag is seamless.
               ctx.deltaYOnStart = event.translationY;
@@ -1178,8 +1203,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       handleGestureEnd,
     ]);
 
-    const useWorkletGestures =
-      experimentalWorkletGestures && Platform.OS !== 'web';
+    // Worklet gesture engine is the default on every platform. `legacyGestures`
+    // (or explicitly `experimentalWorkletGestures={false}`) opts back into the
+    // pre-v11 PanResponder/JS gesture path.
+    const useWorkletGestures = legacyGestures ? false : experimentalWorkletGestures;
     const activeGesture = useWorkletGestures ? workletPanGesture : panGesture;
 
     const workletScrollContext = React.useMemo<WorkletScrollContextType>(
@@ -1192,6 +1219,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         isRefreshing: isRefreshingSV,
         scrollY: scrollableOffsetY,
         scrollableActive: scrollableActiveSV,
+        activeHasRefresh: activeHasRefreshSV,
+        activeRefreshBoundaryY: activeRefreshBoundaryYSV,
       }),
       [useWorkletGestures, gestureEnabled, enableGesturesInScrollView],
     );
@@ -1448,8 +1477,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       };
     }, [underlayTranslateY]);
 
-    const GestureMobileOnly =
-      Platform.OS === 'web' ? Fragment : GestureDetector;
+    // Legacy web uses PanResponder (panHandlers spread on the View). Every other
+    // case — the worklet path on any platform (incl. web), or the legacy native
+    // path — uses a GestureDetector.
+    const isPanResponderGesture = !useWorkletGestures && Platform.OS === 'web';
+    const GestureWrapper = isPanResponderGesture ? Fragment : GestureDetector;
 
     return (
       <>
@@ -1535,14 +1567,16 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             },
                             animatedActionSheetStyle,
                           ]}>
-                          <GestureMobileOnly
-                            {...(Platform.OS === 'web'
+                          <GestureWrapper
+                            {...(isPanResponderGesture
                               ? ({} as any)
                               : {
                                   gesture: activeGesture as PanGesture,
                                 })}>
                             <Animated.View
-                              {...((activeGesture as any)?.panHandlers || {})}
+                              {...(isPanResponderGesture
+                                ? (activeGesture as any)?.panHandlers || {}
+                                : {})}
                               onLayout={event =>
                                 onSheetLayout(event.nativeEvent.layout.height)
                               }
@@ -1561,8 +1595,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                       insets.top -
                                       keyboard.keyboardHeight
                                     : dimensions.height - insets.top,
-                                  // Using this to trigger layout when keyboard is shown
-                                  marginTop: keyboard.keyboardShown ? 0.5 : 0,
                                   paddingBottom:
                                     (Platform.OS === 'ios' &&
                                       keyboard.keyboardShown) ||
@@ -1612,7 +1644,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                 props?.children
                               )}
                             </Animated.View>
-                          </GestureMobileOnly>
+                          </GestureWrapper>
 
                           {overdrawEnabled ? (
                             <Animated.View

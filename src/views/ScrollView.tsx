@@ -24,7 +24,7 @@ function $ScrollView(props: Props, ref: RefObject<RNScrollView>) {
     refreshControlBoundary: props.refreshControlGestureArea || 0.15,
   };
   const handlers = useScrollHandlers<RNScrollView>(options);
-  const worklet = useSheetScrollable(options);
+  const worklet = useSheetScrollable(options, props.onScroll ?? undefined);
   useImperativeHandle(ref, () =>
     worklet.enabled ? worklet.ref.current : handlers.ref.current,
   );

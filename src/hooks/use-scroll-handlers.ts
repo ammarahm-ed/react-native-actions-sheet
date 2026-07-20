@@ -26,6 +26,11 @@ const InitialLayoutRect = {
   py: 0,
 };
 
+/**
+ * @deprecated Only used by the legacy gesture path. The worklet gesture engine
+ * (default) resolves scrollables through Reanimated animated refs instead. This
+ * helper will be removed in v11.
+ */
 export function resolveScrollRef(ref: any) {
   // FlatList
   if (ref.current?._listRef) {
@@ -85,7 +90,12 @@ export function useDraggable<T>(options?: DraggableNodeOptions) {
 }
 
 /**
- * Create a custom scrollable view inside the action sheet. 
+ * @deprecated Legacy (pre-v11) scroll integration for the JS gesture path. With
+ * the worklet gesture engine (now the default) use the shipped `ScrollView`/
+ * `FlatList`, or `useSheetScrollable` for a custom Animated scrollable. Kept
+ * working while `legacyGestures` is supported; removed in v11.
+ *
+ * Create a custom scrollable view inside the action sheet.
  * The scrollable view must implement `onScroll`, and `onLayout` props.
  * @example
  * ```tsx

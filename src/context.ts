@@ -63,6 +63,10 @@ export type WorkletScrollContextType = {
   scrollY: SharedValue<number>;
   /** True while the finger is on a registered scrollable. */
   scrollableActive: SharedValue<boolean>;
+  /** Whether the active scrollable has a RefreshControl. */
+  activeHasRefresh: SharedValue<boolean>;
+  /** Absolute Y below which a downward pull triggers pull-to-refresh. */
+  activeRefreshBoundaryY: SharedValue<number>;
 };
 
 export const WorkletScrollContext =

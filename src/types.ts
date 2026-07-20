@@ -429,19 +429,29 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   enableGesturesInScrollView?: boolean;
 
   /**
-   * Opt into the experimental worklet-driven gesture engine. When enabled, the
-   * drag gesture and scroll<->drag arbitration run entirely on the UI thread, so
-   * a busy JS thread no longer stutters the sheet and scroll handoff is more
-   * reliable.
+   * The worklet-driven gesture engine. When enabled, the drag gesture and
+   * scroll<->drag arbitration run entirely on the UI thread, so a busy JS thread
+   * no longer stutters the sheet and scroll handoff is more reliable. Enabled by
+   * default on all platforms.
    *
    * Requires the sheet's own `ScrollView`/`FlatList` (from this package) for
-   * scrolling content. Currently native-only (iOS/Android); web keeps the
-   * existing gesture path. Pull-to-refresh handoff is not yet supported in this
-   * mode.
+   * scrolling content. Set to `false` (or use `legacyGestures`) to fall back to
+   * the pre-v11 gesture path.
    *
-   * @default false
+   * @default true
    */
   experimentalWorkletGestures?: boolean;
+
+  /**
+   * Force the legacy (pre-v11) PanResponder/JS gesture engine instead of the
+   * worklet engine. Escape hatch in case the worklet path misbehaves for a
+   * specific use case.
+   *
+   * @deprecated The legacy gesture path will be removed in v11. Please report any
+   * issue that requires this flag.
+   * @default false
+   */
+  legacyGestures?: boolean;
 
   onSnapIndexChange?: (index: number) => void;
 
