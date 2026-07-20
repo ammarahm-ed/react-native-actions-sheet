@@ -31,6 +31,8 @@ import {
 } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
+  Extrapolation,
+  interpolate,
   measure,
   runOnJS,
   useAnimatedReaction,
@@ -81,6 +83,10 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 // Long enough to absorb multi-pass layout (e.g. Android modal), short enough to
 // be invisible since the sheet is off-screen until the first commit.
 const LAYOUT_SETTLE_MS = 32;
+
+// Distance (px) over which the draw-under-status-bar effect blends in as the
+// sheet's top approaches the top of the screen.
+const STATUS_BAR_REVEAL_DISTANCE = 64;
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
     {
@@ -214,7 +220,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     // These are also the source-of-truth read by the worklet gesture (Phase 3).
     const actionSheetHeightSV = useSharedValue(0);
     const minTranslateValueSV = useSharedValue(0);
-    const screenHeightSV = useSharedValue(0);
     const insetTopSV = useSharedValue(insets.top);
     // Sheet position/snap state mirrored from the JS refs below via dual-write
     // helpers, so worklets can read them without a JS-thread hop.
@@ -266,24 +271,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       snapPointsSV.value = snapPoints;
     }, [snapPoints, snapPointsSV]);
 
-    // Drives the status-bar underlay purely on the UI thread. Replaces the old
-    // translateY.addListener -> runOnJS bridge that recomputed this every frame.
-    const underlayTranslateY = useDerivedValue(() => {
-      if (!drawUnderStatusBar) return 130;
-      const sheetHeight = actionSheetHeightSV.value;
-      if (sheetHeight <= 0) return 130;
-      const percentScreenCovered =
-        (sheetHeight / (screenHeightSV.value - insetTopSV.value)) * 100;
-      const correctedValue =
-        translateY.value > minTranslateValueSV.value
-          ? translateY.value - minTranslateValueSV.value
-          : 0;
-      const percentage = ((sheetHeight - correctedValue) / sheetHeight) * 100;
-      if (percentage > 85 && percentScreenCovered > 99) {
-        const distanceFromTop = 100 - percentage;
-        return (sheetHeight / 100) * distanceFromTop;
-      }
-      return 130;
+    // How "full-screen" the sheet is, 0 -> 1, purely from geometry: the sheet
+    // card's top edge on screen equals translateY, so this ramps up smoothly over
+    // the last STATUS_BAR_REVEAL_DISTANCE px as the top reaches the status bar.
+    // Reaches 1 only for sheets tall enough to actually cover it, so no explicit
+    // "percent covered" threshold is needed. Drives the status-bar fill + the
+    // top-corner flattening.
+    const fullscreenProgress = useDerivedValue(() => {
+      if (!drawUnderStatusBar) return 0;
+      const inset = insetTopSV.value;
+      if (inset <= 0) return 0;
+      return interpolate(
+        translateY.value,
+        [inset + STATUS_BAR_REVEAL_DISTANCE, inset],
+        [0, 1],
+        Extrapolation.CLAMP,
+      );
     });
     const router = useRouter({
       routes: routes,
@@ -487,7 +490,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       actionSheetHeight.current =
         sheetHeight > rootViewHeight ? rootViewHeight : sheetHeight;
       actionSheetHeightSV.value = actionSheetHeight.current;
-      screenHeightSV.value = rootViewHeight;
 
       let initial = initialValue.current;
       let minTranslate = rootViewHeight - actionSheetHeight.current;
@@ -1603,15 +1605,44 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       };
     }, [translateY]);
 
-    const animatedUnderlayTranslateStyle = useAnimatedStyle(() => {
+    const baseTopLeftRadius =
+      (containerStyle?.borderTopLeftRadius as number) || 10;
+    const baseTopRightRadius =
+      (containerStyle?.borderTopRightRadius as number) || 10;
+
+    // Flatten the top corners as the sheet reaches full screen (iOS-style).
+    const animatedCornerStyle = useAnimatedStyle(() => {
+      const progress = fullscreenProgress.value;
       return {
-        transform: [
-          {
-            translateY: underlayTranslateY.value,
-          },
-        ],
+        borderTopLeftRadius: interpolate(
+          progress,
+          [0, 1],
+          [baseTopLeftRadius, 0],
+          Extrapolation.CLAMP,
+        ),
+        borderTopRightRadius: interpolate(
+          progress,
+          [0, 1],
+          [baseTopRightRadius, 0],
+          Extrapolation.CLAMP,
+        ),
       };
-    }, [underlayTranslateY]);
+    }, [baseTopLeftRadius, baseTopRightRadius]);
+
+    // Reveals the flat fill that continues the sheet surface up behind the status
+    // bar. It rides along with the sheet, so it's kept invisible until the sheet
+    // is almost at the top, then fades in over the last stretch — reading as the
+    // surface snapping flush to the top rather than a strip floating up.
+    const animatedStatusBarFillStyle = useAnimatedStyle(() => {
+      return {
+        opacity: interpolate(
+          fullscreenProgress.value,
+          [0.5, 1],
+          [0, 1],
+          Extrapolation.CLAMP,
+        ),
+      };
+    }, []);
 
     // Legacy web uses PanResponder (panHandlers spread on the View). Every other
     // case — the worklet path on any platform (incl. web), or the legacy native
@@ -1701,6 +1732,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               maxHeight: dimensions.height,
                             },
                             animatedActionSheetStyle,
+                            drawUnderStatusBar ? animatedCornerStyle : undefined,
                           ]}>
                           <GestureWrapper
                             {...(isPanResponderGesture
@@ -1738,23 +1770,23 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                       : insets.bottom,
                                 },
                               ]}>
-                              {drawUnderStatusBar ? (
+                              {drawUnderStatusBar && insets.top > 0 ? (
                                 <Animated.View
+                                  pointerEvents="none"
                                   style={[
                                     {
-                                      height: 130,
                                       position: 'absolute',
-                                      top: -80,
+                                      top: -insets.top,
+                                      left: 0,
+                                      right: 0,
+                                      // Overlap 1px into the sheet to avoid a
+                                      // hairline seam at the join.
+                                      height: insets.top + 1,
                                       backgroundColor:
                                         containerStyle?.backgroundColor ||
                                         'white',
-                                      width: '100%',
-                                      borderTopRightRadius:
-                                        containerStyle?.borderRadius || 10,
-                                      borderTopLeftRadius:
-                                        containerStyle?.borderRadius || 10,
                                     },
-                                    animatedUnderlayTranslateStyle,
+                                    animatedStatusBarFillStyle,
                                   ]}
                                 />
                               ) : null}
