@@ -228,6 +228,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     // These are also the source-of-truth read by the worklet gesture (Phase 3).
     const actionSheetHeightSV = useSharedValue(0);
     const minTranslateValueSV = useSharedValue(0);
+    // Container height, NOT adjusted for the keyboard — used for backdrop dimming
+    // so the fade range doesn't shift when the keyboard opens/closes.
+    const rootHeightSV = useSharedValue(0);
     const insetTopSV = useSharedValue(insets.top);
     // Sheet position/snap state mirrored from the JS refs below via dual-write
     // helpers, so worklets can read them without a JS-thread hop.
@@ -515,9 +518,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
       const sheetHeight = sheetHeightRef.current;
       const rootViewHeight = dimensionsRef.current.height;
+      rootHeightSV.value = rootViewHeight;
 
-      actionSheetHeight.current =
-        sheetHeight > rootViewHeight ? rootViewHeight : sheetHeight;
+      // Cap the sheet to the space actually available. When the keyboard is up
+      // this excludes the keyboard, so a stale (pre-keyboard, taller) measurement
+      // can't compute an above-screen position before the view re-measures.
+      const maxSheetHeight = keyboard.keyboardShown
+        ? rootViewHeight - insets.top - keyboard.keyboardHeight
+        : rootViewHeight;
+      actionSheetHeight.current = Math.min(
+        sheetHeight,
+        Math.max(0, maxSheetHeight),
+      );
       actionSheetHeightSV.value = actionSheetHeight.current;
 
       let initial = initialValue.current;
@@ -570,6 +582,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       snapPoints,
       keyboard.keyboardShown,
       keyboard.keyboardHeight,
+      insets.top,
       animationSheetOpacity,
       translateY,
       moveSheetWithAnimation,
@@ -1668,22 +1681,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const animatedOpacityStyle = useAnimatedStyle(() => {
       if (!dimBackdropOnDrag) return {opacity: opacity.value};
       const sheetHeight = actionSheetHeightSV.value;
-      const minT = minTranslateValueSV.value;
+      const rootHeight = rootHeightSV.value;
       const points = snapPointsSV.value;
-      if (sheetHeight <= 0 || points.length === 0) {
+      if (sheetHeight <= 0 || rootHeight <= 0 || points.length === 0) {
         return {opacity: opacity.value};
       }
-      const lowest = sheetHeight + minT - (sheetHeight * points[0]) / 100;
-      const closed = minT + sheetHeight;
-      const progress =
-        closed > lowest
-          ? interpolate(
-              translateY.value,
-              [lowest, closed],
-              [1, 0],
-              Extrapolation.CLAMP,
-            )
-          : 1;
+      // Fade range is keyboard-independent (uses rootHeight, not the
+      // keyboard-adjusted minTranslate): full at/above the lowest snap, fading to
+      // 0 as dragged toward the bottom. This keeps the backdrop steady when the
+      // sheet shifts up/down for the keyboard.
+      const lowest = rootHeight - (sheetHeight * points[0]) / 100;
+      const progress = interpolate(
+        translateY.value,
+        [lowest, rootHeight],
+        [1, 0],
+        Extrapolation.CLAMP,
+      );
       return {opacity: opacity.value * progress};
     }, [opacity, dimBackdropOnDrag]);
 
