@@ -76,6 +76,11 @@ import {ActionSheetProps, ActionSheetRef, CloseRequestType} from './types';
 import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Window over which layout events are coalesced before geometry is committed.
+// Long enough to absorb multi-pass layout (e.g. Android modal), short enough to
+// be invisible since the sheet is off-screen until the first commit.
+const LAYOUT_SETTLE_MS = 32;
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
     {
@@ -169,6 +174,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     });
     const dimensionsRef = useRef(dimensions);
     dimensionsRef.current = dimensions;
+    // Latest container size reported by onLayout, before it has settled. Layout
+    // events (especially two-pass Android modal layout: a smaller frame then the
+    // real one) are coalesced and only committed once they stop changing.
+    const pendingDimensionsRef = useRef(dimensions);
     const containerStyle = StyleSheet.flatten(props.containerStyle);
     const providerId = useRef(`$$-auto-${sheetId}-${currentContext}-provider`);
     providerId.current = `$$-auto-${sheetId}-${currentContext}-provider`;
@@ -454,100 +463,124 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [onChange, onChangeWorklet],
     );
 
-    const onSheetLayout = React.useCallback(
-      async (height: number) => {
-        const processLayout = () => {
-          const sheetHeight = height;
-          sheetHeightRef.current = sheetHeight;
-          if (dimensionsRef.current.height === -1) {
-            return;
-          }
-          if (closing.current) return;
-          const rootViewHeight = dimensionsRef.current?.height;
+    // Computes the sheet geometry from the *settled* container size + sheet
+    // height. Called only from the debounced scheduler below, so it never runs on
+    // a transient (e.g. first-pass Android) measurement.
+    const processLayout = React.useCallback(() => {
+      // Commit the settled container size (used by styles + close animations).
+      const pending = pendingDimensionsRef.current;
+      if (
+        pending.height >= 10 &&
+        (dimensionsRef.current.width !== pending.width ||
+          dimensionsRef.current.height !== pending.height)
+      ) {
+        dimensionsRef.current = pending;
+        setDimensions(pending);
+      }
 
-          actionSheetHeight.current =
-            sheetHeight > dimensionsRef.current.height
-              ? dimensionsRef.current.height
-              : sheetHeight;
-          actionSheetHeightSV.value = actionSheetHeight.current;
-          screenHeightSV.value = rootViewHeight;
+      if (dimensionsRef.current.height === -1) return;
+      if (closing.current) return;
 
-          let minTranslate = 0;
-          let initial = initialValue.current;
+      const sheetHeight = sheetHeightRef.current;
+      const rootViewHeight = dimensionsRef.current.height;
 
-          minTranslate = rootViewHeight - actionSheetHeight.current;
+      actionSheetHeight.current =
+        sheetHeight > rootViewHeight ? rootViewHeight : sheetHeight;
+      actionSheetHeightSV.value = actionSheetHeight.current;
+      screenHeightSV.value = rootViewHeight;
 
-          if (initial === -1) {
-            translateY.value = rootViewHeight * initialTranslateFactor;
-          }
+      let initial = initialValue.current;
+      let minTranslate = rootViewHeight - actionSheetHeight.current;
 
-          const nextInitialValue =
-            actionSheetHeight.current +
-            minTranslate -
-            (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-              100;
+      if (initial === -1) {
+        translateY.value = rootViewHeight * initialTranslateFactor;
+      }
 
-          initial =
-            (keyboard.keyboardShown || keyboardWasVisible.current) &&
-            initial <= nextInitialValue &&
-            initial >= minTranslate
-              ? initial
-              : nextInitialValue;
+      const nextInitialValue =
+        actionSheetHeight.current +
+        minTranslate -
+        (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) / 100;
 
-          const sheetBottomEdgePosition =
-            initial +
-            (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-              100;
+      initial =
+        (keyboard.keyboardShown || keyboardWasVisible.current) &&
+        initial <= nextInitialValue &&
+        initial >= minTranslate
+          ? initial
+          : nextInitialValue;
 
-          const sheetPositionWithKeyboard =
-            sheetBottomEdgePosition -
-            (dimensionsRef.current?.height - keyboard.keyboardHeight);
+      const sheetBottomEdgePosition =
+        initial +
+        (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) / 100;
 
-          initial = keyboard.keyboardShown
-            ? initial - sheetPositionWithKeyboard
-            : initial;
+      const sheetPositionWithKeyboard =
+        sheetBottomEdgePosition -
+        (rootViewHeight - keyboard.keyboardHeight);
 
-          if (keyboard.keyboardShown) {
-            minTranslate = minTranslate - keyboard.keyboardHeight;
-          }
+      initial = keyboard.keyboardShown
+        ? initial - sheetPositionWithKeyboard
+        : initial;
 
-          minTranslateValue.current = minTranslate;
-          minTranslateValueSV.value = minTranslate;
-          setInitialValue(initial);
+      if (keyboard.keyboardShown) {
+        minTranslate = minTranslate - keyboard.keyboardHeight;
+      }
 
-          animationSheetOpacity(defaultOverlayOpacity);
-          moveSheetWithAnimation(undefined, initial, minTranslate);
+      minTranslateValue.current = minTranslate;
+      minTranslateValueSV.value = minTranslate;
+      setInitialValue(initial);
 
-          if (Platform.OS === 'web') {
-            document.body.style.overflowY = 'hidden';
-            document.documentElement.style.overflowY = 'hidden';
-          }
-        };
+      animationSheetOpacity(defaultOverlayOpacity);
+      moveSheetWithAnimation(undefined, initial, minTranslate);
 
-        // Debounce layout updates to prevent jumps
-        if (Platform.OS === 'android' && !animated) {
-          if (layoutTimeoutRef.current) {
-            clearTimeout(layoutTimeoutRef.current);
-          }
-          layoutTimeoutRef.current = setTimeout(() => {
-            processLayout();
-            layoutTimeoutRef.current = null;
-          }, 32);
-          return;
-        }
+      if (Platform.OS === 'web') {
+        document.body.style.overflowY = 'hidden';
+        document.documentElement.style.overflowY = 'hidden';
+      }
+    }, [
+      snapPoints,
+      keyboard.keyboardShown,
+      keyboard.keyboardHeight,
+      animationSheetOpacity,
+      translateY,
+      moveSheetWithAnimation,
+      setInitialValue,
+      defaultOverlayOpacity,
+      initialTranslateFactor,
+    ]);
 
+    // Coalesce layout events across all sources (root container + sheet view).
+    // Geometry is committed only once the size stops changing for a short window,
+    // so a transient smaller/earlier measurement never positions the sheet. The
+    // sheet is off-screen until the first commit, so this settle is invisible.
+    const scheduleLayout = React.useCallback(() => {
+      if (layoutTimeoutRef.current) clearTimeout(layoutTimeoutRef.current);
+      layoutTimeoutRef.current = setTimeout(() => {
+        layoutTimeoutRef.current = null;
         processLayout();
+      }, LAYOUT_SETTLE_MS);
+    }, [processLayout]);
+
+    const onSheetLayout = React.useCallback(
+      (height: number) => {
+        sheetHeightRef.current = height;
+        scheduleLayout();
       },
-      [
-        animated,
-        snapPoints,
-        keyboard.keyboardShown,
-        keyboard.keyboardHeight,
-        animationSheetOpacity,
-        translateY,
-        moveSheetWithAnimation,
-      ],
+      [scheduleLayout],
     );
+
+    const onRootLayout = React.useCallback(
+      (width: number, height: number) => {
+        if (height < 10) return;
+        pendingDimensionsRef.current = {width, height};
+        scheduleLayout();
+      },
+      [scheduleLayout],
+    );
+
+    useEffect(() => {
+      return () => {
+        if (layoutTimeoutRef.current) clearTimeout(layoutTimeoutRef.current);
+      };
+    }, []);
 
     // Recompute the sheet position when the keyboard shows/hides. Previously this
     // was forced with a `marginTop: 0.5` style toggle that triggered a layout
@@ -555,7 +588,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     useEffect(() => {
       if (!visibleRef.current.value) return;
       if (!sheetHeightRef.current) return;
-      onSheetLayout(sheetHeightRef.current);
+      scheduleLayout();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [keyboard.keyboardShown, keyboard.keyboardHeight]);
 
@@ -1601,11 +1634,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
                     onLayout={event => {
-                      if (event.nativeEvent.layout.height < 10) return;
-                      setDimensions({
-                        width: event.nativeEvent.layout.width,
-                        height: event.nativeEvent.layout.height,
-                      });
+                      onRootLayout(
+                        event.nativeEvent.layout.width,
+                        event.nativeEvent.layout.height,
+                      );
                     }}
                     ref={rootViewContainerRef}
                     pointerEvents={
