@@ -626,13 +626,35 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       };
     }, []);
 
-    // Recompute the sheet position when the keyboard shows/hides. Previously this
-    // was forced with a `marginTop: 0.5` style toggle that triggered a layout
-    // pass; now we recompute directly from the last measured sheet height.
+    // Recompute the sheet position when the keyboard shows/hides. The sheet's
+    // paddingBottom / maxHeight change with the keyboard, so the last onLayout
+    // height can lag the new keyboard state; repositioning from a stale (still
+    // bottom-padded) height would align the padded edge to the keyboard instead
+    // of the content edge. Measure the sheet fresh (after the re-layout has
+    // committed) and reposition from that.
     useEffect(() => {
-      if (!visibleRef.current.value) return;
-      if (!sheetHeightRef.current) return;
-      scheduleLayout();
+      if (!visibleRef.current.value) return undefined;
+      const raf = requestAnimationFrame(() => {
+        const node = panViewRef.current as unknown as {
+          measure?: (
+            cb: (
+              x: number,
+              y: number,
+              w: number,
+              h: number,
+            ) => void,
+          ) => void;
+        } | null;
+        if (node?.measure) {
+          node.measure((_x, _y, _w, h) => {
+            if (h > 0) sheetHeightRef.current = h;
+            scheduleLayout();
+          });
+        } else {
+          scheduleLayout();
+        }
+      });
+      return () => cancelAnimationFrame(raf);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [keyboard.keyboardShown, keyboard.keyboardHeight]);
 
