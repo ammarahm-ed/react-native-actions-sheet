@@ -1,5 +1,5 @@
 import {createContext, createRef, RefObject, useContext} from 'react';
-import type {SharedValue} from 'react-native-reanimated';
+import type {AnimatedRef, SharedValue} from 'react-native-reanimated';
 import {actionSheetEventManager} from './eventmanager';
 
 export type ContentSize = {w: number; h: number};
@@ -42,11 +42,34 @@ export const DraggableNodesContext = createContext<DraggableNodes>({
 export const useDraggableNodesContext = () => useContext(DraggableNodesContext);
 
 /**
- * Sheet-level shared values shared with scrollables when the experimental
- * worklet gesture engine is enabled. Everything here is either a plain value or
- * a shared value so it can be read/written from worklets without a JS-thread
- * hop. Scrollables feed `scrollY`/`scrollableActive` and self-lock using their
- * own animated ref based on `translateY`/`minTranslateValue`.
+ * A region inside the sheet that participates in gesture arbitration when the
+ * worklet gesture engine is enabled. The pan gesture measures each region's
+ * `animatedRef` at gesture start (on the UI thread) to find which one is under
+ * the finger, so multiple scrollables — and gesture-blocking regions — can be
+ * arbitrated correctly at the same time.
+ *
+ * - `kind: 'scroll'` — a scrollable. Feeds its own `scrollY` and self-locks via
+ *   its `animatedRef`. `hasRefreshControl`/`refreshControlBoundary` enable the
+ *   pull-to-refresh handoff.
+ * - `kind: 'ignore'` — a region that swallows the sheet's drag: gestures inside
+ *   its bounds never move the sheet.
+ */
+export type GestureRegionKind = 'scroll' | 'ignore';
+
+export type GestureRegion = {
+  id: number;
+  kind: GestureRegionKind;
+  animatedRef: AnimatedRef<any>;
+  scrollY?: SharedValue<number>;
+  hasRefreshControl?: boolean;
+  refreshControlBoundary?: number;
+};
+
+/**
+ * Sheet-level context shared with scrollables and gesture-blocking regions when
+ * the worklet gesture engine is enabled. The shared values let a scrollable
+ * self-lock on the UI thread; `register` adds a region to the sheet's gesture
+ * arbitration registry and returns a cleanup function.
  */
 export type WorkletScrollContextType = {
   /** Whether the worklet gesture engine is active for this sheet. */
@@ -59,17 +82,14 @@ export type WorkletScrollContextType = {
   minTranslateValue: SharedValue<number>;
   /** True while a pull-to-refresh interaction is in progress. */
   isRefreshing: SharedValue<boolean>;
-  /** Current content offset of the active scrollable. */
-  scrollY: SharedValue<number>;
-  /** True while the finger is on a registered scrollable. */
-  scrollableActive: SharedValue<boolean>;
-  /** Whether the active scrollable has a RefreshControl. */
-  activeHasRefresh: SharedValue<boolean>;
-  /** Absolute Y below which a downward pull triggers pull-to-refresh. */
-  activeRefreshBoundaryY: SharedValue<number>;
+  /** Register a gesture region; returns an unregister cleanup. */
+  register: (region: GestureRegion) => () => void;
 };
 
 export const WorkletScrollContext =
   createContext<WorkletScrollContextType | null>(null);
 
 export const useWorkletScrollContext = () => useContext(WorkletScrollContext);
+
+let regionIdCounter = 0;
+export const nextRegionId = () => ++regionIdCounter;

@@ -25,7 +25,12 @@ export {
   CloseRequestType,
 } from './src/types';
 export {useScrollHandlers} from './src/hooks/use-scroll-handlers';
-export {useSheetScrollable} from './src/hooks/use-worklet-scrollable';
+export {
+  useSheetScrollable,
+  useSheetGestureRegion,
+} from './src/hooks/use-worklet-scrollable';
+export {SheetGestureBlocker} from './src/views/SheetGestureBlocker';
+export type {SheetGestureBlockerProps} from './src/views/SheetGestureBlocker';
 export {
   useSheetRouter,
   useSheetRouteParams,

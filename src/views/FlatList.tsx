@@ -1,12 +1,7 @@
-/* eslint-disable curly */
-import React, {RefObject, useImperativeHandle} from 'react';
+import React from 'react';
 import {FlatList as RNGHFlatList} from 'react-native-gesture-handler';
-import Animated from 'react-native-reanimated';
 import {FlatListProps} from 'react-native';
-import {useScrollHandlers} from '../hooks/use-scroll-handlers';
-import {useSheetScrollable} from '../hooks/use-worklet-scrollable';
-
-const AnimatedRNGHFlatList = Animated.createAnimatedComponent(RNGHFlatList);
+import {createSheetScrollable} from './create-sheet-scrollable';
 
 type Props<T = any> = FlatListProps<T> &
   React.RefAttributes<RNGHFlatList> & {
@@ -18,53 +13,11 @@ type Props<T = any> = FlatListProps<T> &
     refreshControlGestureArea?: number;
   };
 
-function $FlatList<T>(props: Props<T>, ref: RefObject<RNGHFlatList>) {
-  const options = {
-    hasRefreshControl: !!props.refreshControl,
-    refreshControlBoundary: props.refreshControlGestureArea || 0.15,
-  };
-  const handlers = useScrollHandlers<any>(options);
-  const worklet = useSheetScrollable(options, props.onScroll ?? undefined);
-  useImperativeHandle(ref, () =>
-    worklet.enabled ? worklet.ref.current : handlers.ref.current,
-  );
-
-  if (worklet.enabled) {
-    return (
-      <AnimatedRNGHFlatList
-        {...props}
-        ref={worklet.ref}
-        simultaneousHandlers={worklet.simultaneousHandlers}
-        scrollEventThrottle={worklet.scrollEventThrottle}
-        onScroll={worklet.onScroll}
-        onTouchStart={event => {
-          worklet.onTouchStart();
-          props.onTouchStart?.(event);
-        }}
-        bounces={false}
-      />
-    );
-  }
-
-  return (
-    <RNGHFlatList
-      {...props}
-      ref={handlers.ref}
-      simultaneousHandlers={handlers.simultaneousHandlers}
-      scrollEventThrottle={handlers.scrollEventThrottle}
-      onScroll={event => {
-        handlers.onScroll(event);
-        props.onScroll?.(event);
-      }}
-      onLayout={event => {
-        handlers.onLayout();
-        props.onLayout?.(event);
-      }}
-      bounces={false}
-    />
-  );
-}
-
-export const FlatList = React.forwardRef($FlatList) as <T = any>(
-  props: Props<T> & {ref?: React.Ref<RNGHFlatList>},
-) => React.ReactElement;
+/**
+ * A FlatList that cooperates with the ActionSheet's drag gesture. Use it in
+ * place of the React Native / gesture-handler FlatList for scrollable content
+ * inside a sheet.
+ */
+export const FlatList = createSheetScrollable<
+  <T = any>(props: Props<T>) => React.ReactElement
+>(RNGHFlatList as any, 'SheetFlatList');

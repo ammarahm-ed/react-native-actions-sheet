@@ -31,6 +31,7 @@ import {
 } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
+  measure,
   runOnJS,
   useAnimatedReaction,
   useAnimatedStyle,
@@ -43,6 +44,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   DraggableNodes,
   DraggableNodesContext,
+  GestureRegion,
   LayoutRect,
   NodesRef,
   PanGestureRefContext,
@@ -212,13 +214,24 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const keyboardHeightSV = useSharedValue(0);
     const keyboardShownSV = useSharedValue(false);
     const snapPointsSV = useSharedValue<number[]>(snapPoints);
-    // Worklet scroll-arbitration state (experimentalWorkletGestures). Fed by the
-    // sheet's scrollables so the pan gesture worklet can decide drag-vs-scroll.
+    // Worklet scroll-arbitration state (experimentalWorkletGestures).
     const isRefreshingSV = useSharedValue(false);
-    const scrollableOffsetY = useSharedValue(0);
-    const scrollableActiveSV = useSharedValue(false);
-    const activeHasRefreshSV = useSharedValue(false);
-    const activeRefreshBoundaryYSV = useSharedValue(0);
+    // Registry of gesture regions (scrollables + gesture-blocking views). The
+    // worklet pan gesture measures these at gesture start to decide, per finger,
+    // whether to drag the sheet, hand off to a scrollable, or stay put.
+    const gestureRegions = useRef<GestureRegion[]>([]);
+    const [registryVersion, setRegistryVersion] = useState(0);
+    const registerRegion = useCallback((region: GestureRegion) => {
+      gestureRegions.current.push(region);
+      setRegistryVersion(v => v + 1);
+      return () => {
+        const index = gestureRegions.current.findIndex(
+          r => r.id === region.id,
+        );
+        if (index > -1) gestureRegions.current.splice(index, 1);
+        setRegistryVersion(v => v + 1);
+      };
+    }, []);
 
     // Keeps a ref and its mirror shared value in sync in one place.
     const setInitialValue = React.useCallback(
@@ -1089,9 +1102,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             .onEnd(onEnd);
     }, [gestureEnabled]);
 
-    // Experimental: fully worklet-driven pan gesture. Per-frame drag and
-    // scroll<->drag arbitration run on the UI thread; only the snap decision at
-    // release hops to JS (once) via handleGestureEnd.
+    // Fully worklet-driven pan gesture. Per-frame drag and scroll<->drag
+    // arbitration run on the UI thread; only the snap decision at release hops
+    // to JS (once) via handleGestureEnd.
+    //
+    // On gesture start it measures every registered region to find, on the UI
+    // thread, which scrollable (or gesture-blocking region) is under the finger,
+    // so multiple scrollables are arbitrated correctly at the same time.
     const workletPanGesture = React.useMemo(() => {
       const overdrawFactorC = overdrawFactor;
       const overdrawSizeC = overdrawSize;
@@ -1099,28 +1116,74 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       const closableC = closable;
       const disableBeyondC = disableDragBeyondMinimumSnapPoint;
       const enableInScrollC = enableGesturesInScrollView;
-      const ctx = {deltaYOnStart: 0};
+      // Snapshot of the registry captured for this gesture instance. The memo
+      // rebuilds whenever registryVersion changes so this stays current.
+      const regions = gestureRegions.current.slice();
+      // activeKind: 0 = none/sheet, 1 = scrollable, 2 = gesture-blocking region.
+      const ctx = {
+        deltaYOnStart: 0,
+        activeKind: 0,
+        activeIndex: -1,
+        hasRefresh: false,
+        refreshBoundaryY: 0,
+      };
 
       return Gesture.Pan()
         .withRef(panGestureRef)
-        .onBegin(() => {
+        .onBegin(event => {
           'worklet';
           ctx.deltaYOnStart = 0;
+          ctx.activeKind = 0;
+          ctx.activeIndex = -1;
+          ctx.hasRefresh = false;
+          ctx.refreshBoundaryY = 0;
+
+          let bestScrollIndex = -1;
+          let bestScrollArea = Number.MAX_VALUE;
+          for (let i = 0; i < regions.length; i++) {
+            const region = regions[i];
+            const m = measure(region.animatedRef);
+            if (!m) continue;
+            const inside =
+              event.absoluteX >= m.pageX &&
+              event.absoluteX <= m.pageX + m.width &&
+              event.absoluteY >= m.pageY &&
+              event.absoluteY <= m.pageY + m.height;
+            if (!inside) continue;
+            if (region.kind === 'ignore') {
+              // A gesture-blocking region always wins — the sheet stays put.
+              ctx.activeKind = 2;
+              return;
+            }
+            // Prefer the smallest matching scrollable (most specific / innermost).
+            const area = m.width * m.height;
+            if (area < bestScrollArea) {
+              bestScrollArea = area;
+              bestScrollIndex = i;
+              ctx.hasRefresh = !!region.hasRefreshControl;
+              ctx.refreshBoundaryY =
+                m.pageY + m.height * (region.refreshControlBoundary ?? 0.15);
+            }
+          }
+          if (bestScrollIndex > -1) {
+            ctx.activeKind = 1;
+            ctx.activeIndex = bestScrollIndex;
+          }
         })
         .onChange(event => {
           'worklet';
           if (!gestureEnabled) return;
+          // Gesture-blocking region: never move the sheet.
+          if (ctx.activeKind === 2) return;
+
           const swipingDown = event.changeY > 0;
           const minTranslate = minTranslateValueSV.value;
           const fullOpen = translateY.value <= minTranslate + 5;
 
           let block = false;
-          if (
-            enableInScrollC &&
-            scrollableActiveSV.value &&
-            !isRefreshingSV.value
-          ) {
-            const nodeScrolling = scrollableOffsetY.value > 0;
+          if (ctx.activeKind === 1 && enableInScrollC && !isRefreshingSV.value) {
+            const region = regions[ctx.activeIndex];
+            const nodeScrolling = (region?.scrollY?.value ?? 0) > 0;
             // Case 2: fully open + swiping up while list has room -> let it scroll.
             if (fullOpen && !swipingDown) {
               block = true;
@@ -1135,8 +1198,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               fullOpen &&
               swipingDown &&
               !nodeScrolling &&
-              activeHasRefreshSV.value &&
-              event.absoluteY < activeRefreshBoundaryYSV.value
+              ctx.hasRefresh &&
+              event.absoluteY < ctx.refreshBoundaryY
             ) {
               isRefreshingSV.value = true;
               block = true;
@@ -1145,7 +1208,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               // Re-baseline so the eventual handoff to sheet-drag is seamless.
               ctx.deltaYOnStart = event.translationY;
             }
-          } else if (!enableInScrollC && scrollableActiveSV.value) {
+          } else if (ctx.activeKind === 1 && !enableInScrollC) {
             block = true;
           }
 
@@ -1184,11 +1247,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           if (!gestureEnabled) return;
           ctx.deltaYOnStart = 0;
           isRefreshingSV.value = false;
+          if (ctx.activeKind === 2) return;
           runOnJS(handleGestureEnd)(event.velocityY);
-        })
-        .onFinalize(() => {
-          'worklet';
-          scrollableActiveSV.value = false;
         })
         .activeOffsetY([-5, 5])
         .failOffsetX([-5, 5]);
@@ -1201,6 +1261,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       disableDragBeyondMinimumSnapPoint,
       enableGesturesInScrollView,
       handleGestureEnd,
+      registryVersion,
     ]);
 
     // Worklet gesture engine is the default on every platform. `legacyGestures`
@@ -1217,12 +1278,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         translateY,
         minTranslateValue: minTranslateValueSV,
         isRefreshing: isRefreshingSV,
-        scrollY: scrollableOffsetY,
-        scrollableActive: scrollableActiveSV,
-        activeHasRefresh: activeHasRefreshSV,
-        activeRefreshBoundaryY: activeRefreshBoundaryYSV,
+        register: registerRegion,
       }),
-      [useWorkletGestures, gestureEnabled, enableGesturesInScrollView],
+      [
+        useWorkletGestures,
+        gestureEnabled,
+        enableGesturesInScrollView,
+        registerRegion,
+      ],
     );
 
     const onTouch = (event: GestureResponderEvent) => {

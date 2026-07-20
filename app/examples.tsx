@@ -182,6 +182,12 @@ const MainScreen = () => {
         SheetManager.show('custom-scroll-handlers');
       },
     },
+    {
+      title: 'Multi-scroll & gesture blocking',
+      onOpen: () => {
+        SheetManager.show('multi-scroll');
+      },
+    },
   ];
 
   return (
