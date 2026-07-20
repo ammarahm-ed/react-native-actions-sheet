@@ -267,6 +267,16 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   defaultOverlayOpacity?: number;
 
   /**
+   * Fade the backdrop out progressively as the sheet is dragged down below its
+   * lowest snap point toward dismissal (native feel). The backdrop stays fully
+   * opaque at every snap point. Set to `false` to keep a constant backdrop while
+   * dragging.
+   *
+   * @default true
+   */
+  dimBackdropOnDrag?: boolean;
+
+  /**
    * Enables gesture control of ActionSheet.
    *
    * Default: `false`

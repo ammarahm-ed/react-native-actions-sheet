@@ -101,6 +101,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       elevation = 5,
       disableElevation = false,
       defaultOverlayOpacity = 0.3,
+      dimBackdropOnDrag = true,
       overlayColor = 'black',
       closable = true,
       closeOnTouchBackdrop = true,
@@ -1607,11 +1608,31 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [internalEventManager],
     );
 
+    // Backdrop opacity follows the sheet: full at any snap point, fading toward 0
+    // only as the sheet is dragged below the lowest snap toward dismissal. The
+    // `opacity` envelope still drives the open/close fade; this multiplies it by a
+    // drag-progress factor.
     const animatedOpacityStyle = useAnimatedStyle(() => {
-      return {
-        opacity: opacity.value,
-      };
-    }, [opacity]);
+      if (!dimBackdropOnDrag) return {opacity: opacity.value};
+      const sheetHeight = actionSheetHeightSV.value;
+      const minT = minTranslateValueSV.value;
+      const points = snapPointsSV.value;
+      if (sheetHeight <= 0 || points.length === 0) {
+        return {opacity: opacity.value};
+      }
+      const lowest = sheetHeight + minT - (sheetHeight * points[0]) / 100;
+      const closed = minT + sheetHeight;
+      const progress =
+        closed > lowest
+          ? interpolate(
+              translateY.value,
+              [lowest, closed],
+              [1, 0],
+              Extrapolation.CLAMP,
+            )
+          : 1;
+      return {opacity: opacity.value * progress};
+    }, [opacity, dimBackdropOnDrag]);
 
     const animatedActionSheetStyle = useAnimatedStyle(() => {
       return {
