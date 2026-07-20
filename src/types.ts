@@ -404,6 +404,24 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   backdropProps?: Partial<PressableProps>;
 
   /**
+   * Accessibility labels for built-in sheet controls (screen readers).
+   */
+  accessibilityLabels?: {
+    /**
+     * Label for the backdrop button (activating it closes the sheet).
+     * @default "Close"
+     */
+    backdrop?: string;
+    /**
+     * Label for the drag handle / grabber. When there are multiple snap points it
+     * is exposed as an "adjustable" element so screen-reader users can swipe up or
+     * down to change the sheet's position.
+     * @default "Sheet position"
+     */
+    grabber?: string;
+  };
+
+  /**
    * Default safeArea insets provided through a library such as
    * react-native-safe-area-insets. This also helps in giving a tiny boost
    * in performance as the sheet does not have to calculate insets anymore.

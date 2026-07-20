@@ -9,6 +9,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  AccessibilityActionEvent,
   BackHandler,
   Dimensions,
   GestureResponderEvent,
@@ -1423,6 +1424,34 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       }
     };
 
+    // Screen-reader "adjustable" actions on the grabber: swipe up/down to move
+    // between snap points.
+    const onGrabberAccessibilityAction = React.useCallback(
+      (event: AccessibilityActionEvent) => {
+        if (event.nativeEvent.actionName === 'increment') {
+          snapForward(1, false);
+        } else if (event.nativeEvent.actionName === 'decrement') {
+          snapBackward(1, false);
+        }
+      },
+      [snapForward, snapBackward],
+    );
+
+    const grabberAccessibilityProps =
+      gestureEnabled && snapPoints.length > 1
+        ? {
+            accessible: true,
+            accessibilityRole: 'adjustable' as const,
+            accessibilityLabel:
+              props.accessibilityLabels?.grabber ?? 'Sheet position',
+            accessibilityActions: [
+              {name: 'increment'},
+              {name: 'decrement'},
+            ],
+            onAccessibilityAction: onGrabberAccessibilityAction,
+          }
+        : undefined;
+
     const getRef = useCallback(
       (): ActionSheetRef => ({
         show: (snapIndex?: number) => {
@@ -1750,6 +1779,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         <AnimatedPressable
                           onPress={onTouch}
                           testID={props.testIDs?.backdrop}
+                          // Expose the backdrop as a close button to screen
+                          // readers only when tapping it actually closes.
+                          accessible={closeOnTouchBackdrop && closable}
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            props.accessibilityLabels?.backdrop ?? 'Close'
+                          }
                           style={[
                             {
                               height: dimensions.height + insets.top + 100,
@@ -1767,6 +1803,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       Platform.OS === 'web' ? null : (
                         <Animated.View
                           pointerEvents="box-none"
+                          // Treat the sheet as modal for screen readers and let
+                          // the VoiceOver/TalkBack escape gesture dismiss it.
+                          accessibilityViewIsModal={
+                            isModal && !props?.backgroundInteractionEnabled
+                          }
+                          onAccessibilityEscape={onModalRequestClose}
                           style={[
                             {
                               borderTopRightRadius:
@@ -1859,6 +1901,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                   props.CustomHeaderComponent
                                 ) : (
                                   <Animated.View
+                                    {...grabberAccessibilityProps}
                                     style={[
                                       styles.indicator,
                                       props.indicatorStyle,
