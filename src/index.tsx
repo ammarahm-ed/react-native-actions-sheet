@@ -50,6 +50,8 @@ import {
   LayoutRect,
   NodesRef,
   PanGestureRefContext,
+  SheetPosition,
+  SheetPositionContext,
   WorkletScrollContext,
   WorkletScrollContextType,
 } from './context';
@@ -294,6 +296,27 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         Extrapolation.CLAMP,
       );
     });
+    // Normalized openness (0 closed -> 1 fully open) exposed via useSheetPosition.
+    const sheetProgress = useDerivedValue(() => {
+      const sheetHeight = actionSheetHeightSV.value;
+      if (sheetHeight <= 0) return 0;
+      const minT = minTranslateValueSV.value;
+      return interpolate(
+        translateY.value,
+        [minT + sheetHeight, minT],
+        [0, 1],
+        Extrapolation.CLAMP,
+      );
+    });
+    const sheetPosition = React.useMemo<SheetPosition>(
+      () => ({
+        y: translateY,
+        height: actionSheetHeightSV,
+        progress: sheetProgress,
+      }),
+      [translateY, actionSheetHeightSV, sheetProgress],
+    );
+
     const router = useRouter({
       routes: routes,
       getRef: () => getRef(),
@@ -1701,6 +1724,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
               }>
               <PanGestureRefContext.Provider value={context}>
+                <SheetPositionContext.Provider value={sheetPosition}>
                 <WorkletScrollContext.Provider value={workletScrollContext}>
                   <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
@@ -1880,6 +1904,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                   </Animated.View>
                   </DraggableNodesContext.Provider>
                 </WorkletScrollContext.Provider>
+                </SheetPositionContext.Provider>
               </PanGestureRefContext.Provider>
             </GestureHandlerRoot>
           </Root>

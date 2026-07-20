@@ -93,3 +93,31 @@ export const useWorkletScrollContext = () => useContext(WorkletScrollContext);
 
 let regionIdCounter = 0;
 export const nextRegionId = () => ++regionIdCounter;
+
+/**
+ * Live animated position of the sheet, exposed to descendants so they can drive
+ * their own UI-thread animations (parallax headers, collapsing titles, synced
+ * backgrounds) off the sheet's motion.
+ */
+export type SheetPosition = {
+  /** Raw translateY of the sheet in px (top of its container == 0). */
+  y: SharedValue<number>;
+  /** Measured sheet height in px. */
+  height: SharedValue<number>;
+  /** 0 = fully closed / off-screen, 1 = fully open. */
+  progress: SharedValue<number>;
+};
+
+export const SheetPositionContext = createContext<SheetPosition | null>(null);
+
+/**
+ * Returns the sheet's live animated position as shared values. Use inside the
+ * content of an ActionSheet to animate companion UI in sync with the sheet.
+ */
+export function useSheetPosition(): SheetPosition {
+  const context = useContext(SheetPositionContext);
+  if (!context) {
+    throw new Error('useSheetPosition must be used inside an ActionSheet.');
+  }
+  return context;
+}

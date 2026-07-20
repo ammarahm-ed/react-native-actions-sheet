@@ -31,6 +31,8 @@ export {
 } from './src/hooks/use-worklet-scrollable';
 export {SheetGestureBlocker} from './src/views/SheetGestureBlocker';
 export type {SheetGestureBlockerProps} from './src/views/SheetGestureBlocker';
+export {useSheetPosition} from './src/context';
+export type {SheetPosition} from './src/context';
 export {
   useSheetRouter,
   useSheetRouteParams,
