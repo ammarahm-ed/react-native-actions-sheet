@@ -32,8 +32,9 @@ import {
 import Animated, {
   Easing,
   runOnJS,
-  runOnUI,
+  useAnimatedReaction,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withSpring,
   withTiming,
@@ -45,6 +46,8 @@ import {
   LayoutRect,
   NodesRef,
   PanGestureRefContext,
+  WorkletScrollContext,
+  WorkletScrollContextType,
 } from './context';
 import EventManager, {actionSheetEventManager} from './eventmanager';
 import {useAccessibility} from './hooks/use-accessibility';
@@ -87,7 +90,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       drawUnderStatusBar = false,
       gestureEnabled = false,
       isModal = true,
-      snapPoints = [100],
+      snapPoints: snapPointsProp = [100],
       initialSnapIndex = 0,
       overdrawEnabled = true,
       overdrawFactor = 15,
@@ -102,6 +105,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       enableRouterBackNavigation,
       onBeforeClose,
       enableGesturesInScrollView = true,
+      experimentalWorkletGestures = false,
       disableDragBeyondMinimumSnapPoint,
       useBottomSafeAreaPadding = true,
       initialTranslateFactor = 1.1,
@@ -116,10 +120,16 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     },
     ref,
   ) {
-    snapPoints =
-      snapPoints[snapPoints.length - 1] !== 100
-        ? [...snapPoints, 100]
-        : snapPoints;
+    const snapPoints = React.useMemo(
+      () =>
+        snapPointsProp[snapPointsProp.length - 1] !== 100
+          ? [...snapPointsProp, 100]
+          : snapPointsProp,
+      // Stabilize identity across renders so dependent callbacks are not recreated
+      // when the parent passes an inline snapPoints array.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [snapPointsProp.join(',')],
+    );
     const initialValue = useRef(-1);
     const actionSheetHeight = useRef(0);
     const insets = useSafeAreaInsets();
@@ -131,7 +141,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const sheetHeightRef = useRef(0);
     const minTranslateValue = useRef(0);
     const keyboardWasVisible = useRef(false);
-    const animationListenerId = 266786;
     const id = useSheetIDContext();
     const sheetId = props.id || id;
     const panViewRef = useRef<View>(null);
@@ -169,7 +178,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       onBeforeShow: (data, snapIndex) => {
         routerRef.current?.initialNavigation();
         if (snapIndex !== undefined) {
-          currentSnapIndex.current = snapIndex;
+          setCurrentSnapIndex(snapIndex);
         }
         onBeforeShow?.(data as never);
       },
@@ -186,8 +195,71 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const opacity = useSharedValue(0);
     const actionSheetOpacity = useSharedValue(0);
     const translateY = useSharedValue(Dimensions.get('window').height * 2);
-    const underlayTranslateY = useSharedValue(130);
     const routeOpacity = useSharedValue(0);
+
+    // Geometry mirrored into shared values so the underlay and onChange position
+    // math can run entirely on the UI thread (no per-frame JS bridge hop).
+    // These are also the source-of-truth read by the worklet gesture (Phase 3).
+    const actionSheetHeightSV = useSharedValue(0);
+    const minTranslateValueSV = useSharedValue(0);
+    const screenHeightSV = useSharedValue(0);
+    const insetTopSV = useSharedValue(insets.top);
+    // Sheet position/snap state mirrored from the JS refs below via dual-write
+    // helpers, so worklets can read them without a JS-thread hop.
+    const initialValueSV = useSharedValue(-1);
+    const currentSnapIndexSV = useSharedValue(initialSnapIndex);
+    const keyboardHeightSV = useSharedValue(0);
+    const keyboardShownSV = useSharedValue(false);
+    const snapPointsSV = useSharedValue<number[]>(snapPoints);
+    // Worklet scroll-arbitration state (experimentalWorkletGestures). Fed by the
+    // sheet's scrollables so the pan gesture worklet can decide drag-vs-scroll.
+    const isRefreshingSV = useSharedValue(false);
+    const scrollableOffsetY = useSharedValue(0);
+    const scrollableActiveSV = useSharedValue(false);
+
+    // Keeps a ref and its mirror shared value in sync in one place.
+    const setInitialValue = React.useCallback(
+      (value: number) => {
+        initialValue.current = value;
+        initialValueSV.value = value;
+      },
+      [initialValueSV],
+    );
+    const setCurrentSnapIndex = React.useCallback(
+      (value: number) => {
+        currentSnapIndex.current = value;
+        currentSnapIndexSV.value = value;
+      },
+      [currentSnapIndexSV],
+    );
+
+    useEffect(() => {
+      insetTopSV.value = insets.top;
+    }, [insetTopSV, insets.top]);
+
+    useEffect(() => {
+      snapPointsSV.value = snapPoints;
+    }, [snapPoints, snapPointsSV]);
+
+    // Drives the status-bar underlay purely on the UI thread. Replaces the old
+    // translateY.addListener -> runOnJS bridge that recomputed this every frame.
+    const underlayTranslateY = useDerivedValue(() => {
+      if (!drawUnderStatusBar) return 130;
+      const sheetHeight = actionSheetHeightSV.value;
+      if (sheetHeight <= 0) return 130;
+      const percentScreenCovered =
+        (sheetHeight / (screenHeightSV.value - insetTopSV.value)) * 100;
+      const correctedValue =
+        translateY.value > minTranslateValueSV.value
+          ? translateY.value - minTranslateValueSV.value
+          : 0;
+      const percentage = ((sheetHeight - correctedValue) / sheetHeight) * 100;
+      if (percentage > 85 && percentScreenCovered > 99) {
+        const distanceFromTop = 100 - percentage;
+        return (sheetHeight / 100) * distanceFromTop;
+      }
+      return 130;
+    });
     const router = useRouter({
       routes: routes,
       getRef: () => getRef(),
@@ -200,6 +272,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     returnValueRef.current = returnValue;
     routerRef.current = router;
     const keyboard = useKeyboard(keyboardHandlerEnabled);
+    useEffect(() => {
+      keyboardShownSV.value = keyboard.keyboardShown;
+      keyboardHeightSV.value = keyboard.keyboardHeight;
+    }, [
+      keyboard.keyboardShown,
+      keyboard.keyboardHeight,
+      keyboardShownSV,
+      keyboardHeightSV,
+    ]);
     const prevSnapIndex = useRef<number>(initialSnapIndex);
     const draggableNodesContext: DraggableNodes = React.useMemo(
       () => ({
@@ -287,9 +368,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               easing: Easing.in(Easing.ease),
             },
             finished => {
+              'worklet';
               if (finished) {
                 translateY.value = endTranslateValue;
               }
+              // Fire onClose exactly when the animation settles (drift-free,
+              // even when the JS thread is busy) instead of via setTimeout.
+              if (callback) runOnJS(callback)();
             },
           );
         } else {
@@ -299,14 +384,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
               duration: 200,
             },
+            () => {
+              'worklet';
+              if (callback) runOnJS(callback)();
+            },
           );
         }
-
-        /**
-         * Using setTimeout to ensure onClose is triggered when sheet is off screen
-         * or is close to reaching off screen.
-         */
-        setTimeout(() => callback(), config?.duration || 200);
       },
       [animated, animationSheetOpacity, props.closeAnimationConfig, setVisible],
     );
@@ -332,60 +415,28 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const Root: React.ElementType =
       isModal && !props?.backgroundInteractionEnabled ? Modal : Animated.View;
 
-    useEffect(() => {
-      if (drawUnderStatusBar || props.onChange) {
-        let prevPercentage = 0;
-        const onValueChange = (value: number) => {
-          const correctedValue =
-            value > minTranslateValue.current
-              ? value - minTranslateValue.current
-              : 0;
-
-          const percentage =
-            ((actionSheetHeight.current - correctedValue) /
-              actionSheetHeight.current) *
-            100;
-
-          const rounded = Math.round(percentage);
-          if (rounded !== prevPercentage && rounded > -1) {
-            prevPercentage = rounded;
-            props.onChange?.(Math.round(percentage));
-          }
-
-          const percentScreenCovered =
-            (actionSheetHeight.current /
-              (dimensionsRef.current.height - insets.top)) *
-            100;
-          if (drawUnderStatusBar) {
-            if (percentage > 85 && percentScreenCovered > 99) {
-              var distanceFromTop = 100 - percentage;
-              underlayTranslateY.value = Math.max(
-                (actionSheetHeight.current / 100) * distanceFromTop,
-              );
-            } else {
-              underlayTranslateY.value = 130;
-            }
-          } else {
-            underlayTranslateY.value = 130;
-          }
-        };
-        runOnUI(() => {
-          translateY.addListener(animationListenerId, value => {
-            runOnJS(onValueChange)(value);
-          });
-        })();
-      }
-      return () => {
-        runOnUI((animationListener: number) => {
-          translateY.removeListener(animationListener);
-        })(animationListenerId);
-      };
-    }, [
-      props?.id,
-      keyboard.keyboardShown,
-      keyboard.keyboardHeight,
-      dimensions,
-    ]);
+    const onChange = props.onChange;
+    const onChangeWorklet = props.onChangeWorklet;
+    // Computes the visible percentage on the UI thread and only hops to JS when
+    // the rounded integer changes. Replaces the per-frame translateY.addListener
+    // -> runOnJS bridge.
+    useAnimatedReaction(
+      () => {
+        const sheetHeight = actionSheetHeightSV.value;
+        if (sheetHeight <= 0) return -1;
+        const correctedValue =
+          translateY.value > minTranslateValueSV.value
+            ? translateY.value - minTranslateValueSV.value
+            : 0;
+        return Math.round(((sheetHeight - correctedValue) / sheetHeight) * 100);
+      },
+      (rounded, previous) => {
+        if (rounded < 0 || rounded === previous) return;
+        onChangeWorklet?.(rounded);
+        if (onChange) runOnJS(onChange)(rounded);
+      },
+      [onChange, onChangeWorklet],
+    );
 
     const onSheetLayout = React.useCallback(
       async (height: number) => {
@@ -402,6 +453,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             sheetHeight > dimensionsRef.current.height
               ? dimensionsRef.current.height
               : sheetHeight;
+          actionSheetHeightSV.value = actionSheetHeight.current;
+          screenHeightSV.value = rootViewHeight;
 
           let minTranslate = 0;
           let initial = initialValue.current;
@@ -443,14 +496,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }
 
           minTranslateValue.current = minTranslate;
-          initialValue.current = initial;
+          minTranslateValueSV.value = minTranslate;
+          setInitialValue(initial);
 
           animationSheetOpacity(defaultOverlayOpacity);
           moveSheetWithAnimation(undefined, initial, minTranslate);
 
-          if (initial > 130) {
-            underlayTranslateY.value = 130;
-          }
           if (Platform.OS === 'web') {
             document.body.style.overflowY = 'hidden';
             document.documentElement.style.overflowY = 'hidden';
@@ -478,7 +529,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         keyboard.keyboardHeight,
         animationSheetOpacity,
         translateY,
-        underlayTranslateY,
         moveSheetWithAnimation,
       ],
     );
@@ -502,7 +552,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if ((!closable || !closeRequestResult) && !isSheetManagerOrRef) {
           const next = getNextPosition(currentSnapIndex.current);
           moveSheetWithAnimation(vy, next, undefined, gestureEnd);
-          initialValue.current = next;
+          setInitialValue(next);
           return;
         }
 
@@ -511,9 +561,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (closable) {
           closing.current = true;
           Keyboard.dismiss();
-          runOnUI((animationListener: number) => {
-            translateY.removeListener(animationListener);
-          })(animationListenerId);
         }
         const onCompleteAnimation = () => {
           if (closable || isSheetManagerOrRef) {
@@ -541,9 +588,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             } else {
               hiding.current = false;
             }
-            currentSnapIndex.current = initialSnapIndex;
+            setCurrentSnapIndex(initialSnapIndex);
             closing.current = false;
-            initialValue.current = -1;
+            setInitialValue(-1);
             actionSheetOpacity.value = 0;
             translateY.value = Dimensions.get('window').height * 2;
             keyboard.reset();
@@ -604,7 +651,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (currentSnapIndex.current === snapPoints.length - 1) {
           const next = getNextPosition(currentSnapIndex.current);
           moveSheetWithAnimation(vy, next, undefined, gestureEnd);
-          initialValue.current = next;
+          setInitialValue(next);
           return;
         }
         let nextSnapPoint = 0;
@@ -625,9 +672,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
           return;
         }
-        currentSnapIndex.current = nextSnapIndex;
+        setCurrentSnapIndex(nextSnapIndex);
         const next = getNextPosition(currentSnapIndex.current);
-        initialValue.current = next;
+        setInitialValue(next);
         moveSheetWithAnimation(vy, next, undefined, gestureEnd);
       },
       [getCurrentPosition, getNextPosition, moveSheetWithAnimation, snapPoints],
@@ -639,12 +686,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       (vy: number, gestureEnd?: boolean) => {
         if (currentSnapIndex.current === 0) {
           if (closable) {
-            initialValue.current = dimensionsRef.current.height * 1.3;
+            setInitialValue(dimensionsRef.current.height * 1.3);
             hideSheet(vy, undefined, false, gestureEnd);
           } else {
             const next = getNextPosition(currentSnapIndex.current);
             moveSheetWithAnimation(vy, next, undefined, gestureEnd);
-            initialValue.current = next;
+            setInitialValue(next);
           }
           return;
         }
@@ -659,7 +706,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
           if (i === 0 && getCurrentPosition() > getNextPosition(i)) {
             if (closable) {
-              initialValue.current = dimensionsRef.current.height * 1.3;
+              setInitialValue(dimensionsRef.current.height * 1.3);
               hideSheet(vy, undefined, undefined, gestureEnd);
               return;
             }
@@ -671,9 +718,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
           return;
         }
-        currentSnapIndex.current = nextSnapIndex;
+        setCurrentSnapIndex(nextSnapIndex);
         const next = getNextPosition(currentSnapIndex.current);
-        initialValue.current = next;
+        setInitialValue(next);
         moveSheetWithAnimation(vy, next, undefined, gestureEnd);
       },
       [
@@ -724,6 +771,38 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         return activeNodes;
       },
       [],
+    );
+
+    // Snap decision at the end of a worklet-driven drag. Runs once on the JS
+    // thread (via runOnJS) at gesture release — not per frame — and reuses the
+    // existing snap logic. The spring animation itself still runs on the UI
+    // thread inside moveSheetWithAnimation/snapForward/snapBackward.
+    const handleGestureEnd = React.useCallback(
+      (vy: number) => {
+        if (!gestureEnabled) return;
+        const current = getCurrentPosition();
+        const isMovingUp = current < initialValue.current;
+        if (
+          (!isMovingUp && current < initialValue.current + springOffset) ||
+          (isMovingUp && current > initialValue.current - springOffset)
+        ) {
+          moveSheetWithAnimation(1, undefined, undefined, true);
+          return;
+        }
+        if (!isMovingUp) {
+          snapBackward(vy, true);
+        } else {
+          snapForward(vy, true);
+        }
+      },
+      [
+        gestureEnabled,
+        getCurrentPosition,
+        moveSheetWithAnimation,
+        snapBackward,
+        snapForward,
+        springOffset,
+      ],
     );
 
     const panGesture = React.useMemo(() => {
@@ -997,6 +1076,126 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             .onEnd(onEnd);
     }, [gestureEnabled]);
 
+    // Experimental: fully worklet-driven pan gesture. Per-frame drag and
+    // scroll<->drag arbitration run on the UI thread; only the snap decision at
+    // release hops to JS (once) via handleGestureEnd.
+    const workletPanGesture = React.useMemo(() => {
+      const overdrawFactorC = overdrawFactor;
+      const overdrawSizeC = overdrawSize;
+      const overdrawEnabledC = overdrawEnabled;
+      const closableC = closable;
+      const disableBeyondC = disableDragBeyondMinimumSnapPoint;
+      const enableInScrollC = enableGesturesInScrollView;
+      const ctx = {deltaYOnStart: 0};
+
+      return Gesture.Pan()
+        .withRef(panGestureRef)
+        .onBegin(() => {
+          'worklet';
+          ctx.deltaYOnStart = 0;
+        })
+        .onChange(event => {
+          'worklet';
+          if (!gestureEnabled) return;
+          const swipingDown = event.changeY > 0;
+          const minTranslate = minTranslateValueSV.value;
+          const fullOpen = translateY.value <= minTranslate + 5;
+
+          let block = false;
+          if (
+            enableInScrollC &&
+            scrollableActiveSV.value &&
+            !isRefreshingSV.value
+          ) {
+            const nodeScrolling = scrollableOffsetY.value > 0;
+            // Case 2: fully open + swiping up while list has room -> let it scroll.
+            if (fullOpen && !swipingDown) {
+              block = true;
+            }
+            // Cases 3a/4a: swiping down while the list is still scrolled -> scroll.
+            else if (swipingDown && nodeScrolling) {
+              block = true;
+            }
+            if (block) {
+              // Re-baseline so the eventual handoff to sheet-drag is seamless.
+              ctx.deltaYOnStart = event.translationY;
+            }
+          } else if (!enableInScrollC && scrollableActiveSV.value) {
+            block = true;
+          }
+
+          if (block || isRefreshingSV.value) return;
+
+          const deltaY = event.translationY - ctx.deltaYOnStart;
+          const value = initialValueSV.value + deltaY;
+          const correctedValue =
+            value <= minTranslate ? minTranslate - value : value;
+
+          if (correctedValue / overdrawFactorC >= overdrawSizeC && deltaY <= 0) {
+            return;
+          }
+
+          const sheetHeight = actionSheetHeightSV.value;
+          const firstSnap = snapPointsSV.value[0] ?? 100;
+          const minSnapPoint =
+            sheetHeight + minTranslate - (sheetHeight * firstSnap) / 100;
+
+          const translateYValue =
+            value <= minTranslate
+              ? overdrawEnabledC
+                ? minTranslate - correctedValue / overdrawFactorC
+                : minTranslate
+              : value;
+
+          if (!closableC && disableBeyondC) {
+            translateY.value =
+              translateYValue >= minSnapPoint ? minSnapPoint : translateYValue;
+          } else {
+            translateY.value = translateYValue;
+          }
+        })
+        .onEnd(event => {
+          'worklet';
+          if (!gestureEnabled) return;
+          ctx.deltaYOnStart = 0;
+          isRefreshingSV.value = false;
+          runOnJS(handleGestureEnd)(event.velocityY);
+        })
+        .onFinalize(() => {
+          'worklet';
+          scrollableActiveSV.value = false;
+        })
+        .activeOffsetY([-5, 5])
+        .failOffsetX([-5, 5]);
+    }, [
+      gestureEnabled,
+      overdrawFactor,
+      overdrawSize,
+      overdrawEnabled,
+      closable,
+      disableDragBeyondMinimumSnapPoint,
+      enableGesturesInScrollView,
+      handleGestureEnd,
+    ]);
+
+    const useWorkletGestures =
+      experimentalWorkletGestures && Platform.OS !== 'web';
+    const activeGesture = useWorkletGestures ? workletPanGesture : panGesture;
+
+    const workletScrollContext = React.useMemo<WorkletScrollContextType>(
+      () => ({
+        enabled: useWorkletGestures,
+        gestureEnabled,
+        enableGesturesInScrollView,
+        translateY,
+        minTranslateValue: minTranslateValueSV,
+        isRefreshing: isRefreshingSV,
+        scrollY: scrollableOffsetY,
+        scrollableActive: scrollableActiveSV,
+      }),
+      [useWorkletGestures, gestureEnabled, enableGesturesInScrollView],
+    );
+
     const onTouch = (event: GestureResponderEvent) => {
       onTouchBackdrop?.(event);
       if (enableRouterBackNavigation && router.canGoBack()) {
@@ -1018,7 +1217,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       (): ActionSheetRef => ({
         show: (snapIndex?: number) => {
           if (typeof snapIndex === 'number') {
-            currentSnapIndex.current = snapIndex;
+            setCurrentSnapIndex(snapIndex);
           }
           onBeforeShow?.();
           routerRef.current?.initialNavigation();
@@ -1035,10 +1234,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }
         },
         snapToOffset: (offset: number) => {
-          initialValue.current =
+          setInitialValue(
             actionSheetHeight.current +
-            minTranslateValue.current -
-            (actionSheetHeight.current * offset) / 100;
+              minTranslateValue.current -
+              (actionSheetHeight.current * offset) / 100,
+          );
           translateY.value = withSpring(
             initialValue.current,
             openAnimationConfig,
@@ -1051,8 +1251,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }
           const availableHeight =
             actionSheetHeight.current + minTranslateValue.current;
-          initialValue.current =
-            initialValue.current + initialValue.current * (offset / 100);
+          setInitialValue(
+            initialValue.current + initialValue.current * (offset / 100),
+          );
           if (initialValue.current > availableHeight) {
             getRef().snapToOffset(100);
             return;
@@ -1068,8 +1269,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             getRef().show(index);
             return;
           }
-          currentSnapIndex.current = index;
-          initialValue.current = getNextPosition(index);
+          setCurrentSnapIndex(index);
+          setInitialValue(getNextPosition(index));
           translateY.value = withSpring(
             initialValue.current,
             openAnimationConfig,
@@ -1212,10 +1413,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [routeOpacity, router, sheetPayload],
     );
 
-    const context = {
-      ref: panGestureRef,
-      eventManager: internalEventManager,
-    };
+    const context = React.useMemo(
+      () => ({
+        ref: panGestureRef,
+        eventManager: internalEventManager,
+      }),
+      [internalEventManager],
+    );
 
     const animatedOpacityStyle = useAnimatedStyle(() => {
       return {
@@ -1258,7 +1462,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
               }>
               <PanGestureRefContext.Provider value={context}>
-                <DraggableNodesContext.Provider value={draggableNodesContext}>
+                <WorkletScrollContext.Provider value={workletScrollContext}>
+                  <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
                     onLayout={event => {
                       if (event.nativeEvent.layout.height < 10) return;
@@ -1334,10 +1539,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                             {...(Platform.OS === 'web'
                               ? ({} as any)
                               : {
-                                  gesture: panGesture as PanGesture,
+                                  gesture: activeGesture as PanGesture,
                                 })}>
                             <Animated.View
-                              {...((panGesture as any)?.panHandlers || {})}
+                              {...((activeGesture as any)?.panHandlers || {})}
                               onLayout={event =>
                                 onSheetLayout(event.nativeEvent.layout.height)
                               }
@@ -1434,7 +1639,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       ) : null}
                     </>
                   </Animated.View>
-                </DraggableNodesContext.Provider>
+                  </DraggableNodesContext.Provider>
+                </WorkletScrollContext.Provider>
               </PanGestureRefContext.Provider>
             </GestureHandlerRoot>
           </Root>

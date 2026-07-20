@@ -378,6 +378,17 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   onChange?: (position: number) => void;
 
   /**
+   * A worklet version of `onChange`. Runs on the UI thread on every integer
+   * percentage change without any JS-thread hop. Useful for driving companion
+   * animations (backdrop blur, header collapse) in sync with the sheet.
+   *
+   * The function passed here MUST be a worklet.
+   *
+   * @param {number} percentage Sheet visible on the screen in percentage.
+   */
+  onChangeWorklet?: (position: number) => void;
+
+  /**
    * Additional props to pass to the backdrop element. Useful for adding custom accessibility props.
    */
   backdropProps?: Partial<PressableProps>;
@@ -416,6 +427,21 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * Enable swipe gestures inside ScrollView/FlatList. Enabled by default.
    */
   enableGesturesInScrollView?: boolean;
+
+  /**
+   * Opt into the experimental worklet-driven gesture engine. When enabled, the
+   * drag gesture and scroll<->drag arbitration run entirely on the UI thread, so
+   * a busy JS thread no longer stutters the sheet and scroll handoff is more
+   * reliable.
+   *
+   * Requires the sheet's own `ScrollView`/`FlatList` (from this package) for
+   * scrolling content. Currently native-only (iOS/Android); web keeps the
+   * existing gesture path. Pull-to-refresh handoff is not yet supported in this
+   * mode.
+   *
+   * @default false
+   */
+  experimentalWorkletGestures?: boolean;
 
   onSnapIndexChange?: (index: number) => void;
 

@@ -1,13 +1,13 @@
 /* eslint-disable curly */
-import React, { RefObject, useImperativeHandle } from 'react';
-import {
-  ScrollView as RNScrollView,
-  ScrollViewProps
-} from 'react-native';
-import {
-  ScrollView as RNGHScrollView
-} from 'react-native-gesture-handler';
-import { useScrollHandlers } from '../hooks/use-scroll-handlers';
+import React, {RefObject, useImperativeHandle} from 'react';
+import {ScrollView as RNScrollView, ScrollViewProps} from 'react-native';
+import {ScrollView as RNGHScrollView} from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
+import {useScrollHandlers} from '../hooks/use-scroll-handlers';
+import {useSheetScrollable} from '../hooks/use-worklet-scrollable';
+
+const AnimatedRNGHScrollView = Animated.createAnimatedComponent(RNGHScrollView);
+
 type Props = ScrollViewProps &
   React.RefAttributes<RNScrollView> & {
     /**
@@ -18,15 +18,33 @@ type Props = ScrollViewProps &
     refreshControlGestureArea?: number;
   };
 
-function $ScrollView(
-  props: Props,
-  ref: RefObject<RNScrollView>,
-) {
-  const handlers = useScrollHandlers<RNScrollView>({
+function $ScrollView(props: Props, ref: RefObject<RNScrollView>) {
+  const options = {
     hasRefreshControl: !!props.refreshControl,
     refreshControlBoundary: props.refreshControlGestureArea || 0.15,
-  });
-  useImperativeHandle(ref, () => handlers.ref.current);
+  };
+  const handlers = useScrollHandlers<RNScrollView>(options);
+  const worklet = useSheetScrollable(options);
+  useImperativeHandle(ref, () =>
+    worklet.enabled ? worklet.ref.current : handlers.ref.current,
+  );
+
+  if (worklet.enabled) {
+    return (
+      <AnimatedRNGHScrollView
+        {...props}
+        ref={worklet.ref}
+        simultaneousHandlers={worklet.simultaneousHandlers}
+        scrollEventThrottle={worklet.scrollEventThrottle}
+        onScroll={worklet.onScroll}
+        onTouchStart={event => {
+          worklet.onTouchStart();
+          props.onTouchStart?.(event);
+        }}
+        bounces={false}
+      />
+    );
+  }
 
   return (
     <RNGHScrollView

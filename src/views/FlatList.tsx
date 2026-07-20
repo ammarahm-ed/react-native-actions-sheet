@@ -1,8 +1,13 @@
 /* eslint-disable curly */
 import React, {RefObject, useImperativeHandle} from 'react';
 import {FlatList as RNGHFlatList} from 'react-native-gesture-handler';
-import {useScrollHandlers} from '../hooks/use-scroll-handlers';
+import Animated from 'react-native-reanimated';
 import {FlatListProps} from 'react-native';
+import {useScrollHandlers} from '../hooks/use-scroll-handlers';
+import {useSheetScrollable} from '../hooks/use-worklet-scrollable';
+
+const AnimatedRNGHFlatList = Animated.createAnimatedComponent(RNGHFlatList);
+
 type Props<T = any> = FlatListProps<T> &
   React.RefAttributes<RNGHFlatList> & {
     /**
@@ -14,11 +19,32 @@ type Props<T = any> = FlatListProps<T> &
   };
 
 function $FlatList<T>(props: Props<T>, ref: RefObject<RNGHFlatList>) {
-  const handlers = useScrollHandlers<any>({
+  const options = {
     hasRefreshControl: !!props.refreshControl,
     refreshControlBoundary: props.refreshControlGestureArea || 0.15,
-  });
-  useImperativeHandle(ref, () => handlers.ref.current);
+  };
+  const handlers = useScrollHandlers<any>(options);
+  const worklet = useSheetScrollable(options);
+  useImperativeHandle(ref, () =>
+    worklet.enabled ? worklet.ref.current : handlers.ref.current,
+  );
+
+  if (worklet.enabled) {
+    return (
+      <AnimatedRNGHFlatList
+        {...props}
+        ref={worklet.ref}
+        simultaneousHandlers={worklet.simultaneousHandlers}
+        scrollEventThrottle={worklet.scrollEventThrottle}
+        onScroll={worklet.onScroll}
+        onTouchStart={event => {
+          worklet.onTouchStart();
+          props.onTouchStart?.(event);
+        }}
+        bounces={false}
+      />
+    );
+  }
 
   return (
     <RNGHFlatList
@@ -40,5 +66,5 @@ function $FlatList<T>(props: Props<T>, ref: RefObject<RNGHFlatList>) {
 }
 
 export const FlatList = React.forwardRef($FlatList) as <T = any>(
-  props: Props<T> & { ref?: React.Ref<RNGHFlatList> }
+  props: Props<T> & {ref?: React.Ref<RNGHFlatList>},
 ) => React.ReactElement;
