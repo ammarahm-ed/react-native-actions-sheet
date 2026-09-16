@@ -1,0 +1,301 @@
+# Migrating Guide
+
+## Upcoming: the worklet gesture engine
+
+The drag gesture and scroll ↔ drag arbitration now run on the **UI thread** by default (the [`experimentalWorkletGestures`](/reference/actionsheet#experimentalworkletgestures) prop, enabled on all platforms). A busy JS thread no longer stutters the sheet, and scroll handoff is more reliable.
+
+### What you need to do
+
+For most apps: **nothing**. Existing props keep working. Just make sure any scrolling content uses this package's [`ScrollView`/`FlatList`](/guides/scrolling) (or [`useSheetScrollable`](/reference/usesheetscrollable) for a custom Animated list) so arbitration works.
+
+### New APIs
+
+- [`onChangeWorklet`](/reference/actionsheet#onchangeworkletposition-number) — UI-thread version of `onChange`.
+- [`useSheetPosition`](/reference/usesheetposition) — live sheet position as shared values.
+- [`useSheetScrollable`](/reference/usesheetscrollable) — wire a custom Animated scrollable into the engine.
+- [`SheetGestureBlocker`](/reference/sheetgestureblocker) / `useSheetGestureRegion` — exclude a region from the sheet's drag.
+- [`dimBackdropOnDrag`](/reference/actionsheet#dimbackdropondrag) — backdrop fades toward dismissal (default `true`).
+- [`accessibilityLabels`](/reference/actionsheet#accessibilitylabels) — labels for the backdrop and grabber.
+
+### Deprecations (to be removed in v11)
+
+- The legacy `PanResponder`/JS gesture path. Set [`legacyGestures`](/reference/actionsheet#legacygestures) (or `experimentalWorkletGestures={false}`) to fall back to it if the worklet path misbehaves — and please report the issue.
+- [`useScrollHandlers`](/reference/usescrollhandlers) and `resolveScrollRef`. Prefer the bundled scrollables or `useSheetScrollable`.
+
+## Migrating to v10.0.0
+
+### Dependencies
+
+v10.0.0 introduces `react-native-reanimated` and `react-native-safe-area-context` as a peer dependency. Please make sure to install it in your project if you haven't already.
+
+```
+npm install react-native-reanimated react-native-safe-area-context
+```
+
+### Registering sheets
+
+Registering sheets still works the same way as before, however I have added `[SheetRegister](/reference/sheetregister)` component to make it easier to register multiple sheets in one place.
+
+```ts
+import {SheetRegister} from 'react-native-actions-sheet';
+import ExampleSheet from 'example-sheet.tsx';
+
+export const Sheets = () => {
+  return <SheetRegister sheets={{'example-sheet': ExampleSheet}} />
+}
+```
+
+In `App.tsx` import `Sheets` component and wrap your app in `SheetProvider`.
+
+```tsx
+import {SheetProvider} from 'react-native-actions-sheet';
+import {Sheets} from 'sheets.tsx';
+
+function App() {
+  return (
+    <SheetProvider>
+      <Sheets />
+      {
+        // your app components
+      }
+    </SheetProvider>
+  );
+}
+```
+
+The way we were registering sheets earlier felt a bit hacky so this new way is much cleaner and easier to manage when you have many sheets in the app.
+
+### Removed props
+
+The following props have been removed from `ActionSheet` component:
+
+1. `safeAreaInsets`: Now the library uses `react-native-safe-area-context` internally to get the device insets so this prop is not needed anymore.
+2. `payload`: This prop has been replaced by `returnValue` prop to return data when the sheet is closed.
+
+### Changed props
+
+The following props have been changed in `ActionSheet` component:
+
+1. `openAnimationConfig` & `closeAnimationConfig`: These props now take `SpringConfig` from `react-native-reanimated` instead of custom config.
+2. `onChange`: This prop now only returns the position percentage (0-100) instead of position and height.
+
+### New props
+
+The following new props have been added to `ActionSheet` component:
+
+1. `disableElevation`: Now you can disable default elevation/shadow of the action sheet by setting this prop to `true`.
+2. `initialTranslateFactor`: This prop allows you to set the initial translate factor of the action sheet when it opens. Default is `1` which means the action sheet will open from bottom of the screen. You can set it to `0.5` to have it open from half way of the screen.
+3. `returnValue`: The prop replaces `payload` prop to return data when the sheet is closed.
+
+## Migrating to v0.9.0
+
+v0.9.0 does not include any huge breaking changes to the API however there are some changes introduced to improve the overall DX of the library and ease of use.
+
+### Dependencies
+
+The library now depends on `react-native-gesture-handlers` library which is usually already installed in almost every React Native project.
+
+```
+npm install react-native-gesture-handlers
+```
+
+### `Registering sheets`
+
+Registering sheets works the same way, however to get better type intellisense across your code base, it is recommended that you extend some internal interfaces and define your sheets as follows:
+
+```ts
+import {SheetDefinition} from 'react-native-actions-sheet';
+
+declare module 'react-native-actions-sheet' {
+  interface Sheets {
+    'example-sheet': SheetDefinition<{
+      payload: {
+        userId: string;
+      };
+      returnValue: boolean;
+    }>;
+    'awesome-sheet': SheetDefinition;
+  }
+}
+```
+
+Now you will get complete intellisense automatically in most functions.
+
+### SheetProps
+
+The `SheetProps` type is a bit changed.
+
+Before:
+
+```ts
+const ExampleSheet = (props: SheetProps<{message: string}>) => {
+
+  return ...
+}
+```
+
+After:
+
+```ts
+const ExampleSheet = (props: SheetProps<'example-sheet'>) => {
+  return ...
+};
+```
+
+### `id={props.sheetId} not required
+
+Previously you had to do this for every `ActionSheet`.
+
+```ts
+<ActionSheet id={props.sheetId} />
+```
+
+Now it's not needed anymore. You can however define the exact sheet id directly to get intellisense for payload/returnValue etc like below:
+
+```ts
+<ActionSheet
+  id="example-sheet"
+  onClose={data => {
+    // data is fully typed based on SheetDefinition of example-sheet.
+  }}
+/>
+```
+
+### Scrolling
+
+See [Scrolling guide](./scrolling) to learn how to migrate away from `useScrollHandlers` and use dedicated scrolling views provided by `react-native-actions-sheet`.
+
+### Safe Area Insets
+
+It is recommended to set insets from `react-native-safe-area-context` library on the `<ActionSheet/>` component via the `safeAreaInsets` prop.
+
+## Migrating to v0.8.0
+
+v0.8.0 introduces some breaking changes. I tried to minimize them as much as possible but since this is a complete rewrite some of the features of this library have changed.
+
+### Some props have been removed
+
+`keyboardShouldPersistTaps` & `keyboardDismissMode`: Since we don't use `ScrollView` internally anymore, these props have been removed.
+
+`testIDs.scrollview`: Same reason as above.
+
+`onPositionChanged`: This props has been replaced by [`onChange`](/guides/position) which gives more control on action sheet position.
+
+`openAnimationDuration` & `closeAnimationDuration`: These have been replaced by `openAnimationConfig` & `closeAnimationConfig` which give granular control over the spring animations for open & close.
+
+`bounciness` & `bounceOnOpen`: Timing animation is not used anymore so this has been removed.
+
+`extraScroll`: We did not need this prop, containerStyle can handle the same behaviour already.
+
+`indicatorColor` has been replaced by `indicatorStyle`.
+
+`bottomOffset` & `initialOffsetFromBottom`: You can use `snapPoints` & `initialSnapIndex` which is much simpler way to control action sheet.
+
+### `ActionSheetRef`
+
+We now have a `ActionSheetRef` type that should be used in `useRef` hooks:
+
+Before:
+
+```tsx
+const actionSheetRef = useRef<ActionSheet>(null);
+```
+
+After:
+
+```tsx
+import { ActionSheetRef } from 'react-native-actions-sheet';
+const ExampleSheet = () => {
+const actionSheetRef = useRef<ActionSheetRef>(null);
+...
+```
+
+### `SheetManager` changes
+
+`SheetManager.show` & `SheetManager.hide` functions have changed:
+
+From:
+
+```ts
+SheetManager.show('sheet-id', {data: 'hello world'});
+```
+
+to
+
+```ts
+SheetManager.show('sheet-id', {
+  payload: {data: 'hello world'},
+});
+```
+
+And `hide` has changed similarly:
+
+```ts
+SheetManager.hide('sheet-id', {data: 'hello world'});
+```
+
+to
+
+```ts
+SheetManager.hide('sheet-id', {
+  payload: {data: 'hello world'},
+});
+```
+
+### `registerSheet` changes
+
+The `registerSheet` function now takes multiple contexts so a sheet with same id can be opened in multiple contexts.
+
+```ts
+registerSheet('sheet-id', ExampleSheet, 'context-a', 'context-b');
+```
+
+```ts
+SheetManager.show('sheet-id', {
+  context: 'context-b',
+});
+```
+
+### `ScrollView` behaviour changes
+
+`ScrollView` previously required `handleChildScrollEnd` to be attached to it. Now you have to use `useScrollHandlers` hook.
+
+From:
+
+```tsx
+const actionSheetRef = useRef<ActionSheet>(null);
+
+return (
+  <ActionSheet>
+    <ScrollView
+      nestedScrollingEnabled={true}
+      onMomentumScrollEnd={() => {
+        actionSheetRef.current?.handleChildScrollEnd();
+      }}
+    />
+  </ActionSheet>
+);
+```
+
+To:
+
+```tsx
+const actionSheetRef = useRef<ActionSheet>(null);
+const scrollHandlers = useScrollHandlers('scroll-1', actionSheetRef);
+
+return (
+  <ActionSheet>
+    <ScrollView {...scrollHandlers} />;
+  </ActionSheet>
+);
+```
+
+You can now use normal react native `ScrollView` & `FlatList` components instead of the ones from `react-native-gesture-handler`.
+
+`ScrollView` behaviour has also been changed. You should try it out and see the difference in various states:
+
+1.  ActionSheet not fully opened: When the action sheet is not fully opened, scrolling is disabled.
+2.  ActionSheet fully opened: Scrolling is enabled in downward direction where the content offset would increase. So if you swipe down, action sheet will start to close and if you swipe up, scrollview will scroll.
+3.  Scroll Offset > 0: When user has scrolled away from 0, then swiping up and down both will result in scrolling inside the ScrollView area.
+4.  User swipes outside ScrollView area: action sheet will move always.
+5.  User scrolls to top & keeps swiping down: Nothing happens or `RefreshControl` will work. The action sheet will **not** move. User will have to lift their finger and swipe down again to close the action sheet or move it to different snap point.
