@@ -68,7 +68,7 @@ import {
 import {getZIndexFromStack, SheetManager} from './sheetmanager';
 import {styles} from './styles';
 import {ActionSheetProps, ActionSheetRef, CloseRequestType} from './types';
-import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
+import {getElevation, SUPPORTED_ORIENTATIONS, webOnlyDeps} from './utils';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
@@ -1217,12 +1217,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       eventManager: internalEventManager,
     };
 
+    const animatedOpacityStyleDeps = webOnlyDeps([opacity]);
     const animatedOpacityStyle = useAnimatedStyle(() => {
       return {
         opacity: opacity.value,
       };
-    }, [opacity]);
+    }, animatedOpacityStyleDeps);
 
+    const animatedActionSheetStyleDeps = webOnlyDeps([translateY]);
     const animatedActionSheetStyle = useAnimatedStyle(() => {
       return {
         transform: [
@@ -1232,8 +1234,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         ],
         opacity: actionSheetOpacity.value,
       };
-    }, [translateY]);
+    }, animatedActionSheetStyleDeps);
 
+    const animatedUnderlayTranslateStyleDeps = webOnlyDeps([underlayTranslateY]);
     const animatedUnderlayTranslateStyle = useAnimatedStyle(() => {
       return {
         transform: [
@@ -1242,7 +1245,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           },
         ],
       };
-    }, [underlayTranslateY]);
+    }, animatedUnderlayTranslateStyleDeps);
 
     const GestureMobileOnly =
       Platform.OS === 'web' ? Fragment : GestureDetector;

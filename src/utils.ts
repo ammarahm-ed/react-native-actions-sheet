@@ -24,6 +24,13 @@ export const getElevation = (elevation: number) => {
   };
 };
 
+// Reanimated only reads hook dependency arrays on web when its Babel plugin is
+// not used. Native derives them from the worklet closure, and Reanimated 4.6+
+// warns on every render when an array is passed there.
+export function webOnlyDeps<T extends unknown[]>(deps: T): T | undefined {
+  return Platform.OS === 'web' ? deps : undefined;
+}
+
 export const SUPPORTED_ORIENTATIONS: (
   | 'portrait'
   | 'portrait-upside-down'
