@@ -1293,10 +1293,65 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         dragging: false,
         dragBaseSheetY: 0,
         dragBaseTranslationY: 0,
+        // Whether this pan instance has claimed the gesture already. A handler
+        // that is mid-drag must not be failed by an extra finger landing in a
+        // blocking region.
+        activated: false,
+      };
+
+      /**
+       * Whether the point falls inside a gesture-blocking region
+       * (`SheetGestureBlocker` / `useSheetGestureRegion`). Regions are measured
+       * live on the UI thread, so the result tracks the sheet as it moves.
+       */
+      const beginsInBlockingRegion = (x: number, y: number) => {
+        'worklet';
+        for (let i = 0; i < regions.length; i++) {
+          const region = regions[i];
+          if (region.kind !== 'ignore') continue;
+          const m = measure(region.animatedRef);
+          if (!m) continue;
+          if (
+            x >= m.pageX &&
+            x <= m.pageX + m.width &&
+            y >= m.pageY &&
+            y <= m.pageY + m.height
+          ) {
+            return true;
+          }
+        }
+        return false;
       };
 
       return Gesture.Pan()
         .withRef(panGestureRef)
+        // A touch that begins inside a blocking region belongs to the view under
+        // the finger (an inner ScrollView, slider, canvas, ...), not to the
+        // sheet. Deciding that in `onBegin` is too late: once this pan activates,
+        // Android cancels the child's touch stream, so an inner scrollable stops
+        // scrolling and the sheet's behaviour depends on which of the two wins
+        // the activation race. Failing the handler on touch-down hands the whole
+        // gesture to the child — the sheet cannot move, and the child works.
+        .onTouchesDown((event, state) => {
+          'worklet';
+          if (!gestureEnabled || ctx.activated) return;
+          const touches = event.changedTouches;
+          for (let i = 0; i < touches.length; i++) {
+            const touch = touches[i];
+            if (beginsInBlockingRegion(touch.absoluteX, touch.absoluteY)) {
+              state.fail();
+              return;
+            }
+          }
+        })
+        .onStart(() => {
+          'worklet';
+          ctx.activated = true;
+        })
+        .onFinalize(() => {
+          'worklet';
+          ctx.activated = false;
+        })
         .onBegin(event => {
           'worklet';
           ctx.activeKind = 0;
@@ -1304,6 +1359,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           ctx.hasRefresh = false;
           ctx.refreshBoundaryY = 0;
           ctx.dragging = false;
+
+          // Safety net for a region that only became measurable after touch-down
+          // (`onTouchesDown` already failed the gesture for the normal case).
+          if (beginsInBlockingRegion(event.absoluteX, event.absoluteY)) {
+            ctx.activeKind = 2;
+            return;
+          }
 
           let bestScrollIndex = -1;
           let bestScrollArea = Number.MAX_VALUE;
@@ -1317,11 +1379,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               event.absoluteY >= m.pageY &&
               event.absoluteY <= m.pageY + m.height;
             if (!inside) continue;
-            if (region.kind === 'ignore') {
-              // A gesture-blocking region always wins — the sheet stays put.
-              ctx.activeKind = 2;
-              return;
-            }
+            if (region.kind !== 'scroll') continue;
             // Prefer the smallest matching scrollable (most specific / innermost).
             const area = m.width * m.height;
             if (area < bestScrollArea) {

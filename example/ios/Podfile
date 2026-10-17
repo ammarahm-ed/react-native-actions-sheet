@@ -31,5 +31,38 @@ target 'example' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # Xcode 26 (Apple clang 21) rejects fmt 11.0.2's `consteval` constructor:
+    #   error: call to consteval function ... is not a constant expression
+    # React Native 0.81 still pins fmt 11.0.2, and fmt derives FMT_USE_CONSTEVAL
+    # from the compiler with no override hook (it is a plain `#define`, so a
+    # -DFMT_USE_CONSTEVAL=0 flag is overwritten). Force the non-consteval path
+    # instead — that is the same code older toolchains compile. Remove this once
+    # React Native ships a fmt version that handles clang 21 on its own.
+    fmt_base_h = File.join(installer.sandbox.root, 'fmt', 'include', 'fmt', 'base.h')
+    if File.exist?(fmt_base_h)
+      original = File.read(fmt_base_h)
+      patched = original.gsub(
+        /^#  define FMT_USE_CONSTEVAL 1$/,
+        '#  define FMT_USE_CONSTEVAL 0',
+      )
+      if patched == original
+        Pod::UI.puts '[fmt] FMT_USE_CONSTEVAL already patched for clang 21'.green
+      else
+        begin
+          # CocoaPods installs pod sources read-only (0444), so write a sibling
+          # temp file and rename over it — that only needs a writable directory.
+          tmp = "#{fmt_base_h}.patch-tmp"
+          File.write(tmp, patched)
+          File.rename(tmp, fmt_base_h)
+          Pod::UI.puts '[fmt] Patched FMT_USE_CONSTEVAL=0 for Apple clang 21 (Xcode 26)'.yellow
+        rescue StandardError => e
+          Pod::UI.warn(
+            "[fmt] Could not patch FMT_USE_CONSTEVAL (#{e.class}: #{e.message}). " \
+            'Building on Xcode 26 will fail until the patch is applied by hand.',
+          )
+        end
+      end
+    end
   end
 end
