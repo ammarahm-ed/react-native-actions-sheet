@@ -13,8 +13,10 @@ export type SheetGestureBlockerProps = {
  * inside this view leaves the sheet where it is — useful for sliders, color
  * pickers, maps, drawing canvases and similar controls.
  *
- * Only has an effect with the worklet gesture engine (the default). With
- * `legacyGestures`, it renders as a plain view.
+ * Works with both gesture engines: the worklet engine (the default) resolves the
+ * region on the UI thread, web's legacy PanResponder path resolves it on the JS
+ * thread from the view's measured bounds. Only the native `legacyGestures` path
+ * (where the sheet itself is JS-driven) treats it as a plain view.
  */
 export function SheetGestureBlocker({
   children,

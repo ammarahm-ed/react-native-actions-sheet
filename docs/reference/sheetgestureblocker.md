@@ -10,7 +10,7 @@ import {SheetGestureBlocker} from 'react-native-actions-sheet';
 </SheetGestureBlocker>;
 ```
 
-> Only has an effect with the worklet gesture engine (the default). With [`legacyGestures`](/reference/actionsheet#legacygestures) it renders as a plain view.
+> Works with both gesture engines: the worklet engine (the default) on native and web's PanResponder path, which resolves the region against the view's live bounds. The only engine it has no effect with is [`legacyGestures`](/reference/actionsheet#legacygestures) on native, where it renders as a plain view.
 
 ## Props
 

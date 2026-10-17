@@ -460,11 +460,17 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * The worklet-driven gesture engine. When enabled, the drag gesture and
    * scroll<->drag arbitration run entirely on the UI thread, so a busy JS thread
    * no longer stutters the sheet and scroll handoff is more reliable. Enabled by
-   * default on all platforms.
+   * default on native.
    *
    * Requires the sheet's own `ScrollView`/`FlatList` (from this package) for
    * scrolling content. Set to `false` (or use `legacyGestures`) to fall back to
    * the pre-v11 gesture path.
+   *
+   * Ignored on web, which always uses the PanResponder path: gesture-handler's
+   * web `GestureDetector` is driven by pointer events, which the browser cancels
+   * (`pointercancel`) the moment a touch inside a scrollable starts scrolling —
+   * leaving the pan unable to arbitrate with the scrollable. Worklets also run
+   * on the main thread on web, so there is nothing to gain there.
    *
    * @default true
    */

@@ -931,10 +931,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       let prevDeltaY = 0;
       let deltaYOnGestureStart = 0;
       let velocity = 0;
-      let start: {
-        x: number;
-        y: number;
-      };
+      let start:
+        | {
+            x: number;
+            y: number;
+          }
+        | undefined;
       let oldValue = 0;
       let isRefreshing = false;
       const offsets: number[] = [];
@@ -942,6 +944,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       function scrollable(value: boolean) {
         for (let i = 0; i < draggableNodes.current.length; i++) {
           const node = draggableNodes.current[i];
+          // A gesture-blocking region is not a scrollable: there is nothing to
+          // pin, and writing `scrollTop` to it would be meaningless.
+          if (node.handlerConfig?.blocksGesture) continue;
           const scrollRef = resolveScrollRef(node.ref);
           if (Platform.OS === 'ios' || Platform.OS === 'web') {
             if (!value) {
@@ -969,6 +974,42 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       }
 
       let blockPan = false;
+
+      /**
+       * Set on touchstart: the touch began inside a gesture-blocking region
+       * (`SheetGestureBlocker`), which owns the gesture. The decision is made
+       * once, where the gesture began, never where the finger has travelled to
+       * since — that is exactly how the worklet engine resolves a region too.
+       */
+      let blockedTouchStart = false;
+
+      /**
+       * Web only — blocking regions are measured straight from the DOM rather
+       * than from the registry's cached rect, which is refreshed on a debounced
+       * timer after the sheet moves and is therefore routinely stale. A stale
+       * rect is precisely what a region decision cannot tolerate: mid-drag the
+       * finger would be tested against where the region used to be. There are
+       * only ever a handful of regions, and this runs once per touch.
+       */
+      const isBlockedAt = (absoluteX: number, absoluteY: number) => {
+        if (Platform.OS !== 'web') return false;
+        for (const node of draggableNodes.current) {
+          if (!node.handlerConfig?.blocksGesture) continue;
+          const rect = (
+            resolveScrollRef(node.ref) as HTMLElement | null
+          )?.getBoundingClientRect?.();
+          if (!rect) continue;
+          if (
+            absoluteX > rect.left &&
+            absoluteY > rect.top &&
+            absoluteX < rect.right &&
+            absoluteY < rect.bottom
+          ) {
+            return true;
+          }
+        }
+        return false;
+      };
 
       const onChange = (
         absoluteX: number,
@@ -1157,6 +1198,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 return false;
               }
 
+              if (blockedTouchStart) {
+                return false;
+              }
+
               const activeDraggableNodes = getActiveDraggableNodes(
                 _event.nativeEvent.pageX,
                 _event.nativeEvent.pageY,
@@ -1168,6 +1213,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               return true;
             },
             onStartShouldSetPanResponder: (_event, _gesture) => {
+              blockedTouchStart = isBlockedAt(
+                _event.nativeEvent.pageX,
+                _event.nativeEvent.pageY,
+              );
+              if (blockedTouchStart) {
+                return false;
+              }
               const activeDraggableNodes = getActiveDraggableNodes(
                 _event.nativeEvent.pageX,
                 _event.nativeEvent.pageY,
@@ -1177,6 +1229,17 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 offsets.push((scrollRef as HTMLDivElement).scrollTop);
               }
               return true;
+            },
+            onPanResponderGrant: () => {
+              // `start` is the point the drag-vs-scroll decision is made against
+              // and `prevDeltaY` is that decision's last movement delta; both are
+              // per-gesture state that `onChange` only ever sets. Without clearing
+              // them here the origin of the session's first touch (usually a list)
+              // keeps deciding every later drag, so scrolling a list once would
+              // leave the sheet hard to drag from anywhere for the rest of the
+              // session. Web only — native's Gesture.Pan path is untouched.
+              start = undefined;
+              prevDeltaY = 0;
             },
             onPanResponderMove: (_event, gesture) => {
               onChange(
@@ -1200,7 +1263,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     // Fully worklet-driven pan gesture. Per-frame drag and scroll<->drag
     // arbitration run on the UI thread; only the snap decision at release hops
-    // to JS (once) via handleGestureEnd.
+    // to JS (once) via handleGestureSettle.
     //
     // On gesture start it measures every registered region to find, on the UI
     // thread, which scrollable (or gesture-blocking region) is under the finger,
@@ -1417,10 +1480,22 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       registryVersion,
     ]);
 
-    // Worklet gesture engine is the default on every platform. `legacyGestures`
-    // (or explicitly `experimentalWorkletGestures={false}`) opts back into the
+    // Worklet gesture engine is the default on native. `legacyGestures` (or
+    // explicitly `experimentalWorkletGestures={false}`) opts back into the
     // pre-v11 PanResponder/JS gesture path.
-    const useWorkletGestures = legacyGestures ? false : experimentalWorkletGestures;
+    //
+    // Web always uses the PanResponder path. RNGH's `GestureDetector` on web is
+    // driven purely by pointer events, and the browser fires `pointercancel` on
+    // that pointer as soon as a touch inside a nested scrollable is claimed for
+    // scrolling. RNGH installs no touch-event fallback, so the pan is dead for
+    // the rest of the gesture and can never arbitrate with the scrollable: the
+    // sheet no longer expands before the list starts scrolling, and a scroll
+    // that reverses into a downward drag can no longer close the sheet.
+    // `PanResponder` runs off touch events, which do survive the browser
+    // claiming the gesture, and worklets execute on the main thread on web
+    // anyway, so the worklet engine buys nothing there.
+    const useWorkletGestures =
+      Platform.OS !== 'web' && !legacyGestures && experimentalWorkletGestures;
     const activeGesture = useWorkletGestures ? workletPanGesture : panGesture;
 
     const workletScrollContext = React.useMemo<WorkletScrollContextType>(
@@ -1772,9 +1847,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       };
     }, []);
 
-    // Legacy web uses PanResponder (panHandlers spread on the View). Every other
-    // case — the worklet path on any platform (incl. web), or the legacy native
-    // path — uses a GestureDetector.
+    // Web always uses PanResponder (panHandlers spread on the View) — see the
+    // engine selection above. Native uses a GestureDetector, whether it is
+    // running the worklet pan gesture or the legacy one.
     const isPanResponderGesture = !useWorkletGestures && Platform.OS === 'web';
     const GestureWrapper = isPanResponderGesture ? Fragment : GestureDetector;
 

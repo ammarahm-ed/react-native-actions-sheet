@@ -20,6 +20,13 @@ export const PanGestureRefContext = createContext({
 export type DraggableNodeOptions = {
   hasRefreshControl?: boolean;
   refreshControlBoundary: number;
+  /**
+   * Marks the node as a gesture-blocking region rather than a scrollable: the
+   * sheet must not drag when a gesture starts inside it, and it must never be
+   * scrolled or pinned. Set by `useSheetGestureRegion` on the legacy (web) path.
+   * @internal
+   */
+  blocksGesture?: boolean;
 };
 
 export const usePanGestureContext = () => useContext(PanGestureRefContext);
