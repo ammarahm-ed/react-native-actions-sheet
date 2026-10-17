@@ -8,11 +8,13 @@ const useSheetManager = ({
   onHide,
   onBeforeShow,
   onContextUpdate,
+  onFlushClose,
 }: {
   id?: string;
   onHide: (data?: any) => void;
   onBeforeShow?: (data?: any, snapIndex?: number) => void;
   onContextUpdate: () => void;
+  onFlushClose?: () => void;
 }) => {
   const [visible, setVisible] = useState(false);
   const currentContext = useProviderContext();
@@ -38,6 +40,16 @@ const useSheetManager = ({
         if (context && currentContext !== context) return;
         onHide?.(data);
       }),
+      // SheetManager publishes this *before* it subscribes to `onclose_`, so a
+      // show during the iOS dismissal window finishes the old close first and
+      // cannot resolve the new promise with stale data.
+      actionSheetEventManager.subscribe(
+        `flush_close_${id}`,
+        (_data: any, context?: string) => {
+          if (context && currentContext !== context) return;
+          onFlushClose?.();
+        },
+      ),
     ];
     return () => {
       subscriptions.forEach(s => s?.unsubscribe?.());

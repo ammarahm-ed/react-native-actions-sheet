@@ -272,6 +272,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           } as RefObject<ActionSheetRef>);
         }
       },
+      // Runs while SheetManager.show() is still preparing to subscribe, so the
+      // previous close's notification cannot resolve the new promise or remove
+      // the registry entry that show() is about to add.
+      onFlushClose: flushCloseHandshake,
     });
 
     const opacity = useSharedValue(0);
