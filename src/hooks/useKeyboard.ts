@@ -52,7 +52,17 @@ export function useKeyboard(enabled: boolean) {
     let subscriptions: EmitterSubscription[] = [];
     if (enabled) {
       subscriptions = [
-        Keyboard.addListener('keyboardDidChangeFrame', handleKeyboardDidShow),
+        // iOS can post a stray keyboardDidChangeFrame with a smaller height
+        // (no "will" event before it) on every keystroke, then the real
+        // height a frame later. Following it resized the sheet for one frame
+        // per key. Every real change on iOS is announced by
+        // keyboardWillChangeFrame, so listen to that there.
+        Keyboard.addListener(
+          Platform.OS === 'ios'
+            ? 'keyboardWillChangeFrame'
+            : 'keyboardDidChangeFrame',
+          handleKeyboardDidShow,
+        ),
         Keyboard.addListener('keyboardDidHide', handleKeyboardDidHide),
       ];
       if (Platform.OS == 'android') {
