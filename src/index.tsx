@@ -78,7 +78,7 @@ import {
 import {getZIndexFromStack, SheetManager} from './sheetmanager';
 import {styles} from './styles';
 import {ActionSheetProps, ActionSheetRef, CloseRequestType} from './types';
-import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
+import {getElevation, SUPPORTED_ORIENTATIONS, webOnlyDeps} from './utils';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -493,6 +493,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     // Computes the visible percentage on the UI thread and only hops to JS when
     // the rounded integer changes. Replaces the per-frame translateY.addListener
     // -> runOnJS bridge.
+    // Same treatment as the animated styles: the deps array is web-only. On
+    // native Reanimated derives the inputs from the worklet closures, which
+    // capture these same two callbacks, so the reaction still restarts when
+    // either changes.
+    const onChangeReactionDeps = webOnlyDeps([onChange, onChangeWorklet]);
     useAnimatedReaction(
       () => {
         const sheetHeight = actionSheetHeightSV.value;
@@ -508,7 +513,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         onChangeWorklet?.(rounded);
         if (onChange) runOnJS(onChange)(rounded);
       },
-      [onChange, onChangeWorklet],
+      onChangeReactionDeps,
     );
 
     // Computes the sheet geometry from the *settled* container size + sheet
@@ -1909,6 +1914,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     // only as the sheet is dragged below the lowest snap toward dismissal. The
     // `opacity` envelope still drives the open/close fade; this multiplies it by a
     // drag-progress factor.
+    const animatedOpacityStyleDeps = webOnlyDeps([opacity, dimBackdropOnDrag]);
     const animatedOpacityStyle = useAnimatedStyle(() => {
       if (!dimBackdropOnDrag) return {opacity: opacity.value};
       const sheetHeight = actionSheetHeightSV.value;
@@ -1929,8 +1935,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         Extrapolation.CLAMP,
       );
       return {opacity: opacity.value * progress};
-    }, [opacity, dimBackdropOnDrag]);
+    }, animatedOpacityStyleDeps);
 
+    const animatedActionSheetStyleDeps = webOnlyDeps([translateY]);
     const animatedActionSheetStyle = useAnimatedStyle(() => {
       return {
         transform: [
@@ -1940,7 +1947,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         ],
         opacity: actionSheetOpacity.value,
       };
-    }, [translateY]);
+    }, animatedActionSheetStyleDeps);
 
     const baseTopLeftRadius =
       (containerStyle?.borderTopLeftRadius as number) || 10;
@@ -1948,6 +1955,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       (containerStyle?.borderTopRightRadius as number) || 10;
 
     // Flatten the top corners as the sheet reaches full screen (iOS-style).
+    const animatedCornerStyleDeps = webOnlyDeps([
+      baseTopLeftRadius,
+      baseTopRightRadius,
+    ]);
     const animatedCornerStyle = useAnimatedStyle(() => {
       const progress = fullscreenProgress.value;
       return {
@@ -1964,12 +1975,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           Extrapolation.CLAMP,
         ),
       };
-    }, [baseTopLeftRadius, baseTopRightRadius]);
+    }, animatedCornerStyleDeps);
 
     // Reveals the flat fill that continues the sheet surface up behind the status
     // bar. It rides along with the sheet, so it's kept invisible until the sheet
     // is almost at the top, then fades in over the last stretch — reading as the
     // surface snapping flush to the top rather than a strip floating up.
+    const animatedStatusBarFillStyleDeps = webOnlyDeps([]);
     const animatedStatusBarFillStyle = useAnimatedStyle(() => {
       return {
         opacity: interpolate(
@@ -1979,7 +1991,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           Extrapolation.CLAMP,
         ),
       };
-    }, []);
+    }, animatedStatusBarFillStyleDeps);
 
     // Web always uses PanResponder (panHandlers spread on the View) — see the
     // engine selection above. Native uses a GestureDetector, whether it is

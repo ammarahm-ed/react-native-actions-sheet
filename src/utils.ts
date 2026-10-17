@@ -27,6 +27,15 @@ export const getElevation = (elevation: number) => {
   };
 };
 
+// Reanimated only reads hook dependency arrays on web, where its Babel plugin
+// does not run. On native it derives them from the worklet closure, and since
+// 4.6 its implementation warns on every render when an array is passed there
+// ("dependencies should only be used in web implementation"), which floods dev
+// consoles. Keep the arrays for web, drop them everywhere else.
+export function webOnlyDeps<T extends unknown[]>(deps: T): T | undefined {
+  return Platform.OS === 'web' ? deps : undefined;
+}
+
 export const SUPPORTED_ORIENTATIONS: (
   | 'portrait'
   | 'portrait-upside-down'
