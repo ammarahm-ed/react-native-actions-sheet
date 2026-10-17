@@ -319,7 +319,7 @@ class _SheetManager {
     context?: string,
   ): RefObject<ActionSheetRef<SheetId>> => {
     if (!context) {
-      for (let _id of renderedSheetIds.reverse()) {
+      for (let _id of renderedSheetIds.slice().reverse()) {
         if (_id.includes(`${id}:`)) {
           context = _id.split(':')[1];
         }
