@@ -48,6 +48,15 @@ await SheetManager.show('my-sheet');
 await SheetManager.hide('my-sheet');
 ```
 
+## `resetMocks`
+
+The mock keeps its behaviour under `resetMocks: true` (or `jest.resetAllMocks()`): `SheetManager.show`/`hide` still return promises, and the ref API still works. Call assertions keep working too.
+
+```js
+// jest.config.js
+module.exports = {resetMocks: true};
+```
+
 ## What the mock provides
 
 | Provided | Not provided |

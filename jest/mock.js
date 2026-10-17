@@ -35,9 +35,33 @@ const CloseRequestType = {
 };
 
 const noop = () => {};
+/**
+ * Behaviour that survives `resetMocks: true`.
+ *
+ * The mocks below must still return promises and documented values after a
+ * project sets `resetMocks: true` (or calls `jest.resetAllMocks()`), which
+ * strips mock implementations between tests. So the behaviour is attached to a
+ * getter: each access re-installs the implementation on the same `jest.fn()`,
+ * keeping `toHaveBeenCalledWith` working while never returning `undefined`.
+ */
+const stableMock = implementation => {
+  if (typeof jest === 'undefined') return implementation || noop;
+  const fn = jest.fn(implementation);
+  return new Proxy(fn, {
+    apply(target, thisArg, args) {
+      // Re-install the behaviour if resetMocks cleared it, then call through so
+      // jest still records the call for toHaveBeenCalledWith.
+      if (target.getMockImplementation() === undefined && implementation) {
+        target.mockImplementation(implementation);
+      }
+      return Reflect.apply(target, thisArg, args);
+    },
+  });
+};
 /** `jest.fn()` inside jest, a plain no-op anywhere else. */
 const spy = implementation =>
   typeof jest === 'undefined' ? implementation || noop : jest.fn(implementation);
+
 /** A SharedValue stand-in: `.value` reads and writes never throw. */
 const sharedValue = value => ({value});
 const inertRef = () => ({current: null});
@@ -47,8 +71,8 @@ const SheetPayloadContext = React.createContext(undefined);
 
 function createRefApi(getState) {
   return {
-    show: spy(() => getState().setVisible(true)),
-    hide: spy(data => {
+    show: stableMock(() => getState().setVisible(true)),
+    hide: stableMock(data => {
       getState().setVisible(false);
       getState().props.onClose?.(data);
     }),
@@ -147,12 +171,19 @@ const SheetGestureBlocker = ({children, style, ...rest}) =>
 const Route = () => null;
 
 const SheetManager = {
-  show: spy(() => Promise.resolve(undefined)),
-  hide: spy(() => Promise.resolve(undefined)),
+  // Resolved promises: `.then`/`await` chains in tests must keep working even
+  // after `resetMocks: true`.
+  show: stableMock(() => Promise.resolve(undefined)),
+  hide: stableMock(() => Promise.resolve(undefined)),
+  update: stableMock(() => Promise.resolve(undefined)),
+  // Methods consumers actually call; missing ones used to throw in tests.
+  hideAll: spy(),
   remove: spy(),
-  get: spy(() => undefined),
+  get: stableMock(() => undefined),
   add: spy(),
+  getActiveSheets: stableMock(() => []),
   registerRef: spy(),
+  context: stableMock(() => 'global'),
 };
 
 const registerSheet = spy();

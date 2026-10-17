@@ -47,9 +47,9 @@
   "peerDependencies": {
     "react-native": "*",
     "react-native-gesture-handler": "*",
-    "react-native-reanimated": "*",
+    "react-native-reanimated": ">=4.0.0",
     "react-native-safe-area-context": "*",
-    "react-native-worklets": "*"
+    "react-native-worklets": ">=0.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -95,6 +95,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "watch": "yarn tsc --watch"
+    "watch": "yarn tsc --watch",
+    "prepublishOnly": "tsc"
   }
 }
