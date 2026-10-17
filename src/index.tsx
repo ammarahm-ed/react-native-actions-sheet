@@ -1853,10 +1853,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                     : 999,
                 width: '100%',
                 height: '100%',
+                // `pointerEvents` is a style on RN-web 0.21 (the prop is
+                // deprecated) and works as a style on native since 0.71.
+                pointerEvents: props?.backgroundInteractionEnabled
+                  ? 'box-none'
+                  : 'auto',
               },
-              pointerEvents: props?.backgroundInteractionEnabled
-                ? 'box-none'
-                : 'auto',
             },
       [
         currentContext,
@@ -1991,10 +1993,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           <Root {...rootProps}>
             <GestureHandlerRoot
               isModal={isModal}
-              style={styles.parentContainer}
-              pointerEvents={
-                props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
-              }>
+              style={[
+                styles.parentContainer,
+                {
+                  pointerEvents: props?.backgroundInteractionEnabled
+                    ? 'box-none'
+                    : 'auto',
+                },
+              ]}>
               <PanGestureRefContext.Provider value={context}>
                 <SheetPositionContext.Provider value={sheetPosition}>
                 <WorkletScrollContext.Provider value={workletScrollContext}>
@@ -2007,14 +2013,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       );
                     }}
                     ref={rootViewContainerRef}
-                    pointerEvents={
-                      props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
-                    }
                     style={[
                       styles.parentContainer,
                       {
                         width: '100%',
                         justifyContent: 'flex-end',
+                        pointerEvents: props?.backgroundInteractionEnabled
+                          ? 'box-none'
+                          : 'auto',
                       },
                     ]}>
                     <>
@@ -2045,7 +2051,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       {dimensions.height === -1 &&
                       Platform.OS === 'web' ? null : (
                         <Animated.View
-                          pointerEvents="box-none"
                           // Treat the sheet as modal for screen readers and let
                           // the VoiceOver/TalkBack escape gesture dismiss it.
                           accessibilityViewIsModal={
@@ -2053,6 +2058,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                           }
                           onAccessibilityEscape={onModalRequestClose}
                           style={[
+                            {pointerEvents: 'box-none'},
                             {
                               borderTopRightRadius:
                                 containerStyle?.borderTopRightRadius || 10,
@@ -2121,13 +2127,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               ]}>
                               {drawUnderStatusBar && insets.top > 0 ? (
                                 <Animated.View
-                                  pointerEvents="none"
                                   style={[
                                     {
                                       position: 'absolute',
                                       top: -insets.top,
                                       left: 0,
                                       right: 0,
+                                      pointerEvents: 'none',
                                       // Overlap 1px into the sheet to avoid a
                                       // hairline seam at the join.
                                       height: insets.top + 1,
@@ -2202,9 +2208,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
 const GestureHandlerRoot = (props: any) => {
   return props.isModal ? (
-    <GestureHandlerRootView
-      style={props.style}
-      pointerEvents={props.pointerEvents}>
+    // `pointerEvents` arrives inside `style` (see the call site): the prop is
+    // deprecated on RN-web 0.21 and the style form works on native too.
+    <GestureHandlerRootView style={props.style}>
       {props.children}
     </GestureHandlerRootView>
   ) : (

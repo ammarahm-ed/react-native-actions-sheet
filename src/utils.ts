@@ -15,12 +15,15 @@ export function getDeviceHeight(
 }
 
 export const getElevation = (elevation: number) => {
+  // `boxShadow` replaces the deprecated `shadow*` trio, which RN-web 0.21 warns
+  // about and which iOS refuses to draw without a background colour ("shadow set
+  // but cannot calculate efficiently"). Android keeps its native `elevation`,
+  // which already draws the shadow, so `boxShadow` is not stacked on top of it.
+  if (Platform.OS === 'android') {
+    return {elevation};
+  }
   return {
-    elevation,
-    shadowColor: 'black',
-    shadowOffset: {width: 0.3 * elevation, height: 0.5 * elevation},
-    shadowOpacity: 0.2,
-    shadowRadius: 0.7 * elevation,
+    boxShadow: `0px ${0.5 * elevation}px ${0.7 * elevation}px rgba(0, 0, 0, 0.2)`,
   };
 };
 
