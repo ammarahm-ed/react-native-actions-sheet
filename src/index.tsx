@@ -223,6 +223,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       presentGeneration.current += 1;
       setKeepModalMounted(false);
       runPendingCloseNotify();
+      hiding.current = false;
+      closing.current = false;
     }, [runPendingCloseNotify]);
     const draggableNodes = useRef<NodesRef>([]);
     const layoutTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -722,11 +724,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
      * `onClose` handlers are free to present another one.
      */
     const onModalDismiss = React.useCallback(() => {
-      // A re-open landed while the Modal was dismissing: this dismissal belongs
-      // to the previous presentation. Keep it mounted for the new one and do not
-      // touch `visible` (it is already true again).
-      if (closeGeneration.current !== presentGeneration.current) return;
+      // The Modal is gone either way, so the hold is always released. Without
+      // this the render gate would keep a stale Modal mounted and `hiding` would
+      // stay latched, swallowing every later hide().
       setKeepModalMounted(false);
+      // A re-open landed while the Modal was dismissing: this dismissal belongs
+      // to the previous presentation. Do not touch `visible` (already true).
+      if (closeGeneration.current !== presentGeneration.current) return;
+      hiding.current = false;
       runPendingCloseNotify();
     }, [runPendingCloseNotify]);
 
@@ -800,6 +805,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 );
               }
               hiding.current = false;
+              setKeepModalMounted(false);
             };
 
             if (
@@ -816,9 +822,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               setKeepModalMounted(true);
               setVisible(false);
               closeNotifyTimeout.current = setTimeout(() => {
-                // `onDismiss` never arrived; never leave a promise hanging.
+                // `onDismiss` never arrived; never leave a promise hanging and
+                // never leave the `hiding` latch closed.
                 runPendingCloseNotify();
                 setKeepModalMounted(false);
+                hiding.current = false;
               }, 500);
             } else {
               notify();
