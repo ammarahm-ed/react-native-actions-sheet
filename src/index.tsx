@@ -189,10 +189,41 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     // `onDismiss`, with a timeout as a backstop so a promise can never hang.
     const pendingCloseNotify = useRef<null | (() => void)>(null);
     const closeNotifyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // Keeps the Modal mounted while it dismisses: unmounting it in the same tick
-    // can drop the native `onDismiss` event, so we flip `visible` to false first
-    // (a real true -> false transition, which always reports) and unmount after.
-    const [modalDismissing, setModalDismissing] = useState(false);
+    // The sheet's own `visible` goes false as soon as it closes (so a re-open in
+    // the same tick is a real state change and presents again). The native Modal
+    // is kept mounted one step longer, because unmounting it in the same tick can
+    // drop the `onDismiss` event the notification waits for.
+    const [keepModalMounted, setKeepModalMounted] = useState(false);
+    // Bumped every time the sheet is asked to present. A dismissal that arrives
+    // for an older generation is stale: the caller re-opened the sheet while the
+    // native Modal was still going away, so the `onDismiss` must not unmount it.
+    const presentGeneration = useRef(0);
+    const closeGeneration = useRef(0);
+
+    /**
+     * Runs a parked close notification exactly once, and cancels its backstop.
+     */
+    const runPendingCloseNotify = React.useCallback(() => {
+      if (closeNotifyTimeout.current) {
+        clearTimeout(closeNotifyTimeout.current);
+        closeNotifyTimeout.current = null;
+      }
+      const notify = pendingCloseNotify.current;
+      pendingCloseNotify.current = null;
+      notify?.();
+    }, []);
+
+    /**
+     * Ends an in-flight iOS close handshake: the sheet is presenting again, so
+     * the parked notification must run now and the Modal must go back to
+     * `visible`, otherwise the pending `onDismiss` would unmount the sheet the
+     * caller just re-opened.
+     */
+    const flushCloseHandshake = React.useCallback(() => {
+      presentGeneration.current += 1;
+      setKeepModalMounted(false);
+      runPendingCloseNotify();
+    }, [runPendingCloseNotify]);
     const draggableNodes = useRef<NodesRef>([]);
     const layoutTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [dimensions, setDimensions] = useState({
@@ -215,6 +246,16 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         hideSheet(undefined, data, true);
       },
       onBeforeShow: (data, snapIndex) => {
+        // Reopening while a close is still being handed off to the native Modal
+        // (iOS): the sheet never unmounted, so `visible` did not change and the
+        // effect below cannot see it. Flush the parked close notification and
+        // let the Modal present again -- otherwise the late `onDismiss` would
+        // unmount the sheet the caller just re-opened.
+        flushCloseHandshake();
+        // The caller is presenting, so any close in flight is now stale: let the
+        // next `hide()` through instead of being swallowed by the `hiding` guard.
+        hiding.current = false;
+        closing.current = false;
         routerRef.current?.initialNavigation();
         if (snapIndex !== undefined) {
           setCurrentSnapIndex(snapIndex);
@@ -677,27 +718,17 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     }, [keyboard.keyboardShown, keyboard.keyboardHeight]);
 
     /**
-     * Runs a parked close notification exactly once, and cancels its backstop.
-     */
-    const runPendingCloseNotify = React.useCallback(() => {
-      if (closeNotifyTimeout.current) {
-        clearTimeout(closeNotifyTimeout.current);
-        closeNotifyTimeout.current = null;
-      }
-      const notify = pendingCloseNotify.current;
-      pendingCloseNotify.current = null;
-      notify?.();
-    }, []);
-
-    /**
      * iOS Modal only. Fires once the sheet's view controller is really gone, so
      * `onClose` handlers are free to present another one.
      */
     const onModalDismiss = React.useCallback(() => {
-      setModalDismissing(false);
+      // A re-open landed while the Modal was dismissing: this dismissal belongs
+      // to the previous presentation. Keep it mounted for the new one and do not
+      // touch `visible` (it is already true again).
+      if (closeGeneration.current !== presentGeneration.current) return;
+      setKeepModalMounted(false);
       runPendingCloseNotify();
-      setVisible(false);
-    }, [runPendingCloseNotify, setVisible]);
+    }, [runPendingCloseNotify]);
 
     const hideSheet = React.useCallback(
       (
@@ -723,12 +754,21 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
 
         hiding.current = true;
+        // Remember which presentation this close belongs to; a re-open during the
+        // hide animation bumps the generation and makes this teardown stale.
+        closeGeneration.current = presentGeneration.current;
         onBeforeClose?.((data || returnValueRef.current || data) as never);
         if (closable) {
           closing.current = true;
           Keyboard.dismiss();
         }
         const onCompleteAnimation = () => {
+          // Re-opened while the sheet was animating away: do not tear down the
+          // presentation that is now on screen.
+          if (closeGeneration.current !== presentGeneration.current) {
+            hiding.current = false;
+            return;
+          }
           if (closable || isSheetManagerOrRef) {
             // Teardown runs now, as it always did: the sheet is gone from the
             // provider stack, its snap/translate state is reset, and the ref
@@ -770,11 +810,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               // Hold the notification until the native Modal is dismissed, so a
               // handler may present a view controller or navigate safely.
               pendingCloseNotify.current = notify;
-              setModalDismissing(true);
+              closeGeneration.current = presentGeneration.current;
+              // `visible` false now (re-open is a real transition), Modal kept
+              // mounted until `onDismiss` so presenting works after it.
+              setKeepModalMounted(true);
+              setVisible(false);
               closeNotifyTimeout.current = setTimeout(() => {
                 // `onDismiss` never arrived; never leave a promise hanging.
                 runPendingCloseNotify();
-                setVisible(false);
+                setKeepModalMounted(false);
               }, 500);
             } else {
               notify();
@@ -803,16 +847,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         runPendingCloseNotify,
       ],
     );
-
-    // Reopening while a close is still being handed off to the native Modal
-    // (iOS): flush the parked notification so the previous close's promises
-    // resolve, then present again.
-    React.useEffect(() => {
-      if (visible) {
-        setModalDismissing(false);
-        runPendingCloseNotify();
-      }
-    }, [visible, runPendingCloseNotify]);
 
     const onHardwareBackPress = React.useCallback(() => {
       if (
@@ -1706,6 +1740,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           if (typeof snapIndex === 'number') {
             setCurrentSnapIndex(snapIndex);
           }
+          // Same presentation bookkeeping as the SheetManager path: end any
+          // in-flight close handshake before presenting again.
+          flushCloseHandshake();
+          hiding.current = false;
+          closing.current = false;
           onBeforeShow?.();
           routerRef.current?.initialNavigation();
           setVisible(true);
@@ -1832,9 +1871,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       () =>
         isModal && !props.backgroundInteractionEnabled
           ? {
-              // Kept mounted while it dismisses so `onDismiss` is delivered;
-              // the sheet unmounts from the handler below.
-              visible: !modalDismissing,
+              // The sheet unmounts as soon as it is closed; the Modal is kept
+              // mounted (with this false) only so the dismissal can complete and
+              // report `onDismiss`.
+              visible: visible,
               onDismiss: onModalDismiss,
               animationType: 'none',
               testID: props.testIDs?.modal || props.testID,
@@ -1875,7 +1915,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [
         currentContext,
         isModal,
-        modalDismissing,
+        visible,
         onHardwareBackPress,
         onModalDismiss,
         onModalRequestClose,
@@ -2008,7 +2048,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     return (
       <>
-        {visible ? (
+        {visible || keepModalMounted ? (
           <Root {...rootProps}>
             <GestureHandlerRoot
               isModal={isModal}
