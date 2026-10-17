@@ -9,6 +9,11 @@ assets/
 
 # docs
 docs/
+# built docs site (docs:build output)
+docs-dist/
+
+# local notes, release plans - never published
+.local/
 
 # Example
 example/

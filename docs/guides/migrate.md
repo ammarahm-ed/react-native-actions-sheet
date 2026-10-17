@@ -1,8 +1,24 @@
 # Migrating Guide
 
-## Upcoming: the worklet gesture engine
+## Migrating to v11.0.0
 
-The drag gesture and scroll ↔ drag arbitration now run on the **UI thread** by default (the [`experimentalWorkletGestures`](/reference/actionsheet#experimentalworkletgestures) prop, enabled on all platforms). A busy JS thread no longer stutters the sheet, and scroll handoff is more reliable.
+### The New Architecture is required
+
+v11 runs the sheet's gestures and animations as worklets through Reanimated 4, which requires React Native's **New Architecture** (Fabric). If your app is still on the legacy architecture, stay on `react-native-actions-sheet@10`.
+
+### Dependencies
+
+`react-native-worklets` is now a peer dependency. It was a direct dependency in v10, which could pin a worklets version that did not match the native one your app (or your Expo SDK) ships — a JS/native mismatch, and a `pod install` failure on the old architecture. Install it with the other peers instead:
+
+```
+npm install react-native-reanimated react-native-worklets react-native-gesture-handler react-native-safe-area-context
+```
+
+The library also stops depending on `react-native-linear-gradient`: nothing in the library ever imported it. If your app uses it, keep it in your own `package.json`.
+
+### The worklet gesture engine is the default
+
+The drag gesture and scroll ↔ drag arbitration now run on the **UI thread** by default (the [`experimentalWorkletGestures`](/reference/actionsheet#experimentalworkletgestures) prop, enabled by default on native). A busy JS thread no longer stutters the sheet, and scroll handoff is more reliable. Web always uses the `PanResponder` path — gesture-handler's web `GestureDetector` is driven by pointer events, which the browser cancels as soon as a touch inside a scrollable starts scrolling.
 
 ### What you need to do
 
