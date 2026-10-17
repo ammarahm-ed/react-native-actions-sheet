@@ -1332,7 +1332,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             .runOnJS(true)
             .activeOffsetY([-5, 5])
             .failOffsetX([-5, 5])
-            .onEnd(onEnd);
+            // Passed wrapped, like `onChange` above: with the Worklets Babel
+            // plugin in bundle mode each callback is extracted into its own
+            // worklet file and its closure serialized, and `onEnd` writes to
+            // closure state that only exists on the JS side. Handing the
+            // function to `.onEnd` directly makes the extracted worklet *be*
+            // `onEnd`, which crashes there; a thin arrow wrapper keeps the real
+            // function on the JS thread (`runOnJS(true)` is set above).
+            .onEnd(() => onEnd());
     }, [gestureEnabled]);
 
     // Fully worklet-driven pan gesture. Per-frame drag and scroll<->drag
