@@ -67,6 +67,17 @@ Open the ActionSheet from anywhere in the app.
 SheetManager.show('example-sheet');
 ```
 
+`show` returns a promise that resolves with the sheet's return value **when the sheet closes**, not when it opens. That is what makes the [returning data](./getdata) and chaining patterns work, but it also means code written after an `await` runs only once the sheet is gone:
+
+```jsx
+// opens, then waits for the user to close the sheet
+const result = await SheetManager.show('example-sheet');
+// ...runs after the sheet has closed
+
+// opens immediately and does not wait
+SheetManager.show('example-sheet');
+```
+
 Hide the ActionSheet
 
 ```jsx
