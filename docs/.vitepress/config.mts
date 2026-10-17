@@ -111,6 +111,7 @@ export default defineConfig({
           {text: 'Position tracking', link: '/guides/position'},
           {text: 'Handling SafeArea', link: '/guides/safearea'},
           {text: 'Navigation bar colors', link: '/guides/navigationbar'},
+          {text: 'Testing', link: '/guides/testing'},
           {text: 'Migrating Guide', link: '/guides/migrate'},
         ],
       },
