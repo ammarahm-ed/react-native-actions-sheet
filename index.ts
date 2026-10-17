@@ -22,6 +22,7 @@ export {
   SheetDefinition,
   Sheets,
   ActionSheetRef,
+  CloseRequestType,
 } from './src/types';
 export {useScrollHandlers} from './src/hooks/use-scroll-handlers';
 export {

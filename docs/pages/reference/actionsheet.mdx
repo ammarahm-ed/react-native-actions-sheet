@@ -488,3 +488,11 @@ Return `false` to cancel closing the ActionSheet.
 | Type                                  | Required |
 | ------------------------------------- | -------- |
 | `(type: CloseRequestType) => boolean` | no       |
+
+`CloseRequestType` is exported from the package root:
+
+```js
+import {CloseRequestType} from 'react-native-actions-sheet';
+
+// CloseRequestType.SWIPE | CloseRequestType.BACK_PRESS | CloseRequestType.TOUCH_BACKDROP
+```
