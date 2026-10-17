@@ -7,5 +7,6 @@ node_modules/
 # Jest Test Coverage
 coverage/
 dist/
+docs-dist
 .npmrc
 .local

@@ -7,6 +7,7 @@ export default defineConfig({
   description:
     'A cross-platform (Android, iOS & Web) ActionSheet with a robust and flexible API, native performance and UI-thread gestures for React Native.',
   lang: 'en-US',
+  outDir: '../docs-dist',
   cleanUrls: true,
   lastUpdated: true,
   sitemap: {hostname: 'https://rnas.vercel.app'},

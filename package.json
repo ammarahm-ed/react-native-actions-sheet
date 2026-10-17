@@ -75,7 +75,8 @@
     "react-test-renderer": "19.1.0",
     "typedoc": "^0.23.10",
     "typedoc-plugin-markdown": "^3.13.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitepress": "^1.6.4"
   },
   "directories": {
     "example": "example"
@@ -84,9 +85,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "docs": "typedoc --plugin typedoc-plugin-markdown --out docs ./index.tsx",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "watch": "yarn tsc --watch"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "dependencies": {
     "react-native-linear-gradient": "^2.8.3",
     "react-native-worklets": "^0.7.1"
