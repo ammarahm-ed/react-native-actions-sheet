@@ -220,6 +220,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
      * caller just re-opened.
      */
     const flushCloseHandshake = React.useCallback(() => {
+      // Nothing parked means no close is waiting on `onDismiss`, so there is
+      // nothing to flush. Returning early matters: a show issued while the close
+      // *animation* is still running (rather than parked) must not bump the
+      // generation or clear the latches, or `onCompleteAnimation` treats the
+      // close as stale, skips teardown, and leaves an invisible full-screen
+      // Modal up with `visible` still true -- the next tap hits its backdrop and
+      // `onClose` never fires. Such a show is dropped, which is the pre-existing
+      // behaviour and is safe.
+      if (!pendingCloseNotify.current) return;
       presentGeneration.current += 1;
       setKeepModalMounted(false);
       runPendingCloseNotify();
@@ -248,16 +257,27 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         hideSheet(undefined, data, true);
       },
       onBeforeShow: (data, snapIndex) => {
-        // Reopening while a close is still being handed off to the native Modal
-        // (iOS): the sheet never unmounted, so `visible` did not change and the
-        // effect below cannot see it. Flush the parked close notification and
-        // let the Modal present again -- otherwise the late `onDismiss` would
-        // unmount the sheet the caller just re-opened.
-        flushCloseHandshake();
-        // The caller is presenting, so any close in flight is now stale: let the
-        // next `hide()` through instead of being swallowed by the `hiding` guard.
-        hiding.current = false;
-        closing.current = false;
+        // A show that lands while the close ANIMATION is still running is
+        // dropped: touching the close state here would make `onCompleteAnimation`
+        // treat the close as stale, skip teardown, and leave the sheet visible
+        // with an invisible full-screen Modal over the app. That was the
+        // pre-existing behaviour and it is safe.
+        //
+        // The dismiss-handshake windows are different: `hiding` is set but
+        // `visible` has not flipped yet, or the close is parked waiting for the
+        // Modal's `onDismiss`. Only those need the flush.
+        const inDismissalWindow =
+          hiding.current && closeGeneration.current === presentGeneration.current;
+        if (inDismissalWindow) {
+          // Reopening while a close is being handed off to the native Modal
+          // (iOS): flush the parked notification and present again, otherwise
+          // the late `onDismiss` would unmount the sheet being re-opened.
+          flushCloseHandshake();
+          // The caller is presenting, so any close in flight is now stale: let
+          // the next `hide()` through instead of being swallowed by the guard.
+          hiding.current = false;
+          closing.current = false;
+        }
         routerRef.current?.initialNavigation();
         if (snapIndex !== undefined) {
           setCurrentSnapIndex(snapIndex);
@@ -1752,11 +1772,19 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           if (typeof snapIndex === 'number') {
             setCurrentSnapIndex(snapIndex);
           }
-          // Same presentation bookkeeping as the SheetManager path: end any
-          // in-flight close handshake before presenting again.
-          flushCloseHandshake();
-          hiding.current = false;
-          closing.current = false;
+          // A show during the close ANIMATION is dropped: clearing the latches or
+          // presenting here would make `onCompleteAnimation` skip teardown and
+          // leave the sheet visible under an invisible full-screen Modal. Only a
+          // close that is waiting on the Modal's `onDismiss` is flushed.
+          if (hiding.current) {
+            if (pendingCloseNotify.current) {
+              flushCloseHandshake();
+              hiding.current = false;
+              closing.current = false;
+            } else {
+              return;
+            }
+          }
           onBeforeShow?.();
           routerRef.current?.initialNavigation();
           setVisible(true);
