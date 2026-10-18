@@ -15,6 +15,14 @@ export function getDeviceHeight(
 }
 
 export const getElevation = (elevation: number) => {
+  if (Platform.OS === 'web') {
+    // react-native-web deprecated the shadow* style props in favour of boxShadow.
+    return {
+      boxShadow: `${0.3 * elevation}px ${0.5 * elevation}px ${
+        0.7 * elevation
+      }px rgba(0, 0, 0, 0.2)`,
+    };
+  }
   return {
     elevation,
     shadowColor: 'black',
