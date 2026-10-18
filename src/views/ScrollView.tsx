@@ -1,52 +1,13 @@
-/* eslint-disable curly */
-import React, { RefObject, useImperativeHandle } from 'react';
-import {
-  ScrollView as RNScrollView,
-  ScrollViewProps
-} from 'react-native';
-import {
-  ScrollView as RNGHScrollView
-} from 'react-native-gesture-handler';
-import { useScrollHandlers } from '../hooks/use-scroll-handlers';
-type Props = ScrollViewProps &
-  React.RefAttributes<RNScrollView> & {
-    /**
-     * By default refresh control gesture will work in top 15% area of the ScrollView. You can set a different value here.
-     *
-     * Accepts a value between 0-1.
-     */
-    refreshControlGestureArea?: number;
-  };
+import {ScrollView as RNScrollView} from 'react-native';
+import {ScrollView as RNGHScrollView} from 'react-native-gesture-handler';
+import {createSheetScrollable} from './create-sheet-scrollable';
 
-function $ScrollView(
-  props: Props,
-  ref: RefObject<RNScrollView>,
-) {
-  const handlers = useScrollHandlers<RNScrollView>({
-    hasRefreshControl: !!props.refreshControl,
-    refreshControlBoundary: props.refreshControlGestureArea || 0.15,
-  });
-  useImperativeHandle(ref, () => handlers.ref.current);
-
-  return (
-    <RNGHScrollView
-      {...props}
-      ref={handlers.ref}
-      simultaneousHandlers={handlers.simultaneousHandlers}
-      scrollEventThrottle={handlers.scrollEventThrottle}
-      onScroll={event => {
-        handlers.onScroll(event);
-        props.onScroll?.(event);
-      }}
-      onLayout={event => {
-        handlers.onLayout();
-        props.onLayout?.(event);
-      }}
-      bounces={false}
-    />
-  );
-}
-
-export const ScrollView = React.forwardRef(
-  $ScrollView,
-) as unknown as typeof RNScrollView;
+/**
+ * A ScrollView that cooperates with the ActionSheet's drag gesture. Use it in
+ * place of the React Native / gesture-handler ScrollView for scrollable content
+ * inside a sheet.
+ */
+export const ScrollView = createSheetScrollable<typeof RNScrollView>(
+  RNGHScrollView as unknown as typeof RNScrollView,
+  'SheetScrollView',
+);

@@ -1,4 +1,5 @@
 import {
+  Platform,
   Pressable,
   PressableProps,
   StyleProp,
@@ -26,10 +27,9 @@ export function Button(
           paddingHorizontal: 10,
           borderRadius: 10,
           elevation: 5,
-          shadowColor: 'black',
-          shadowOffset: {width: 0.3 * 4, height: 0.5 * 4},
-          shadowOpacity: 0.2,
-          shadowRadius: 0.7 * 4,
+          ...(Platform.OS === 'android'
+            ? null
+            : {boxShadow: '0px 2px 2.8px rgba(0, 0, 0, 0.2)'}),
           width: '100%',
           marginBottom: 10,
         },

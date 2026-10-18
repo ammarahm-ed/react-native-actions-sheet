@@ -267,6 +267,16 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   defaultOverlayOpacity?: number;
 
   /**
+   * Fade the backdrop out progressively as the sheet is dragged down below its
+   * lowest snap point toward dismissal (native feel). The backdrop stays fully
+   * opaque at every snap point. Set to `false` to keep a constant backdrop while
+   * dragging.
+   *
+   * @default true
+   */
+  dimBackdropOnDrag?: boolean;
+
+  /**
    * Enables gesture control of ActionSheet.
    *
    * Default: `false`
@@ -378,9 +388,38 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
   onChange?: (position: number) => void;
 
   /**
+   * A worklet version of `onChange`. Runs on the UI thread on every integer
+   * percentage change without any JS-thread hop. Useful for driving companion
+   * animations (backdrop blur, header collapse) in sync with the sheet.
+   *
+   * The function passed here MUST be a worklet.
+   *
+   * @param {number} percentage Sheet visible on the screen in percentage.
+   */
+  onChangeWorklet?: (position: number) => void;
+
+  /**
    * Additional props to pass to the backdrop element. Useful for adding custom accessibility props.
    */
   backdropProps?: Partial<PressableProps>;
+
+  /**
+   * Accessibility labels for built-in sheet controls (screen readers).
+   */
+  accessibilityLabels?: {
+    /**
+     * Label for the backdrop button (activating it closes the sheet).
+     * @default "Close"
+     */
+    backdrop?: string;
+    /**
+     * Label for the drag handle / grabber. When there are multiple snap points it
+     * is exposed as an "adjustable" element so screen-reader users can swipe up or
+     * down to change the sheet's position.
+     * @default "Sheet position"
+     */
+    grabber?: string;
+  };
 
   /**
    * Default safeArea insets provided through a library such as
@@ -416,6 +455,37 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    * Enable swipe gestures inside ScrollView/FlatList. Enabled by default.
    */
   enableGesturesInScrollView?: boolean;
+
+  /**
+   * The worklet-driven gesture engine. When enabled, the drag gesture and
+   * scroll<->drag arbitration run entirely on the UI thread, so a busy JS thread
+   * no longer stutters the sheet and scroll handoff is more reliable. Enabled by
+   * default on native.
+   *
+   * Requires the sheet's own `ScrollView`/`FlatList` (from this package) for
+   * scrolling content. Set to `false` (or use `legacyGestures`) to fall back to
+   * the pre-v11 gesture path.
+   *
+   * Ignored on web, which always uses the PanResponder path: gesture-handler's
+   * web `GestureDetector` is driven by pointer events, which the browser cancels
+   * (`pointercancel`) the moment a touch inside a scrollable starts scrolling —
+   * leaving the pan unable to arbitrate with the scrollable. Worklets also run
+   * on the main thread on web, so there is nothing to gain there.
+   *
+   * @default true
+   */
+  experimentalWorkletGestures?: boolean;
+
+  /**
+   * Force the legacy (pre-v11) PanResponder/JS gesture engine instead of the
+   * worklet engine. Escape hatch in case the worklet path misbehaves for a
+   * specific use case.
+   *
+   * @deprecated The legacy gesture path will be removed in v11. Please report any
+   * issue that requires this flag.
+   * @default false
+   */
+  legacyGestures?: boolean;
 
   onSnapIndexChange?: (index: number) => void;
 

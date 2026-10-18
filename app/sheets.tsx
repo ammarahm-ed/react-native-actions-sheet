@@ -15,6 +15,7 @@ import Gestures from './examples/gestures';
 import Hello, { Hello_Two } from './examples/hello';
 import Input from './examples/input';
 import LegendListExample from './examples/legend-list';
+import MultiScrollSheet from './examples/multi-scroll';
 import NestedSheet from './examples/nested';
 import Payload from './examples/payload';
 import ReturnData from './examples/return-data';
@@ -65,7 +66,8 @@ declare module 'react-native-actions-sheet' {
     }>;
     'legend-list': SheetDefinition;
     'custom-scroll-handlers': SheetDefinition;
-    "custom-background": SheetDefinition
+    "custom-background": SheetDefinition;
+    'multi-scroll': SheetDefinition;
   }
 }
 
@@ -89,7 +91,8 @@ const sheets: SheetRegisterProps['sheets'] = {
   'legend-list': LegendListExample,
   'custom-scroll-handlers': CustomScrollHandlers,
   "hello_two": Hello_Two,
-  "custom-background": CustomBackground
+  "custom-background": CustomBackground,
+  'multi-scroll': MultiScrollSheet,
 };
 
 export const AppSheets = () => {

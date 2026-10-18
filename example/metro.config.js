@@ -19,6 +19,9 @@ const config = {
       'react-native': path.resolve(__dirname, 'node_modules/react-native'),
       'react-native-actions-sheet': path.resolve(__dirname, '../'),
       'react-native-reanimated': path.resolve(__dirname, 'node_modules/react-native-reanimated'),
+      // The shared demo screens under ../app import this, and the library no
+      // longer depends on it (v11), so resolve it from this project explicitly.
+      'react-native-linear-gradient': path.resolve(__dirname, 'node_modules/react-native-linear-gradient'),
       '@legendapp/list': path.resolve(__dirname, 'node_modules/@legendapp/list')
     },
     resolveRequest: (context, moduleName, platform) => {

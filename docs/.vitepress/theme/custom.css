@@ -1,0 +1,104 @@
+/**
+ * React Native ActionSheet — brand theme
+ * Brand gradient: #EC2B2B (red) → #B93B68 (pink/magenta)
+ */
+
+:root {
+  --rnas-red: #ec2b2b;
+  --rnas-pink: #b93b68;
+  --rnas-gradient: linear-gradient(120deg, #ec2b2b 10%, #b93b68 90%);
+
+  /* Brand color ramp used by buttons, links, focus rings, etc. */
+  --vp-c-brand-1: #d12b4e;
+  --vp-c-brand-2: #ec2b2b;
+  --vp-c-brand-3: #b93b68;
+  --vp-c-brand-soft: rgba(236, 43, 43, 0.14);
+
+  /* Keep the older aliases in sync for any component still reading them. */
+  --vp-c-brand: var(--vp-c-brand-1);
+  --vp-c-brand-light: var(--vp-c-brand-2);
+  --vp-c-brand-lighter: var(--vp-c-brand-3);
+}
+
+.dark {
+  --vp-c-brand-1: #ff5a6e;
+  --vp-c-brand-2: #ec2b2b;
+  --vp-c-brand-3: #d1497a;
+  --vp-c-brand-soft: rgba(255, 90, 110, 0.16);
+}
+
+/* ---------- Buttons ---------- */
+:root {
+  --vp-button-brand-bg: var(--rnas-red);
+  --vp-button-brand-hover-bg: #d92626;
+  --vp-button-brand-active-bg: #c62222;
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-text: #ffffff;
+  --vp-button-brand-hover-text: #ffffff;
+}
+
+/* Gradient primary CTA on the home hero */
+.VPButton.brand {
+  background: var(--rnas-gradient) !important;
+  border: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  box-shadow: 0 8px 24px -8px rgba(236, 43, 43, 0.5);
+}
+.VPButton.brand:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px -8px rgba(185, 59, 104, 0.6);
+}
+
+/* ---------- Home hero ---------- */
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: var(--rnas-gradient);
+
+  --vp-home-hero-image-background-image: linear-gradient(
+    120deg,
+    rgba(236, 43, 43, 0.5),
+    rgba(185, 59, 104, 0.5)
+  );
+  --vp-home-hero-image-filter: blur(56px);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --vp-home-hero-image-filter: blur(72px);
+  }
+}
+@media (min-width: 960px) {
+  :root {
+    --vp-home-hero-image-filter: blur(96px);
+  }
+}
+
+/* Give the hero name a touch more presence */
+.VPHero .name {
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Feature cards ---------- */
+.VPFeature {
+  transition: border-color 0.25s ease, transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.VPFeature:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -18px rgba(236, 43, 43, 0.55);
+}
+.VPFeature .icon {
+  background: var(--vp-c-brand-soft) !important;
+}
+
+/* ---------- Misc polish ---------- */
+.VPNavBarTitle .logo {
+  transition: transform 0.4s ease;
+}
+.VPNavBarTitle:hover .logo {
+  transform: rotate(-6deg) scale(1.08);
+}

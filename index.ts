@@ -26,6 +26,14 @@ export {
 } from './src/types';
 export {useScrollHandlers} from './src/hooks/use-scroll-handlers';
 export {
+  useSheetScrollable,
+  useSheetGestureRegion,
+} from './src/hooks/use-worklet-scrollable';
+export {SheetGestureBlocker} from './src/views/SheetGestureBlocker';
+export type {SheetGestureBlockerProps} from './src/views/SheetGestureBlocker';
+export {useSheetPosition} from './src/context';
+export type {SheetPosition} from './src/context';
+export {
   useSheetRouter,
   useSheetRouteParams,
   Route,

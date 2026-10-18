@@ -9,6 +9,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  AccessibilityActionEvent,
   BackHandler,
   Dimensions,
   GestureResponderEvent,
@@ -31,9 +32,13 @@ import {
 } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
+  Extrapolation,
+  interpolate,
+  measure,
   runOnJS,
-  runOnUI,
+  useAnimatedReaction,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withSpring,
   withTiming,
@@ -42,9 +47,14 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   DraggableNodes,
   DraggableNodesContext,
+  GestureRegion,
   LayoutRect,
   NodesRef,
   PanGestureRefContext,
+  SheetPosition,
+  SheetPositionContext,
+  WorkletScrollContext,
+  WorkletScrollContextType,
 } from './context';
 import EventManager, {actionSheetEventManager} from './eventmanager';
 import {useAccessibility} from './hooks/use-accessibility';
@@ -68,9 +78,23 @@ import {
 import {getZIndexFromStack, SheetManager} from './sheetmanager';
 import {styles} from './styles';
 import {ActionSheetProps, ActionSheetRef, CloseRequestType} from './types';
-import {getElevation, SUPPORTED_ORIENTATIONS} from './utils';
+import {getElevation, SUPPORTED_ORIENTATIONS, webOnlyDeps} from './utils';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Window over which layout events are coalesced before geometry is committed.
+// Long enough to absorb multi-pass layout (e.g. Android modal), short enough to
+// be invisible since the sheet is off-screen until the first commit.
+const LAYOUT_SETTLE_MS = 32;
+
+// Distance (px) over which the draw-under-status-bar effect blends in as the
+// sheet's top approaches the top of the screen.
+const STATUS_BAR_REVEAL_DISTANCE = 64;
+
+// How far a release velocity (px/s) "throws" the sheet when picking the snap
+// point to settle on. Higher = a flick carries further before snapping. Tuned to
+// feel like a native scroll-view fling.
+const VELOCITY_PROJECTION = 0.08;
 export default forwardRef<ActionSheetRef, ActionSheetProps>(
   function ActionSheet(
     {
@@ -80,6 +104,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       elevation = 5,
       disableElevation = false,
       defaultOverlayOpacity = 0.3,
+      dimBackdropOnDrag = true,
       overlayColor = 'black',
       closable = true,
       closeOnTouchBackdrop = true,
@@ -87,7 +112,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       drawUnderStatusBar = false,
       gestureEnabled = false,
       isModal = true,
-      snapPoints = [100],
+      snapPoints: snapPointsProp = [100],
       initialSnapIndex = 0,
       overdrawEnabled = true,
       overdrawFactor = 15,
@@ -102,6 +127,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       enableRouterBackNavigation,
       onBeforeClose,
       enableGesturesInScrollView = true,
+      experimentalWorkletGestures = true,
+      legacyGestures = false,
       disableDragBeyondMinimumSnapPoint,
       useBottomSafeAreaPadding = true,
       initialTranslateFactor = 1.1,
@@ -116,10 +143,16 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     },
     ref,
   ) {
-    snapPoints =
-      snapPoints[snapPoints.length - 1] !== 100
-        ? [...snapPoints, 100]
-        : snapPoints;
+    const snapPoints = React.useMemo(
+      () =>
+        snapPointsProp[snapPointsProp.length - 1] !== 100
+          ? [...snapPointsProp, 100]
+          : snapPointsProp,
+      // Stabilize identity across renders so dependent callbacks are not recreated
+      // when the parent passes an inline snapPoints array.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [snapPointsProp.join(',')],
+    );
     const initialValue = useRef(-1);
     const actionSheetHeight = useRef(0);
     const insets = useSafeAreaInsets();
@@ -130,8 +163,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const sheetRef = useSheetRef();
     const sheetHeightRef = useRef(0);
     const minTranslateValue = useRef(0);
-    const keyboardWasVisible = useRef(false);
-    const animationListenerId = 266786;
     const id = useSheetIDContext();
     const sheetId = props.id || id;
     const panViewRef = useRef<View>(null);
@@ -149,6 +180,61 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const sheetPayload = useSheetPayload();
     const panGestureRef = useRef<GestureType>(undefined);
     const closing = useRef(false);
+    // iOS only: the sheet tears down and animates away, but `onClose` and the
+    // `SheetManager` promises must not run until the native Modal has actually
+    // been dismissed. Otherwise a handler that presents a view controller
+    // (camera, share sheet, alert) or pushes a native-stack modal runs while the
+    // sheet's own Modal is still presented, and UIKit dismisses the wrong
+    // controller or blocks. The work is parked here and run from the Modal's
+    // `onDismiss`, with a timeout as a backstop so a promise can never hang.
+    const pendingCloseNotify = useRef<null | (() => void)>(null);
+    const closeNotifyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // The sheet's own `visible` goes false as soon as it closes (so a re-open in
+    // the same tick is a real state change and presents again). The native Modal
+    // is kept mounted one step longer, because unmounting it in the same tick can
+    // drop the `onDismiss` event the notification waits for.
+    const [keepModalMounted, setKeepModalMounted] = useState(false);
+    // Bumped every time the sheet is asked to present. A dismissal that arrives
+    // for an older generation is stale: the caller re-opened the sheet while the
+    // native Modal was still going away, so the `onDismiss` must not unmount it.
+    const presentGeneration = useRef(0);
+    const closeGeneration = useRef(0);
+
+    /**
+     * Runs a parked close notification exactly once, and cancels its backstop.
+     */
+    const runPendingCloseNotify = React.useCallback(() => {
+      if (closeNotifyTimeout.current) {
+        clearTimeout(closeNotifyTimeout.current);
+        closeNotifyTimeout.current = null;
+      }
+      const notify = pendingCloseNotify.current;
+      pendingCloseNotify.current = null;
+      notify?.();
+    }, []);
+
+    /**
+     * Ends an in-flight iOS close handshake: the sheet is presenting again, so
+     * the parked notification must run now and the Modal must go back to
+     * `visible`, otherwise the pending `onDismiss` would unmount the sheet the
+     * caller just re-opened.
+     */
+    const flushCloseHandshake = React.useCallback(() => {
+      // Nothing parked means no close is waiting on `onDismiss`, so there is
+      // nothing to flush. Returning early matters: a show issued while the close
+      // *animation* is still running (rather than parked) must not bump the
+      // generation or clear the latches, or `onCompleteAnimation` treats the
+      // close as stale, skips teardown, and leaves an invisible full-screen
+      // Modal up with `visible` still true -- the next tap hits its backdrop and
+      // `onClose` never fires. Such a show is dropped, which is the pre-existing
+      // behaviour and is safe.
+      if (!pendingCloseNotify.current) return;
+      presentGeneration.current += 1;
+      setKeepModalMounted(false);
+      runPendingCloseNotify();
+      hiding.current = false;
+      closing.current = false;
+    }, [runPendingCloseNotify]);
     const draggableNodes = useRef<NodesRef>([]);
     const layoutTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [dimensions, setDimensions] = useState({
@@ -157,6 +243,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     });
     const dimensionsRef = useRef(dimensions);
     dimensionsRef.current = dimensions;
+    // Latest container size reported by onLayout, before it has settled. Layout
+    // events (especially two-pass Android modal layout: a smaller frame then the
+    // real one) are coalesced and only committed once they stop changing.
+    const pendingDimensionsRef = useRef(dimensions);
     const containerStyle = StyleSheet.flatten(props.containerStyle);
     const providerId = useRef(`$$-auto-${sheetId}-${currentContext}-provider`);
     providerId.current = `$$-auto-${sheetId}-${currentContext}-provider`;
@@ -167,9 +257,30 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         hideSheet(undefined, data, true);
       },
       onBeforeShow: (data, snapIndex) => {
+        // A show that lands while the close ANIMATION is still running is
+        // dropped: touching the close state here would make `onCompleteAnimation`
+        // treat the close as stale, skip teardown, and leave the sheet visible
+        // with an invisible full-screen Modal over the app. That was the
+        // pre-existing behaviour and it is safe.
+        //
+        // The dismiss-handshake windows are different: `hiding` is set but
+        // `visible` has not flipped yet, or the close is parked waiting for the
+        // Modal's `onDismiss`. Only those need the flush.
+        const inDismissalWindow =
+          hiding.current && closeGeneration.current === presentGeneration.current;
+        if (inDismissalWindow) {
+          // Reopening while a close is being handed off to the native Modal
+          // (iOS): flush the parked notification and present again, otherwise
+          // the late `onDismiss` would unmount the sheet being re-opened.
+          flushCloseHandshake();
+          // The caller is presenting, so any close in flight is now stale: let
+          // the next `hide()` through instead of being swallowed by the guard.
+          hiding.current = false;
+          closing.current = false;
+        }
         routerRef.current?.initialNavigation();
         if (snapIndex !== undefined) {
-          currentSnapIndex.current = snapIndex;
+          setCurrentSnapIndex(snapIndex);
         }
         onBeforeShow?.(data as never);
       },
@@ -181,13 +292,114 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           } as RefObject<ActionSheetRef>);
         }
       },
+      // Runs while SheetManager.show() is still preparing to subscribe, so the
+      // previous close's notification cannot resolve the new promise or remove
+      // the registry entry that show() is about to add.
+      onFlushClose: flushCloseHandshake,
     });
 
     const opacity = useSharedValue(0);
     const actionSheetOpacity = useSharedValue(0);
     const translateY = useSharedValue(Dimensions.get('window').height * 2);
-    const underlayTranslateY = useSharedValue(130);
     const routeOpacity = useSharedValue(0);
+
+    // Geometry mirrored into shared values so the underlay and onChange position
+    // math can run entirely on the UI thread (no per-frame JS bridge hop).
+    // These are also the source-of-truth read by the worklet gesture (Phase 3).
+    const actionSheetHeightSV = useSharedValue(0);
+    const minTranslateValueSV = useSharedValue(0);
+    // Container height, NOT adjusted for the keyboard — used for backdrop dimming
+    // so the fade range doesn't shift when the keyboard opens/closes.
+    const rootHeightSV = useSharedValue(0);
+    const insetTopSV = useSharedValue(insets.top);
+    // Sheet position/snap state mirrored from the JS refs below via dual-write
+    // helpers, so worklets can read them without a JS-thread hop.
+    const initialValueSV = useSharedValue(-1);
+    const currentSnapIndexSV = useSharedValue(initialSnapIndex);
+    const keyboardHeightSV = useSharedValue(0);
+    const keyboardShownSV = useSharedValue(false);
+    const snapPointsSV = useSharedValue<number[]>(snapPoints);
+    // Worklet scroll-arbitration state (experimentalWorkletGestures).
+    const isRefreshingSV = useSharedValue(false);
+    // Registry of gesture regions (scrollables + gesture-blocking views). The
+    // worklet pan gesture measures these at gesture start to decide, per finger,
+    // whether to drag the sheet, hand off to a scrollable, or stay put.
+    const gestureRegions = useRef<GestureRegion[]>([]);
+    const [registryVersion, setRegistryVersion] = useState(0);
+    const registerRegion = useCallback((region: GestureRegion) => {
+      gestureRegions.current.push(region);
+      setRegistryVersion(v => v + 1);
+      return () => {
+        const index = gestureRegions.current.findIndex(
+          r => r.id === region.id,
+        );
+        if (index > -1) gestureRegions.current.splice(index, 1);
+        setRegistryVersion(v => v + 1);
+      };
+    }, []);
+
+    // Keeps a ref and its mirror shared value in sync in one place.
+    const setInitialValue = React.useCallback(
+      (value: number) => {
+        initialValue.current = value;
+        initialValueSV.value = value;
+      },
+      [initialValueSV],
+    );
+    const setCurrentSnapIndex = React.useCallback(
+      (value: number) => {
+        currentSnapIndex.current = value;
+        currentSnapIndexSV.value = value;
+      },
+      [currentSnapIndexSV],
+    );
+
+    useEffect(() => {
+      insetTopSV.value = insets.top;
+    }, [insetTopSV, insets.top]);
+
+    useEffect(() => {
+      snapPointsSV.value = snapPoints;
+    }, [snapPoints, snapPointsSV]);
+
+    // How "full-screen" the sheet is, 0 -> 1, purely from geometry: the sheet
+    // card's top edge on screen equals translateY, so this ramps up smoothly over
+    // the last STATUS_BAR_REVEAL_DISTANCE px as the top reaches the status bar.
+    // Reaches 1 only for sheets tall enough to actually cover it, so no explicit
+    // "percent covered" threshold is needed. Drives the status-bar fill + the
+    // top-corner flattening.
+    const fullscreenProgress = useDerivedValue(() => {
+      if (!drawUnderStatusBar) return 0;
+      const inset = insetTopSV.value;
+      if (inset <= 0) return 0;
+      return interpolate(
+        translateY.value,
+        [inset + STATUS_BAR_REVEAL_DISTANCE, inset],
+        [0, 1],
+        Extrapolation.CLAMP,
+      );
+    });
+    // Normalized openness (0 closed -> 1 fully open) exposed via useSheetPosition.
+    const sheetProgress = useDerivedValue(() => {
+      const sheetHeight = actionSheetHeightSV.value;
+      if (sheetHeight <= 0) return 0;
+      const minT = minTranslateValueSV.value;
+      return interpolate(
+        translateY.value,
+        [minT + sheetHeight, minT],
+        [0, 1],
+        Extrapolation.CLAMP,
+      );
+    });
+    const sheetPosition = React.useMemo<SheetPosition>(
+      () => ({
+        y: translateY,
+        height: actionSheetHeightSV,
+        progress: sheetProgress,
+      }),
+      [translateY, actionSheetHeightSV, sheetProgress],
+    );
+
     const router = useRouter({
       routes: routes,
       getRef: () => getRef(),
@@ -200,6 +412,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     returnValueRef.current = returnValue;
     routerRef.current = router;
     const keyboard = useKeyboard(keyboardHandlerEnabled);
+    useEffect(() => {
+      keyboardShownSV.value = keyboard.keyboardShown;
+      keyboardHeightSV.value = keyboard.keyboardHeight;
+    }, [
+      keyboard.keyboardShown,
+      keyboard.keyboardHeight,
+      keyboardShownSV,
+      keyboardHeightSV,
+    ]);
     const prevSnapIndex = useRef<number>(initialSnapIndex);
     const draggableNodesContext: DraggableNodes = React.useMemo(
       () => ({
@@ -287,9 +508,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               easing: Easing.in(Easing.ease),
             },
             finished => {
+              'worklet';
               if (finished) {
                 translateY.value = endTranslateValue;
               }
+              // Fire onClose exactly when the animation settles (drift-free,
+              // even when the JS thread is busy) instead of via setTimeout.
+              if (callback) runOnJS(callback)();
             },
           );
         } else {
@@ -299,14 +524,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               velocity: typeof vy !== 'number' ? 3.0 : vy + 1,
               duration: 200,
             },
+            () => {
+              'worklet';
+              if (callback) runOnJS(callback)();
+            },
           );
         }
-
-        /**
-         * Using setTimeout to ensure onClose is triggered when sheet is off screen
-         * or is close to reaching off screen.
-         */
-        setTimeout(() => callback(), config?.duration || 200);
       },
       [animated, animationSheetOpacity, props.closeAnimationConfig, setVisible],
     );
@@ -332,156 +555,209 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
     const Root: React.ElementType =
       isModal && !props?.backgroundInteractionEnabled ? Modal : Animated.View;
 
-    useEffect(() => {
-      if (drawUnderStatusBar || props.onChange) {
-        let prevPercentage = 0;
-        const onValueChange = (value: number) => {
-          const correctedValue =
-            value > minTranslateValue.current
-              ? value - minTranslateValue.current
-              : 0;
+    const onChange = props.onChange;
+    const onChangeWorklet = props.onChangeWorklet;
+    // Computes the visible percentage on the UI thread and only hops to JS when
+    // the rounded integer changes. Replaces the per-frame translateY.addListener
+    // -> runOnJS bridge.
+    // Same treatment as the animated styles: the deps array is web-only. On
+    // native Reanimated derives the inputs from the worklet closures, which
+    // capture these same two callbacks, so the reaction still restarts when
+    // either changes.
+    const onChangeReactionDeps = webOnlyDeps([onChange, onChangeWorklet]);
+    useAnimatedReaction(
+      () => {
+        const sheetHeight = actionSheetHeightSV.value;
+        if (sheetHeight <= 0) return -1;
+        const correctedValue =
+          translateY.value > minTranslateValueSV.value
+            ? translateY.value - minTranslateValueSV.value
+            : 0;
+        return Math.round(((sheetHeight - correctedValue) / sheetHeight) * 100);
+      },
+      (rounded, previous) => {
+        if (rounded < 0 || rounded === previous) return;
+        onChangeWorklet?.(rounded);
+        if (onChange) runOnJS(onChange)(rounded);
+      },
+      onChangeReactionDeps,
+    );
 
-          const percentage =
-            ((actionSheetHeight.current - correctedValue) /
-              actionSheetHeight.current) *
-            100;
-
-          const rounded = Math.round(percentage);
-          if (rounded !== prevPercentage && rounded > -1) {
-            prevPercentage = rounded;
-            props.onChange?.(Math.round(percentage));
-          }
-
-          const percentScreenCovered =
-            (actionSheetHeight.current /
-              (dimensionsRef.current.height - insets.top)) *
-            100;
-          if (drawUnderStatusBar) {
-            if (percentage > 85 && percentScreenCovered > 99) {
-              var distanceFromTop = 100 - percentage;
-              underlayTranslateY.value = Math.max(
-                (actionSheetHeight.current / 100) * distanceFromTop,
-              );
-            } else {
-              underlayTranslateY.value = 130;
-            }
-          } else {
-            underlayTranslateY.value = 130;
-          }
-        };
-        runOnUI(() => {
-          translateY.addListener(animationListenerId, value => {
-            runOnJS(onValueChange)(value);
-          });
-        })();
+    // Computes the sheet geometry from the *settled* container size + sheet
+    // height. Called only from the debounced scheduler below, so it never runs on
+    // a transient (e.g. first-pass Android) measurement.
+    const processLayout = React.useCallback(() => {
+      // Commit the settled container size (used by styles + close animations).
+      const pending = pendingDimensionsRef.current;
+      if (
+        pending.height >= 10 &&
+        (dimensionsRef.current.width !== pending.width ||
+          dimensionsRef.current.height !== pending.height)
+      ) {
+        dimensionsRef.current = pending;
+        setDimensions(pending);
       }
-      return () => {
-        runOnUI((animationListener: number) => {
-          translateY.removeListener(animationListener);
-        })(animationListenerId);
-      };
+
+      if (dimensionsRef.current.height === -1) return;
+      if (closing.current) return;
+
+      const sheetHeight = sheetHeightRef.current;
+      const rootViewHeight = dimensionsRef.current.height;
+      rootHeightSV.value = rootViewHeight;
+
+      // Cap the sheet to the space actually available. When the keyboard is up
+      // this excludes the keyboard, so a stale (pre-keyboard, taller) measurement
+      // can't compute an above-screen position before the view re-measures.
+      const maxSheetHeight = keyboard.keyboardShown
+        ? rootViewHeight - insets.top - keyboard.keyboardHeight
+        : rootViewHeight;
+      actionSheetHeight.current = Math.min(
+        sheetHeight,
+        Math.max(0, maxSheetHeight),
+      );
+      actionSheetHeightSV.value = actionSheetHeight.current;
+
+      let initial = initialValue.current;
+      let minTranslate = rootViewHeight - actionSheetHeight.current;
+
+      if (initial === -1) {
+        translateY.value = rootViewHeight * initialTranslateFactor;
+      }
+
+      const nextInitialValue =
+        actionSheetHeight.current +
+        minTranslate -
+        (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) / 100;
+
+      initial =
+        keyboard.keyboardShown &&
+        initial <= nextInitialValue &&
+        initial >= minTranslate
+          ? initial
+          : nextInitialValue;
+
+      const sheetBottomEdgePosition =
+        initial +
+        (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) / 100;
+
+      const sheetPositionWithKeyboard =
+        sheetBottomEdgePosition -
+        (rootViewHeight - keyboard.keyboardHeight);
+
+      initial = keyboard.keyboardShown
+        ? initial - sheetPositionWithKeyboard
+        : initial;
+
+      if (keyboard.keyboardShown) {
+        minTranslate = minTranslate - keyboard.keyboardHeight;
+      }
+
+      minTranslateValue.current = minTranslate;
+      minTranslateValueSV.value = minTranslate;
+      setInitialValue(initial);
+
+      animationSheetOpacity(defaultOverlayOpacity);
+      moveSheetWithAnimation(undefined, initial, minTranslate);
+
+      if (Platform.OS === 'web') {
+        document.body.style.overflowY = 'hidden';
+        document.documentElement.style.overflowY = 'hidden';
+      }
     }, [
-      props?.id,
+      snapPoints,
       keyboard.keyboardShown,
       keyboard.keyboardHeight,
-      dimensions,
+      insets.top,
+      animationSheetOpacity,
+      translateY,
+      moveSheetWithAnimation,
+      setInitialValue,
+      defaultOverlayOpacity,
+      initialTranslateFactor,
     ]);
 
-    const onSheetLayout = React.useCallback(
-      async (height: number) => {
-        const processLayout = () => {
-          const sheetHeight = height;
-          sheetHeightRef.current = sheetHeight;
-          if (dimensionsRef.current.height === -1) {
-            return;
-          }
-          if (closing.current) return;
-          const rootViewHeight = dimensionsRef.current?.height;
-
-          actionSheetHeight.current =
-            sheetHeight > dimensionsRef.current.height
-              ? dimensionsRef.current.height
-              : sheetHeight;
-
-          let minTranslate = 0;
-          let initial = initialValue.current;
-
-          minTranslate = rootViewHeight - actionSheetHeight.current;
-
-          if (initial === -1) {
-            translateY.value = rootViewHeight * initialTranslateFactor;
-          }
-
-          const nextInitialValue =
-            actionSheetHeight.current +
-            minTranslate -
-            (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-              100;
-
-          initial =
-            (keyboard.keyboardShown || keyboardWasVisible.current) &&
-            initial <= nextInitialValue &&
-            initial >= minTranslate
-              ? initial
-              : nextInitialValue;
-
-          const sheetBottomEdgePosition =
-            initial +
-            (actionSheetHeight.current * snapPoints[currentSnapIndex.current]) /
-              100;
-
-          const sheetPositionWithKeyboard =
-            sheetBottomEdgePosition -
-            (dimensionsRef.current?.height - keyboard.keyboardHeight);
-
-          initial = keyboard.keyboardShown
-            ? initial - sheetPositionWithKeyboard
-            : initial;
-
-          if (keyboard.keyboardShown) {
-            minTranslate = minTranslate - keyboard.keyboardHeight;
-          }
-
-          minTranslateValue.current = minTranslate;
-          initialValue.current = initial;
-
-          animationSheetOpacity(defaultOverlayOpacity);
-          moveSheetWithAnimation(undefined, initial, minTranslate);
-
-          if (initial > 130) {
-            underlayTranslateY.value = 130;
-          }
-          if (Platform.OS === 'web') {
-            document.body.style.overflowY = 'hidden';
-            document.documentElement.style.overflowY = 'hidden';
-          }
-        };
-
-        // Debounce layout updates to prevent jumps
-        if (Platform.OS === 'android' && !animated) {
-          if (layoutTimeoutRef.current) {
-            clearTimeout(layoutTimeoutRef.current);
-          }
-          layoutTimeoutRef.current = setTimeout(() => {
-            processLayout();
-            layoutTimeoutRef.current = null;
-          }, 32);
-          return;
-        }
-
+    // Coalesce layout events across all sources (root container + sheet view).
+    // Geometry is committed only once the size stops changing for a short window,
+    // so a transient smaller/earlier measurement never positions the sheet. The
+    // sheet is off-screen until the first commit, so this settle is invisible.
+    const scheduleLayout = React.useCallback(() => {
+      if (layoutTimeoutRef.current) clearTimeout(layoutTimeoutRef.current);
+      layoutTimeoutRef.current = setTimeout(() => {
+        layoutTimeoutRef.current = null;
         processLayout();
+      }, LAYOUT_SETTLE_MS);
+    }, [processLayout]);
+
+    const onSheetLayout = React.useCallback(
+      (height: number) => {
+        sheetHeightRef.current = height;
+        scheduleLayout();
       },
-      [
-        animated,
-        snapPoints,
-        keyboard.keyboardShown,
-        keyboard.keyboardHeight,
-        animationSheetOpacity,
-        translateY,
-        underlayTranslateY,
-        moveSheetWithAnimation,
-      ],
+      [scheduleLayout],
     );
+
+    const onRootLayout = React.useCallback(
+      (width: number, height: number) => {
+        if (height < 10) return;
+        pendingDimensionsRef.current = {width, height};
+        scheduleLayout();
+      },
+      [scheduleLayout],
+    );
+
+    useEffect(() => {
+      return () => {
+        if (layoutTimeoutRef.current) clearTimeout(layoutTimeoutRef.current);
+      };
+    }, []);
+
+    // Recompute the sheet position when the keyboard shows/hides. The sheet's
+    // paddingBottom / maxHeight change with the keyboard, so the last onLayout
+    // height can lag the new keyboard state; repositioning from a stale (still
+    // bottom-padded) height would align the padded edge to the keyboard instead
+    // of the content edge. Measure the sheet fresh (after the re-layout has
+    // committed) and reposition from that.
+    useEffect(() => {
+      if (!visibleRef.current.value) return undefined;
+      const raf = requestAnimationFrame(() => {
+        const node = panViewRef.current as unknown as {
+          measure?: (
+            cb: (
+              x: number,
+              y: number,
+              w: number,
+              h: number,
+            ) => void,
+          ) => void;
+        } | null;
+        if (node?.measure) {
+          node.measure((_x, _y, _w, h) => {
+            if (h > 0) sheetHeightRef.current = h;
+            scheduleLayout();
+          });
+        } else {
+          scheduleLayout();
+        }
+      });
+      return () => cancelAnimationFrame(raf);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [keyboard.keyboardShown, keyboard.keyboardHeight]);
+
+    /**
+     * iOS Modal only. Fires once the sheet's view controller is really gone, so
+     * `onClose` handlers are free to present another one.
+     */
+    const onModalDismiss = React.useCallback(() => {
+      // The Modal is gone either way, so the hold is always released. Without
+      // this the render gate would keep a stale Modal mounted and `hiding` would
+      // stay latched, swallowing every later hide().
+      setKeepModalMounted(false);
+      // A re-open landed while the Modal was dismissing: this dismissal belongs
+      // to the previous presentation. Do not touch `visible` (already true).
+      if (closeGeneration.current !== presentGeneration.current) return;
+      hiding.current = false;
+      runPendingCloseNotify();
+    }, [runPendingCloseNotify]);
 
     const hideSheet = React.useCallback(
       (
@@ -502,51 +778,84 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if ((!closable || !closeRequestResult) && !isSheetManagerOrRef) {
           const next = getNextPosition(currentSnapIndex.current);
           moveSheetWithAnimation(vy, next, undefined, gestureEnd);
-          initialValue.current = next;
+          setInitialValue(next);
           return;
         }
 
         hiding.current = true;
+        // Remember which presentation this close belongs to; a re-open during the
+        // hide animation bumps the generation and makes this teardown stale.
+        closeGeneration.current = presentGeneration.current;
         onBeforeClose?.((data || returnValueRef.current || data) as never);
         if (closable) {
           closing.current = true;
           Keyboard.dismiss();
-          runOnUI((animationListener: number) => {
-            translateY.removeListener(animationListener);
-          })(animationListenerId);
         }
         const onCompleteAnimation = () => {
+          // Re-opened while the sheet was animating away: do not tear down the
+          // presentation that is now on screen.
+          if (closeGeneration.current !== presentGeneration.current) {
+            hiding.current = false;
+            return;
+          }
           if (closable || isSheetManagerOrRef) {
+            // Teardown runs now, as it always did: the sheet is gone from the
+            // provider stack, its snap/translate state is reset, and the ref
+            // reports closed.
             const providerIndex = providerRegistryStack.indexOf(providerId.current);
             if (providerIndex > -1) {
               providerRegistryStack.splice(providerIndex, 1);
             }
-            setVisible(false);
             visibleRef.current.value = false;
-            if (props.onClose) {
-              props.onClose?.(
-                (data || returnValueRef.current || data) as never,
-              );
-              hiding.current = false;
-            }
-            hardwareBackPressEvent.current?.remove();
-            if (sheetId) {
-              SheetManager.remove(sheetId, currentContext);
-              hiding.current = false;
-              actionSheetEventManager.publish(
-                `onclose_${sheetId}`,
-                data || returnValueRef.current || data,
-                currentContext || 'global',
-              );
-            } else {
-              hiding.current = false;
-            }
-            currentSnapIndex.current = initialSnapIndex;
+            setCurrentSnapIndex(initialSnapIndex);
             closing.current = false;
-            initialValue.current = -1;
+            setInitialValue(-1);
             actionSheetOpacity.value = 0;
             translateY.value = Dimensions.get('window').height * 2;
             keyboard.reset();
+
+            // Notification is separate: it is what resolves `SheetManager`'s
+            // promises and runs the app's `onClose`.
+            const notify = () => {
+              const closeData = data || returnValueRef.current || data;
+              props.onClose?.(closeData as never);
+              hardwareBackPressEvent.current?.remove();
+              if (sheetId) {
+                SheetManager.remove(sheetId, currentContext);
+                actionSheetEventManager.publish(
+                  `onclose_${sheetId}`,
+                  closeData,
+                  currentContext || 'global',
+                );
+              }
+              hiding.current = false;
+              setKeepModalMounted(false);
+            };
+
+            if (
+              Platform.OS === 'ios' &&
+              isModal &&
+              !props.backgroundInteractionEnabled
+            ) {
+              // Hold the notification until the native Modal is dismissed, so a
+              // handler may present a view controller or navigate safely.
+              pendingCloseNotify.current = notify;
+              closeGeneration.current = presentGeneration.current;
+              // `visible` false now (re-open is a real transition), Modal kept
+              // mounted until `onDismiss` so presenting works after it.
+              setKeepModalMounted(true);
+              setVisible(false);
+              closeNotifyTimeout.current = setTimeout(() => {
+                // `onDismiss` never arrived; never leave a promise hanging and
+                // never leave the `hiding` latch closed.
+                runPendingCloseNotify();
+                setKeepModalMounted(false);
+                hiding.current = false;
+              }, 500);
+            } else {
+              notify();
+              setVisible(false);
+            }
           } else {
             opacity.value = 1;
             moveSheetWithAnimation(1, undefined, undefined, gestureEnd);
@@ -562,9 +871,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         closable,
         hideSheetWithAnimation,
         props.onClose,
+        props.backgroundInteractionEnabled,
         moveSheetWithAnimation,
         keyboard,
         setVisible,
+        isModal,
+        runPendingCloseNotify,
       ],
     );
 
@@ -604,7 +916,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         if (currentSnapIndex.current === snapPoints.length - 1) {
           const next = getNextPosition(currentSnapIndex.current);
           moveSheetWithAnimation(vy, next, undefined, gestureEnd);
-          initialValue.current = next;
+          setInitialValue(next);
           return;
         }
         let nextSnapPoint = 0;
@@ -625,9 +937,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
           return;
         }
-        currentSnapIndex.current = nextSnapIndex;
+        setCurrentSnapIndex(nextSnapIndex);
         const next = getNextPosition(currentSnapIndex.current);
-        initialValue.current = next;
+        setInitialValue(next);
         moveSheetWithAnimation(vy, next, undefined, gestureEnd);
       },
       [getCurrentPosition, getNextPosition, moveSheetWithAnimation, snapPoints],
@@ -639,12 +951,12 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       (vy: number, gestureEnd?: boolean) => {
         if (currentSnapIndex.current === 0) {
           if (closable) {
-            initialValue.current = dimensionsRef.current.height * 1.3;
+            setInitialValue(dimensionsRef.current.height * 1.3);
             hideSheet(vy, undefined, false, gestureEnd);
           } else {
             const next = getNextPosition(currentSnapIndex.current);
             moveSheetWithAnimation(vy, next, undefined, gestureEnd);
-            initialValue.current = next;
+            setInitialValue(next);
           }
           return;
         }
@@ -659,7 +971,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
           if (i === 0 && getCurrentPosition() > getNextPosition(i)) {
             if (closable) {
-              initialValue.current = dimensionsRef.current.height * 1.3;
+              setInitialValue(dimensionsRef.current.height * 1.3);
               hideSheet(vy, undefined, undefined, gestureEnd);
               return;
             }
@@ -671,9 +983,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           moveSheetWithAnimation(vy, undefined, undefined, gestureEnd);
           return;
         }
-        currentSnapIndex.current = nextSnapIndex;
+        setCurrentSnapIndex(nextSnapIndex);
         const next = getNextPosition(currentSnapIndex.current);
-        initialValue.current = next;
+        setInitialValue(next);
         moveSheetWithAnimation(vy, next, undefined, gestureEnd);
       },
       [
@@ -726,14 +1038,45 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [],
     );
 
+    // Settles a worklet-driven drag to a target snap index (chosen by velocity
+    // projection in the gesture's onEnd) or closes the sheet. Runs once on the JS
+    // thread at release — not per frame. The target already accounts for fling
+    // velocity, so the spring itself uses a gentle velocity (no double-counting,
+    // no overdraw over-spring).
+    const handleGestureSettle = React.useCallback(
+      (targetIndex: number, shouldClose: boolean) => {
+        if (!gestureEnabled) return;
+        if (shouldClose && closable) {
+          setInitialValue(dimensionsRef.current.height * 1.3);
+          hideSheet(undefined, undefined, false, true);
+          return;
+        }
+        const target = getNextPosition(targetIndex);
+        setCurrentSnapIndex(targetIndex);
+        setInitialValue(target);
+        moveSheetWithAnimation(1, target, undefined, true);
+      },
+      [
+        gestureEnabled,
+        closable,
+        hideSheet,
+        getNextPosition,
+        setCurrentSnapIndex,
+        setInitialValue,
+        moveSheetWithAnimation,
+      ],
+    );
+
     const panGesture = React.useMemo(() => {
       let prevDeltaY = 0;
       let deltaYOnGestureStart = 0;
       let velocity = 0;
-      let start: {
-        x: number;
-        y: number;
-      };
+      let start:
+        | {
+            x: number;
+            y: number;
+          }
+        | undefined;
       let oldValue = 0;
       let isRefreshing = false;
       const offsets: number[] = [];
@@ -741,6 +1084,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       function scrollable(value: boolean) {
         for (let i = 0; i < draggableNodes.current.length; i++) {
           const node = draggableNodes.current[i];
+          // A gesture-blocking region is not a scrollable: there is nothing to
+          // pin, and writing `scrollTop` to it would be meaningless.
+          if (node.handlerConfig?.blocksGesture) continue;
           const scrollRef = resolveScrollRef(node.ref);
           if (Platform.OS === 'ios' || Platform.OS === 'web') {
             if (!value) {
@@ -768,6 +1114,42 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       }
 
       let blockPan = false;
+
+      /**
+       * Set on touchstart: the touch began inside a gesture-blocking region
+       * (`SheetGestureBlocker`), which owns the gesture. The decision is made
+       * once, where the gesture began, never where the finger has travelled to
+       * since — that is exactly how the worklet engine resolves a region too.
+       */
+      let blockedTouchStart = false;
+
+      /**
+       * Web only — blocking regions are measured straight from the DOM rather
+       * than from the registry's cached rect, which is refreshed on a debounced
+       * timer after the sheet moves and is therefore routinely stale. A stale
+       * rect is precisely what a region decision cannot tolerate: mid-drag the
+       * finger would be tested against where the region used to be. There are
+       * only ever a handful of regions, and this runs once per touch.
+       */
+      const isBlockedAt = (absoluteX: number, absoluteY: number) => {
+        if (Platform.OS !== 'web') return false;
+        for (const node of draggableNodes.current) {
+          if (!node.handlerConfig?.blocksGesture) continue;
+          const rect = (
+            resolveScrollRef(node.ref) as HTMLElement | null
+          )?.getBoundingClientRect?.();
+          if (!rect) continue;
+          if (
+            absoluteX > rect.left &&
+            absoluteY > rect.top &&
+            absoluteX < rect.right &&
+            absoluteY < rect.bottom
+          ) {
+            return true;
+          }
+        }
+        return false;
+      };
 
       const onChange = (
         absoluteX: number,
@@ -956,6 +1338,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 return false;
               }
 
+              if (blockedTouchStart) {
+                return false;
+              }
+
               const activeDraggableNodes = getActiveDraggableNodes(
                 _event.nativeEvent.pageX,
                 _event.nativeEvent.pageY,
@@ -967,6 +1353,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
               return true;
             },
             onStartShouldSetPanResponder: (_event, _gesture) => {
+              blockedTouchStart = isBlockedAt(
+                _event.nativeEvent.pageX,
+                _event.nativeEvent.pageY,
+              );
+              if (blockedTouchStart) {
+                return false;
+              }
               const activeDraggableNodes = getActiveDraggableNodes(
                 _event.nativeEvent.pageX,
                 _event.nativeEvent.pageY,
@@ -976,6 +1369,17 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                 offsets.push((scrollRef as HTMLDivElement).scrollTop);
               }
               return true;
+            },
+            onPanResponderGrant: () => {
+              // `start` is the point the drag-vs-scroll decision is made against
+              // and `prevDeltaY` is that decision's last movement delta; both are
+              // per-gesture state that `onChange` only ever sets. Without clearing
+              // them here the origin of the session's first touch (usually a list)
+              // keeps deciding every later drag, so scrolling a list once would
+              // leave the sheet hard to drag from anywhere for the rest of the
+              // session. Web only — native's Gesture.Pan path is untouched.
+              start = undefined;
+              prevDeltaY = 0;
             },
             onPanResponderMove: (_event, gesture) => {
               onChange(
@@ -994,8 +1398,328 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             .runOnJS(true)
             .activeOffsetY([-5, 5])
             .failOffsetX([-5, 5])
-            .onEnd(onEnd);
+            // Passed wrapped, like `onChange` above: with the Worklets Babel
+            // plugin in bundle mode each callback is extracted into its own
+            // worklet file and its closure serialized, and `onEnd` writes to
+            // closure state that only exists on the JS side. Handing the
+            // function to `.onEnd` directly makes the extracted worklet *be*
+            // `onEnd`, which crashes there; a thin arrow wrapper keeps the real
+            // function on the JS thread (`runOnJS(true)` is set above).
+            .onEnd(() => onEnd());
     }, [gestureEnabled]);
+
+    // Fully worklet-driven pan gesture. Per-frame drag and scroll<->drag
+    // arbitration run on the UI thread; only the snap decision at release hops
+    // to JS (once) via handleGestureSettle.
+    //
+    // On gesture start it measures every registered region to find, on the UI
+    // thread, which scrollable (or gesture-blocking region) is under the finger,
+    // so multiple scrollables are arbitrated correctly at the same time.
+    const workletPanGesture = React.useMemo(() => {
+      const overdrawFactorC = overdrawFactor;
+      const overdrawSizeC = overdrawSize;
+      const overdrawEnabledC = overdrawEnabled;
+      const closableC = closable;
+      const disableBeyondC = disableDragBeyondMinimumSnapPoint;
+      const enableInScrollC = enableGesturesInScrollView;
+      const springOffsetC = springOffset;
+      // Snapshot of the registry captured for this gesture instance. The memo
+      // rebuilds whenever registryVersion changes so this stays current.
+      const regions = gestureRegions.current.slice();
+      // activeKind: 0 = none/sheet, 1 = scrollable, 2 = gesture-blocking region.
+      // dragging: whether the sheet is currently being moved by the finger. The
+      // drag anchors to the sheet's actual position when it starts (dragBaseSheetY
+      // / dragBaseTranslationY), so a frame that briefly hands back to the
+      // scrollable (at the offset==0 boundary) freezes the sheet in place and the
+      // next frame resumes seamlessly instead of snapping back to fully-open.
+      const ctx = {
+        activeKind: 0,
+        activeIndex: -1,
+        hasRefresh: false,
+        refreshBoundaryY: 0,
+        dragging: false,
+        dragBaseSheetY: 0,
+        dragBaseTranslationY: 0,
+        // Whether this pan instance has claimed the gesture already. A handler
+        // that is mid-drag must not be failed by an extra finger landing in a
+        // blocking region.
+        activated: false,
+      };
+
+      /**
+       * Whether the point falls inside a gesture-blocking region
+       * (`SheetGestureBlocker` / `useSheetGestureRegion`). Regions are measured
+       * live on the UI thread, so the result tracks the sheet as it moves.
+       */
+      const beginsInBlockingRegion = (x: number, y: number) => {
+        'worklet';
+        for (let i = 0; i < regions.length; i++) {
+          const region = regions[i];
+          if (region.kind !== 'ignore') continue;
+          const m = measure(region.animatedRef);
+          if (!m) continue;
+          if (
+            x >= m.pageX &&
+            x <= m.pageX + m.width &&
+            y >= m.pageY &&
+            y <= m.pageY + m.height
+          ) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      return Gesture.Pan()
+        .withRef(panGestureRef)
+        // A touch that begins inside a blocking region belongs to the view under
+        // the finger (an inner ScrollView, slider, canvas, ...), not to the
+        // sheet. Deciding that in `onBegin` is too late: once this pan activates,
+        // Android cancels the child's touch stream, so an inner scrollable stops
+        // scrolling and the sheet's behaviour depends on which of the two wins
+        // the activation race. Failing the handler on touch-down hands the whole
+        // gesture to the child — the sheet cannot move, and the child works.
+        .onTouchesDown((event, state) => {
+          'worklet';
+          if (!gestureEnabled || ctx.activated) return;
+          const touches = event.changedTouches;
+          for (let i = 0; i < touches.length; i++) {
+            const touch = touches[i];
+            if (beginsInBlockingRegion(touch.absoluteX, touch.absoluteY)) {
+              state.fail();
+              return;
+            }
+          }
+        })
+        .onStart(() => {
+          'worklet';
+          ctx.activated = true;
+        })
+        .onFinalize(() => {
+          'worklet';
+          ctx.activated = false;
+        })
+        .onBegin(event => {
+          'worklet';
+          ctx.activeKind = 0;
+          ctx.activeIndex = -1;
+          ctx.hasRefresh = false;
+          ctx.refreshBoundaryY = 0;
+          ctx.dragging = false;
+
+          // Safety net for a region that only became measurable after touch-down
+          // (`onTouchesDown` already failed the gesture for the normal case).
+          if (beginsInBlockingRegion(event.absoluteX, event.absoluteY)) {
+            ctx.activeKind = 2;
+            return;
+          }
+
+          let bestScrollIndex = -1;
+          let bestScrollArea = Number.MAX_VALUE;
+          for (let i = 0; i < regions.length; i++) {
+            const region = regions[i];
+            const m = measure(region.animatedRef);
+            if (!m) continue;
+            const inside =
+              event.absoluteX >= m.pageX &&
+              event.absoluteX <= m.pageX + m.width &&
+              event.absoluteY >= m.pageY &&
+              event.absoluteY <= m.pageY + m.height;
+            if (!inside) continue;
+            if (region.kind !== 'scroll') continue;
+            // Prefer the smallest matching scrollable (most specific / innermost).
+            const area = m.width * m.height;
+            if (area < bestScrollArea) {
+              bestScrollArea = area;
+              bestScrollIndex = i;
+              ctx.hasRefresh = !!region.hasRefreshControl;
+              ctx.refreshBoundaryY =
+                m.pageY + m.height * (region.refreshControlBoundary ?? 0.15);
+            }
+          }
+          if (bestScrollIndex > -1) {
+            ctx.activeKind = 1;
+            ctx.activeIndex = bestScrollIndex;
+          }
+        })
+        .onChange(event => {
+          'worklet';
+          if (!gestureEnabled) return;
+          // Gesture-blocking region: never move the sheet.
+          if (ctx.activeKind === 2) {
+            ctx.dragging = false;
+            return;
+          }
+
+          const swipingDown = event.changeY > 0;
+          const minTranslate = minTranslateValueSV.value;
+          const fullOpen = translateY.value <= minTranslate + 5;
+
+          let block = false;
+          if (ctx.activeKind === 1 && enableInScrollC && !isRefreshingSV.value) {
+            const region = regions[ctx.activeIndex];
+            const nodeScrolling = (region?.scrollY?.value ?? 0) > 0;
+            // Case 2: fully open + swiping up while list has room -> let it scroll.
+            if (fullOpen && !swipingDown) {
+              block = true;
+            }
+            // Cases 3a/4a: swiping down while the list is still scrolled -> scroll.
+            else if (swipingDown && nodeScrolling) {
+              block = true;
+            }
+            // Case 5: pull-to-refresh. Fully open, pulling down from the top of a
+            // list that has a RefreshControl, within its trigger zone.
+            else if (
+              fullOpen &&
+              swipingDown &&
+              !nodeScrolling &&
+              ctx.hasRefresh &&
+              event.absoluteY < ctx.refreshBoundaryY
+            ) {
+              isRefreshingSV.value = true;
+              block = true;
+            }
+          } else if (ctx.activeKind === 1 && !enableInScrollC) {
+            block = true;
+          }
+
+          if (block || isRefreshingSV.value) {
+            // Hand the frame to the scrollable: freeze the sheet where it is so
+            // the next drag frame resumes from here instead of jumping.
+            ctx.dragging = false;
+            return;
+          }
+
+          // Anchor the drag to the sheet's current position the moment it starts
+          // moving. Captured once — a stray blocked frame just re-anchors here,
+          // with no visible jump.
+          if (!ctx.dragging) {
+            ctx.dragging = true;
+            ctx.dragBaseSheetY = translateY.value;
+            ctx.dragBaseTranslationY = event.translationY;
+          }
+
+          const value =
+            ctx.dragBaseSheetY + (event.translationY - ctx.dragBaseTranslationY);
+          const correctedValue =
+            value <= minTranslate ? minTranslate - value : value;
+
+          // When overdrawn to the limit, keep absorbing upward movement but let
+          // the user drag back down immediately.
+          if (
+            correctedValue / overdrawFactorC >= overdrawSizeC &&
+            event.changeY <= 0
+          ) {
+            return;
+          }
+
+          const sheetHeight = actionSheetHeightSV.value;
+          const firstSnap = snapPointsSV.value[0] ?? 100;
+          const minSnapPoint =
+            sheetHeight + minTranslate - (sheetHeight * firstSnap) / 100;
+
+          const translateYValue =
+            value <= minTranslate
+              ? overdrawEnabledC
+                ? minTranslate - correctedValue / overdrawFactorC
+                : minTranslate
+              : value;
+
+          if (!closableC && disableBeyondC) {
+            translateY.value =
+              translateYValue >= minSnapPoint ? minSnapPoint : translateYValue;
+          } else {
+            translateY.value = translateYValue;
+          }
+        })
+        .onEnd(event => {
+          'worklet';
+          if (!gestureEnabled) return;
+          ctx.dragging = false;
+          isRefreshingSV.value = false;
+          if (ctx.activeKind === 2) return;
+
+          // Project where the sheet would coast to given the release velocity,
+          // then settle on the nearest snap point. This is what makes a quick
+          // flick carry to the next detent (or dismiss) rather than depending
+          // only on how far the finger travelled.
+          const projected = translateY.value + event.velocityY * VELOCITY_PROJECTION;
+          const sheetHeight = actionSheetHeightSV.value;
+          const minT = minTranslateValueSV.value;
+          const points = snapPointsSV.value;
+
+          let bestIndex = 0;
+          let bestDistance = Number.MAX_VALUE;
+          let lowestOffset = 0;
+          for (let i = 0; i < points.length; i++) {
+            const offset = sheetHeight + minT - (sheetHeight * points[i]) / 100;
+            if (i === 0) lowestOffset = offset;
+            const distance = Math.abs(projected - offset);
+            if (distance < bestDistance) {
+              bestDistance = distance;
+              bestIndex = i;
+            }
+          }
+
+          // Close when the throw carries past the lowest snap by more than the
+          // spring-back threshold (index 0 is the lowest / most-closed position).
+          const shouldClose =
+            closableC &&
+            bestIndex === 0 &&
+            projected - lowestOffset > springOffsetC;
+
+          runOnJS(handleGestureSettle)(bestIndex, shouldClose);
+        })
+        .activeOffsetY([-5, 5])
+        .failOffsetX([-5, 5]);
+    }, [
+      gestureEnabled,
+      overdrawFactor,
+      overdrawSize,
+      overdrawEnabled,
+      closable,
+      disableDragBeyondMinimumSnapPoint,
+      enableGesturesInScrollView,
+      springOffset,
+      handleGestureSettle,
+      registryVersion,
+    ]);
+
+    // Worklet gesture engine is the default on native. `legacyGestures` (or
+    // explicitly `experimentalWorkletGestures={false}`) opts back into the
+    // pre-v11 PanResponder/JS gesture path.
+    //
+    // Web always uses the PanResponder path. RNGH's `GestureDetector` on web is
+    // driven purely by pointer events, and the browser fires `pointercancel` on
+    // that pointer as soon as a touch inside a nested scrollable is claimed for
+    // scrolling. RNGH installs no touch-event fallback, so the pan is dead for
+    // the rest of the gesture and can never arbitrate with the scrollable: the
+    // sheet no longer expands before the list starts scrolling, and a scroll
+    // that reverses into a downward drag can no longer close the sheet.
+    // `PanResponder` runs off touch events, which do survive the browser
+    // claiming the gesture, and worklets execute on the main thread on web
+    // anyway, so the worklet engine buys nothing there.
+    const useWorkletGestures =
+      Platform.OS !== 'web' && !legacyGestures && experimentalWorkletGestures;
+    const activeGesture = useWorkletGestures ? workletPanGesture : panGesture;
+
+    const workletScrollContext = React.useMemo<WorkletScrollContextType>(
+      () => ({
+        enabled: useWorkletGestures,
+        gestureEnabled,
+        enableGesturesInScrollView,
+        translateY,
+        minTranslateValue: minTranslateValueSV,
+        isRefreshing: isRefreshingSV,
+        register: registerRegion,
+      }),
+      [
+        useWorkletGestures,
+        gestureEnabled,
+        enableGesturesInScrollView,
+        registerRegion,
+      ],
+    );
 
     const onTouch = (event: GestureResponderEvent) => {
       onTouchBackdrop?.(event);
@@ -1014,11 +1738,52 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       }
     };
 
+    // Screen-reader "adjustable" actions on the grabber: swipe up/down to move
+    // between snap points.
+    const onGrabberAccessibilityAction = React.useCallback(
+      (event: AccessibilityActionEvent) => {
+        if (event.nativeEvent.actionName === 'increment') {
+          snapForward(1, false);
+        } else if (event.nativeEvent.actionName === 'decrement') {
+          snapBackward(1, false);
+        }
+      },
+      [snapForward, snapBackward],
+    );
+
+    const grabberAccessibilityProps =
+      gestureEnabled && snapPoints.length > 1
+        ? {
+            accessible: true,
+            accessibilityRole: 'adjustable' as const,
+            accessibilityLabel:
+              props.accessibilityLabels?.grabber ?? 'Sheet position',
+            accessibilityActions: [
+              {name: 'increment'},
+              {name: 'decrement'},
+            ],
+            onAccessibilityAction: onGrabberAccessibilityAction,
+          }
+        : undefined;
+
     const getRef = useCallback(
       (): ActionSheetRef => ({
         show: (snapIndex?: number) => {
           if (typeof snapIndex === 'number') {
-            currentSnapIndex.current = snapIndex;
+            setCurrentSnapIndex(snapIndex);
+          }
+          // A show during the close ANIMATION is dropped: clearing the latches or
+          // presenting here would make `onCompleteAnimation` skip teardown and
+          // leave the sheet visible under an invisible full-screen Modal. Only a
+          // close that is waiting on the Modal's `onDismiss` is flushed.
+          if (hiding.current) {
+            if (pendingCloseNotify.current) {
+              flushCloseHandshake();
+              hiding.current = false;
+              closing.current = false;
+            } else {
+              return;
+            }
           }
           onBeforeShow?.();
           routerRef.current?.initialNavigation();
@@ -1035,10 +1800,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }
         },
         snapToOffset: (offset: number) => {
-          initialValue.current =
+          setInitialValue(
             actionSheetHeight.current +
-            minTranslateValue.current -
-            (actionSheetHeight.current * offset) / 100;
+              minTranslateValue.current -
+              (actionSheetHeight.current * offset) / 100,
+          );
           translateY.value = withSpring(
             initialValue.current,
             openAnimationConfig,
@@ -1051,8 +1817,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           }
           const availableHeight =
             actionSheetHeight.current + minTranslateValue.current;
-          initialValue.current =
-            initialValue.current + initialValue.current * (offset / 100);
+          setInitialValue(
+            initialValue.current + initialValue.current * (offset / 100),
+          );
           if (initialValue.current > availableHeight) {
             getRef().snapToOffset(100);
             return;
@@ -1068,8 +1835,8 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
             getRef().show(index);
             return;
           }
-          currentSnapIndex.current = index;
-          initialValue.current = getNextPosition(index);
+          setCurrentSnapIndex(index);
+          setInitialValue(getNextPosition(index));
           translateY.value = withSpring(
             initialValue.current,
             openAnimationConfig,
@@ -1107,7 +1874,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         getNextPosition,
         notifySnapIndexChanged,
         gestureEnabled,
-        visible,
+        // NOTE: open state is read through `visibleRef.current`, not `visible`,
+        // so `visible` is intentionally not a dependency (keeps the ref stable
+        // across open/close).
         keyboard.pauseKeyboardHandler,
       ],
     );
@@ -1142,7 +1911,11 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       () =>
         isModal && !props.backgroundInteractionEnabled
           ? {
-              visible: true,
+              // The sheet unmounts as soon as it is closed; the Modal is kept
+              // mounted (with this false) only so the dismissal can complete and
+              // report `onDismiss`.
+              visible: visible,
+              onDismiss: onModalDismiss,
               animationType: 'none',
               testID: props.testIDs?.modal || props.testID,
               supportedOrientations: SUPPORTED_ORIENTATIONS,
@@ -1172,15 +1945,19 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                     : 999,
                 width: '100%',
                 height: '100%',
+                // `pointerEvents` is a style on RN-web 0.21 (the prop is
+                // deprecated) and works as a style on native since 0.71.
+                pointerEvents: props?.backgroundInteractionEnabled
+                  ? 'box-none'
+                  : 'auto',
               },
-              pointerEvents: props?.backgroundInteractionEnabled
-                ? 'box-none'
-                : 'auto',
             },
       [
         currentContext,
         isModal,
+        visible,
         onHardwareBackPress,
+        onModalDismiss,
         onModalRequestClose,
         props,
         zIndex,
@@ -1212,17 +1989,42 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       [routeOpacity, router, sheetPayload],
     );
 
-    const context = {
-      ref: panGestureRef,
-      eventManager: internalEventManager,
-    };
+    const context = React.useMemo(
+      () => ({
+        ref: panGestureRef,
+        eventManager: internalEventManager,
+      }),
+      [internalEventManager],
+    );
 
+    // Backdrop opacity follows the sheet: full at any snap point, fading toward 0
+    // only as the sheet is dragged below the lowest snap toward dismissal. The
+    // `opacity` envelope still drives the open/close fade; this multiplies it by a
+    // drag-progress factor.
+    const animatedOpacityStyleDeps = webOnlyDeps([opacity, dimBackdropOnDrag]);
     const animatedOpacityStyle = useAnimatedStyle(() => {
-      return {
-        opacity: opacity.value,
-      };
-    }, [opacity]);
+      if (!dimBackdropOnDrag) return {opacity: opacity.value};
+      const sheetHeight = actionSheetHeightSV.value;
+      const rootHeight = rootHeightSV.value;
+      const points = snapPointsSV.value;
+      if (sheetHeight <= 0 || rootHeight <= 0 || points.length === 0) {
+        return {opacity: opacity.value};
+      }
+      // Fade range is keyboard-independent (uses rootHeight, not the
+      // keyboard-adjusted minTranslate): full at/above the lowest snap, fading to
+      // 0 as dragged toward the bottom. This keeps the backdrop steady when the
+      // sheet shifts up/down for the keyboard.
+      const lowest = rootHeight - (sheetHeight * points[0]) / 100;
+      const progress = interpolate(
+        translateY.value,
+        [lowest, rootHeight],
+        [1, 0],
+        Extrapolation.CLAMP,
+      );
+      return {opacity: opacity.value * progress};
+    }, animatedOpacityStyleDeps);
 
+    const animatedActionSheetStyleDeps = webOnlyDeps([translateY]);
     const animatedActionSheetStyle = useAnimatedStyle(() => {
       return {
         transform: [
@@ -1232,50 +2034,92 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         ],
         opacity: actionSheetOpacity.value,
       };
-    }, [translateY]);
+    }, animatedActionSheetStyleDeps);
 
-    const animatedUnderlayTranslateStyle = useAnimatedStyle(() => {
+    const baseTopLeftRadius =
+      (containerStyle?.borderTopLeftRadius as number) || 10;
+    const baseTopRightRadius =
+      (containerStyle?.borderTopRightRadius as number) || 10;
+
+    // Flatten the top corners as the sheet reaches full screen (iOS-style).
+    const animatedCornerStyleDeps = webOnlyDeps([
+      baseTopLeftRadius,
+      baseTopRightRadius,
+    ]);
+    const animatedCornerStyle = useAnimatedStyle(() => {
+      const progress = fullscreenProgress.value;
       return {
-        transform: [
-          {
-            translateY: underlayTranslateY.value,
-          },
-        ],
+        borderTopLeftRadius: interpolate(
+          progress,
+          [0, 1],
+          [baseTopLeftRadius, 0],
+          Extrapolation.CLAMP,
+        ),
+        borderTopRightRadius: interpolate(
+          progress,
+          [0, 1],
+          [baseTopRightRadius, 0],
+          Extrapolation.CLAMP,
+        ),
       };
-    }, [underlayTranslateY]);
+    }, animatedCornerStyleDeps);
 
-    const GestureMobileOnly =
-      Platform.OS === 'web' ? Fragment : GestureDetector;
+    // Reveals the flat fill that continues the sheet surface up behind the status
+    // bar. It rides along with the sheet, so it's kept invisible until the sheet
+    // is almost at the top, then fades in over the last stretch — reading as the
+    // surface snapping flush to the top rather than a strip floating up.
+    const animatedStatusBarFillStyleDeps = webOnlyDeps([]);
+    const animatedStatusBarFillStyle = useAnimatedStyle(() => {
+      return {
+        opacity: interpolate(
+          fullscreenProgress.value,
+          [0.5, 1],
+          [0, 1],
+          Extrapolation.CLAMP,
+        ),
+      };
+    }, animatedStatusBarFillStyleDeps);
+
+    // Web always uses PanResponder (panHandlers spread on the View) — see the
+    // engine selection above. Native uses a GestureDetector, whether it is
+    // running the worklet pan gesture or the legacy one.
+    const isPanResponderGesture = !useWorkletGestures && Platform.OS === 'web';
+    const GestureWrapper = isPanResponderGesture ? Fragment : GestureDetector;
 
     return (
       <>
-        {visible ? (
+        {visible || keepModalMounted ? (
           <Root {...rootProps}>
             <GestureHandlerRoot
               isModal={isModal}
-              style={styles.parentContainer}
-              pointerEvents={
-                props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
-              }>
+              style={[
+                styles.parentContainer,
+                {
+                  pointerEvents: props?.backgroundInteractionEnabled
+                    ? 'box-none'
+                    : 'auto',
+                },
+              ]}>
               <PanGestureRefContext.Provider value={context}>
-                <DraggableNodesContext.Provider value={draggableNodesContext}>
+                <SheetPositionContext.Provider value={sheetPosition}>
+                <WorkletScrollContext.Provider value={workletScrollContext}>
+                  <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
                     onLayout={event => {
-                      if (event.nativeEvent.layout.height < 10) return;
-                      setDimensions({
-                        width: event.nativeEvent.layout.width,
-                        height: event.nativeEvent.layout.height,
-                      });
+                      onRootLayout(
+                        event.nativeEvent.layout.width,
+                        event.nativeEvent.layout.height,
+                      );
                     }}
                     ref={rootViewContainerRef}
-                    pointerEvents={
-                      props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
-                    }
                     style={[
                       styles.parentContainer,
                       {
                         width: '100%',
                         justifyContent: 'flex-end',
+                        pointerEvents: props?.backgroundInteractionEnabled
+                          ? 'box-none'
+                          : 'auto',
                       },
                     ]}>
                     <>
@@ -1283,6 +2127,13 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                         <AnimatedPressable
                           onPress={onTouch}
                           testID={props.testIDs?.backdrop}
+                          // Expose the backdrop as a close button to screen
+                          // readers only when tapping it actually closes.
+                          accessible={closeOnTouchBackdrop && closable}
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            props.accessibilityLabels?.backdrop ?? 'Close'
+                          }
                           style={[
                             {
                               height: dimensions.height + insets.top + 100,
@@ -1299,8 +2150,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       {dimensions.height === -1 &&
                       Platform.OS === 'web' ? null : (
                         <Animated.View
-                          pointerEvents="box-none"
+                          // Treat the sheet as modal for screen readers and let
+                          // the VoiceOver/TalkBack escape gesture dismiss it.
+                          accessibilityViewIsModal={
+                            isModal && !props?.backgroundInteractionEnabled
+                          }
+                          onAccessibilityEscape={onModalRequestClose}
                           style={[
+                            {pointerEvents: 'box-none'},
                             {
                               borderTopRightRadius:
                                 containerStyle?.borderTopRightRadius || 10,
@@ -1329,15 +2186,18 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                               maxHeight: dimensions.height,
                             },
                             animatedActionSheetStyle,
+                            drawUnderStatusBar ? animatedCornerStyle : undefined,
                           ]}>
-                          <GestureMobileOnly
-                            {...(Platform.OS === 'web'
+                          <GestureWrapper
+                            {...(isPanResponderGesture
                               ? ({} as any)
                               : {
-                                  gesture: panGesture as PanGesture,
+                                  gesture: activeGesture as PanGesture,
                                 })}>
                             <Animated.View
-                              {...((panGesture as any)?.panHandlers || {})}
+                              {...(isPanResponderGesture
+                                ? (activeGesture as any)?.panHandlers || {}
+                                : {})}
                               onLayout={event =>
                                 onSheetLayout(event.nativeEvent.layout.height)
                               }
@@ -1356,8 +2216,6 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                       insets.top -
                                       keyboard.keyboardHeight
                                     : dimensions.height - insets.top,
-                                  // Using this to trigger layout when keyboard is shown
-                                  marginTop: keyboard.keyboardShown ? 0.5 : 0,
                                   paddingBottom:
                                     (Platform.OS === 'ios' &&
                                       keyboard.keyboardShown) ||
@@ -1366,23 +2224,23 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                       : insets.bottom,
                                 },
                               ]}>
-                              {drawUnderStatusBar ? (
+                              {drawUnderStatusBar && insets.top > 0 ? (
                                 <Animated.View
                                   style={[
                                     {
-                                      height: 130,
                                       position: 'absolute',
-                                      top: -80,
+                                      top: -insets.top,
+                                      left: 0,
+                                      right: 0,
+                                      pointerEvents: 'none',
+                                      // Overlap 1px into the sheet to avoid a
+                                      // hairline seam at the join.
+                                      height: insets.top + 1,
                                       backgroundColor:
                                         containerStyle?.backgroundColor ||
                                         'white',
-                                      width: '100%',
-                                      borderTopRightRadius:
-                                        containerStyle?.borderRadius || 10,
-                                      borderTopLeftRadius:
-                                        containerStyle?.borderRadius || 10,
                                     },
-                                    animatedUnderlayTranslateStyle,
+                                    animatedStatusBarFillStyle,
                                   ]}
                                 />
                               ) : null}
@@ -1391,6 +2249,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                   props.CustomHeaderComponent
                                 ) : (
                                   <Animated.View
+                                    {...grabberAccessibilityProps}
                                     style={[
                                       styles.indicator,
                                       props.indicatorStyle,
@@ -1407,7 +2266,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                                 props?.children
                               )}
                             </Animated.View>
-                          </GestureMobileOnly>
+                          </GestureWrapper>
 
                           {overdrawEnabled ? (
                             <Animated.View
@@ -1434,7 +2293,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       ) : null}
                     </>
                   </Animated.View>
-                </DraggableNodesContext.Provider>
+                  </DraggableNodesContext.Provider>
+                </WorkletScrollContext.Provider>
+                </SheetPositionContext.Provider>
               </PanGestureRefContext.Provider>
             </GestureHandlerRoot>
           </Root>
@@ -1446,9 +2307,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
 const GestureHandlerRoot = (props: any) => {
   return props.isModal ? (
-    <GestureHandlerRootView
-      style={props.style}
-      pointerEvents={props.pointerEvents}>
+    // `pointerEvents` arrives inside `style` (see the call site): the prop is
+    // deprecated on RN-web 0.21 and the style form works on native too.
+    <GestureHandlerRootView style={props.style}>
       {props.children}
     </GestureHandlerRootView>
   ) : (

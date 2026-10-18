@@ -1,15 +1,9 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
-    "jsx": "react-native",
     "esModuleInterop": true,
     "paths": {
-      "react-native-actions-sheet": [
-        "../"
-      ],
-      "react-native-actions-sheet/dist/src/views/FlashList": [
-        "../dist/src/views/FlashList"
-      ]
+      "react-native-actions-sheet": ["../"],
+      "@legendapp/list": ["./node_modules/@legendapp/list/react-native"]
     }
   },
   "extends": "expo/tsconfig.base"

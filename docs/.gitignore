@@ -33,3 +33,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# vitepress
+.vitepress/cache
+.vitepress/dist

@@ -1,6 +1,6 @@
 import {createContext, useCallback, useContext, useState} from 'react';
 import {Sheets, ActionSheetRef} from '../types';
-import {SharedValue, withTiming} from 'react-native-reanimated';
+import {runOnJS, SharedValue, withTiming} from 'react-native-reanimated';
 
 export type RouteDefinition<T extends {} = {}> = T;
 
@@ -88,10 +88,24 @@ export const useRouter = ({
   const [stack, setStack] = useState<Route[]>([]);
   const currentRoute: Route | undefined = stack?.[stack.length - 1];
 
-  const animate = useCallback(
-    (snap = 0, opacity = 0, _delay = 0) => {
+  // Snap the sheet in the given direction and fade the current route out.
+  // `onDone` runs when the fade-out settles, replacing the old setTimeout(100).
+  const animateOut = useCallback(
+    (snap: number, onDone: () => void) => {
       getRef?.().snapToRelativeOffset(snap);
-      routeOpacity.value = withTiming(opacity, {
+      routeOpacity.value = withTiming(0, {duration: 150}, () => {
+        'worklet';
+        runOnJS(onDone)();
+      });
+    },
+    [getRef, routeOpacity],
+  );
+
+  // Fade the (new) current route back in.
+  const animateIn = useCallback(
+    (snap = 0) => {
+      getRef?.().snapToRelativeOffset(snap);
+      routeOpacity.value = withTiming(1, {
         duration: 150,
       });
     },
@@ -100,12 +114,11 @@ export const useRouter = ({
 
   const navigate = useCallback(
     (name: string, params?: any, snap?: number) => {
-      animate(snap || -4, 0);
-      setTimeout(() => {
+      animateOut(snap || -4, () => {
         setStack((state: any) => {
           const next = routes?.find(route => route.name === name);
           if (!next) {
-            animate(0, 1);
+            animateIn(0);
             return state;
           }
           const currentIndex = state.findIndex(
@@ -119,10 +132,10 @@ export const useRouter = ({
           onNavigate?.(next.name);
           return [...state, {...next, params: params || next.params}];
         });
-        setTimeout(() => animate(0, 1, 150));
-      }, 100);
+        animateIn(0);
+      });
     },
-    [animate, routes, onNavigate],
+    [animateOut, animateIn, routes, onNavigate],
   );
 
   const initialNavigation = () => {
@@ -141,8 +154,7 @@ export const useRouter = ({
   };
 
   const goBack = (name?: string, snap?: number) => {
-    animate(snap || -4, 0);
-    setTimeout(() => {
+    animateOut(snap || -4, () => {
       setStack(state => {
         const next = routes?.find(route => route.name === name);
         if (state.length === 1) {
@@ -165,12 +177,12 @@ export const useRouter = ({
           onNavigateBack?.(nextStack[nextStack.length - 1]?.name);
           return [...nextStack, next];
         }
-        
+
         onNavigateBack?.(next.name);
         return [...stack, next];
       });
-      setTimeout(() => animate(0, 1, 150));
-    }, 100);
+      animateIn(0);
+    });
   };
 
   const close = () => {

@@ -136,6 +136,27 @@ class _SheetManager {
         }
       }
 
+      // Check if the sheet is registered.
+      let isRegisteredWithSheetProvider = false;
+      for (let _id in sheetsRegistry) {
+        if (_id === id) {
+          isRegisteredWithSheetProvider = true;
+        }
+      }
+
+      // Finish any close still in flight for this sheet BEFORE subscribing to
+      // `onclose_`. Publishing is synchronous, so the show event reaches
+      // `onBeforeShow` -> `flushCloseHandshake` -> `runPendingCloseNotify` on
+      // this same tick; if we had already subscribed, the previous close's
+      // notification would resolve this promise immediately with stale data,
+      // remove the registry entry we are about to add, and let the provider
+      // unmount the sheet we are re-opening.
+      actionSheetEventManager.publish(
+        `flush_close_${id}`,
+        undefined,
+        currentContext || 'global',
+      );
+
       const handler = (data: any, context = 'global') => {
         if (currentContext !== context) return;
         options?.onClose?.(data);
@@ -144,13 +165,6 @@ class _SheetManager {
       };
       var sub = actionSheetEventManager.subscribe(`onclose_${id}`, handler);
 
-      // Check if the sheet is registered.
-      let isRegisteredWithSheetProvider = false;
-      for (let _id in sheetsRegistry) {
-        if (_id === id) {
-          isRegisteredWithSheetProvider = true;
-        }
-      }
       actionSheetEventManager.publish(
         isRegisteredWithSheetProvider ? `show_wrap_${id}` : `show_${id}`,
         options?.payload,
@@ -240,7 +254,7 @@ class _SheetManager {
   /**
    * An async hide function. This is useful when you want to show one ActionSheet after closing another.
    *
-   * @param id id of the ActionSheet to show
+   * @param id id of the ActionSheet to hide
    * @param data
    */
   async hide<SheetId extends keyof Sheets>(
@@ -329,17 +343,24 @@ class _SheetManager {
   };
 
   add = (id: string, context: string) => {
-    if (renderedSheetIds.indexOf(id) < 0) {
-      renderedSheetIds[renderedSheetIds.length] =
-        `${id}:${context || 'global'}`;
+    // Key on `id:context`, the same shape stored below. Checking the bare `id`
+    // never matched an entry, so re-registering the same sheet piled up
+    // duplicates.
+    const key = `${id}:${context || 'global'}`;
+    if (renderedSheetIds.indexOf(key) < 0) {
+      renderedSheetIds[renderedSheetIds.length] = key;
     }
   };
 
   remove = (id: string, context: string) => {
-    if (renderedSheetIds.indexOf(`${id}:${context}`) > -1) {
-      renderedSheetIds.splice(
-        renderedSheetIds.indexOf(`${id}:${context || 'global'}`),
-      );
+    // Same key for the lookup and the splice (the old code checked
+    // `${id}:${context}` but spliced `${id}:${context || 'global'}`), and a
+    // delete count of 1 -- `splice(index)` removed every entry after this one,
+    // so removing A also unregistered any sheet registered after it.
+    const key = `${id}:${context || 'global'}`;
+    const index = renderedSheetIds.indexOf(key);
+    if (index > -1) {
+      renderedSheetIds.splice(index, 1);
     }
   };
   /**

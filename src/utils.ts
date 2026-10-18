@@ -15,14 +15,26 @@ export function getDeviceHeight(
 }
 
 export const getElevation = (elevation: number) => {
+  // `boxShadow` replaces the deprecated `shadow*` trio, which RN-web 0.21 warns
+  // about and which iOS refuses to draw without a background colour ("shadow set
+  // but cannot calculate efficiently"). Android keeps its native `elevation`,
+  // which already draws the shadow, so `boxShadow` is not stacked on top of it.
+  if (Platform.OS === 'android') {
+    return {elevation};
+  }
   return {
-    elevation,
-    shadowColor: 'black',
-    shadowOffset: {width: 0.3 * elevation, height: 0.5 * elevation},
-    shadowOpacity: 0.2,
-    shadowRadius: 0.7 * elevation,
+    boxShadow: `${0.3 * elevation}px ${0.5 * elevation}px ${0.7 * elevation}px rgba(0, 0, 0, 0.2)`,
   };
 };
+
+// Reanimated only reads hook dependency arrays on web, where its Babel plugin
+// does not run. On native it derives them from the worklet closure, and since
+// 4.6 its implementation warns on every render when an array is passed there
+// ("dependencies should only be used in web implementation"), which floods dev
+// consoles. Keep the arrays for web, drop them everywhere else.
+export function webOnlyDeps<T extends unknown[]>(deps: T): T | undefined {
+  return Platform.OS === 'web' ? deps : undefined;
+}
 
 export const SUPPORTED_ORIENTATIONS: (
   | 'portrait'

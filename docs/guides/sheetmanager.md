@@ -1,0 +1,85 @@
+# Usage with SheetManager
+
+`SheetManager` is great because it helps you save lots of development time. One great feature is that you can reuse the same ActionSheet in the app and don't have to create or define it in multiple places. Another is that you don't have to write boilerplate for every ActionSheet component. Everything just works.
+
+Import `ActionSheet`.
+
+```tsx
+import ActionSheet from 'react-native-actions-sheet';
+```
+
+Create your ActionSheet component and export it.
+
+```tsx
+function ExampleSheet() {
+  return (
+    <ActionSheet gestureEnabled>
+      <View>
+        <Text>Hello World</Text>
+      </View>
+    </ActionSheet>
+  );
+}
+
+export default ExampleSheet;
+```
+
+Create a `sheets.tsx` file and import your sheet then register it.
+
+```tsx
+import {SheetRegister, SheetDefinition} from 'react-native-actions-sheet';
+import ExampleSheet from 'example-sheet.tsx';
+
+// We extend some of the types here to give us great intellisense
+// across the app for all registered sheets.
+declare module 'react-native-actions-sheet' {
+  interface Sheets {
+    'example-sheet': SheetDefinition;
+  }
+}
+
+export const Sheets = () => {
+  return <SheetRegister sheets={{'example-sheet': ExampleSheet}} />
+}
+```
+
+In `App.tsx` import `Sheets` component and wrap your app in `SheetProvider`.
+
+```tsx
+import {SheetProvider} from 'react-native-actions-sheet';
+import { Sheets } from 'sheets.tsx';
+
+function App() {
+  return (
+    <SheetProvider>
+      <Sheets />
+      {
+        // your app components
+      }
+    </SheetProvider>
+  );
+}
+```
+
+Open the ActionSheet from anywhere in the app.
+
+```jsx
+SheetManager.show('example-sheet');
+```
+
+`show` returns a promise that resolves with the sheet's return value **when the sheet closes**, not when it opens. That is what makes the [returning data](./getdata) and chaining patterns work, but it also means code written after an `await` runs only once the sheet is gone:
+
+```jsx
+// opens, then waits for the user to close the sheet
+const result = await SheetManager.show('example-sheet');
+// ...runs after the sheet has closed
+
+// opens immediately and does not wait
+SheetManager.show('example-sheet');
+```
+
+Hide the ActionSheet
+
+```jsx
+SheetManager.hide('example-sheet');
+```
