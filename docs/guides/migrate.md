@@ -33,7 +33,7 @@ For most apps: **nothing**. Existing props keep working. Just make sure any scro
 - [`dimBackdropOnDrag`](/reference/actionsheet#dimbackdropondrag) — backdrop fades toward dismissal (default `true`).
 - [`accessibilityLabels`](/reference/actionsheet#accessibilitylabels) — labels for the backdrop and grabber.
 
-### Deprecations (to be removed in v11)
+### Deprecations (to be removed in v12)
 
 - The legacy `PanResponder`/JS gesture path. Set [`legacyGestures`](/reference/actionsheet#legacygestures) (or `experimentalWorkletGestures={false}`) to fall back to it if the worklet path misbehaves — and please report the issue.
 - [`useScrollHandlers`](/reference/usescrollhandlers) and `resolveScrollRef`. Prefer the bundled scrollables or `useSheetScrollable`.
