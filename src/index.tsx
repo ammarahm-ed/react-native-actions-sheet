@@ -1172,10 +1172,10 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                     : 999,
                 width: '100%',
                 height: '100%',
+                pointerEvents: props?.backgroundInteractionEnabled
+                  ? 'box-none'
+                  : 'auto',
               },
-              pointerEvents: props?.backgroundInteractionEnabled
-                ? 'box-none'
-                : 'auto',
             },
       [
         currentContext,
@@ -1253,10 +1253,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           <Root {...rootProps}>
             <GestureHandlerRoot
               isModal={isModal}
-              style={styles.parentContainer}
-              pointerEvents={
-                props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
-              }>
+              style={[
+                styles.parentContainer,
+                {
+                  pointerEvents: props?.backgroundInteractionEnabled
+                    ? 'box-none'
+                    : 'auto',
+                },
+              ]}>
               <PanGestureRefContext.Provider value={context}>
                 <DraggableNodesContext.Provider value={draggableNodesContext}>
                   <Animated.View
@@ -1268,14 +1272,14 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       });
                     }}
                     ref={rootViewContainerRef}
-                    pointerEvents={
-                      props?.backgroundInteractionEnabled ? 'box-none' : 'auto'
-                    }
                     style={[
                       styles.parentContainer,
                       {
                         width: '100%',
                         justifyContent: 'flex-end',
+                        pointerEvents: props?.backgroundInteractionEnabled
+                          ? 'box-none'
+                          : 'auto',
                       },
                     ]}>
                     <>
@@ -1299,9 +1303,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       {dimensions.height === -1 &&
                       Platform.OS === 'web' ? null : (
                         <Animated.View
-                          pointerEvents="box-none"
                           style={[
                             {
+                              pointerEvents: 'box-none',
                               borderTopRightRadius:
                                 containerStyle?.borderTopRightRadius || 10,
                               borderTopLeftRadius:
@@ -1446,9 +1450,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
 const GestureHandlerRoot = (props: any) => {
   return props.isModal ? (
-    <GestureHandlerRootView
-      style={props.style}
-      pointerEvents={props.pointerEvents}>
+    <GestureHandlerRootView style={props.style}>
       {props.children}
     </GestureHandlerRootView>
   ) : (
