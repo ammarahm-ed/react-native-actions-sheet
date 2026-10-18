@@ -23,7 +23,7 @@ export const getElevation = (elevation: number) => {
     return {elevation};
   }
   return {
-    boxShadow: `0px ${0.5 * elevation}px ${0.7 * elevation}px rgba(0, 0, 0, 0.2)`,
+    boxShadow: `${0.3 * elevation}px ${0.5 * elevation}px ${0.7 * elevation}px rgba(0, 0, 0, 0.2)`,
   };
 };
 
