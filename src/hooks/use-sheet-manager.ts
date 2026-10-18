@@ -8,13 +8,15 @@ const useSheetManager = ({
   onHide,
   onBeforeShow,
   onContextUpdate,
+  initialVisible = false,
 }: {
   id?: string;
   onHide: (data?: any) => void;
   onBeforeShow?: (data?: any, snapIndex?: number) => void;
   onContextUpdate: () => void;
+  initialVisible?: boolean;
 }) => {
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(initialVisible);
   const currentContext = useProviderContext();
   const visibleRef = useRef({
     value: visible,

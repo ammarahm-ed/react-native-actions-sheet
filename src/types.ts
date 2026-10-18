@@ -407,6 +407,13 @@ export type ActionSheetProps<SheetId extends keyof Sheets = never> = {
    */
   initialRoute?: keyof Sheets[SheetId]['routes'] | (string & {});
   /**
+   * Set the ActionSheet to be visible on initial render. When true, the sheet
+   * appears immediately without the opening animation.
+   *
+   * Default: `false`
+   */
+  initialVisible?: boolean;
+  /**
    * Enable back navigation for router when pressing hardware back button or
    * touching the back drop. Remember that swiping down the sheet will still close
    * the sheet regardless of the route in stack.

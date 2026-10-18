@@ -188,6 +188,7 @@ const MainScreen = () => {
     <>
       <SafeAreaView style={[styles.safeareview, {}]}>
         <ActionSheet
+          initialVisible
           ref={actionSheetRef}
           gestureEnabled
           containerStyle={{

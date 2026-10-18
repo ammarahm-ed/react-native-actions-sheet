@@ -98,6 +98,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
       returnValue,
       routes,
       initialRoute,
+      initialVisible,
       onBeforeShow,
       enableRouterBackNavigation,
       onBeforeClose,
@@ -121,6 +122,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         ? [...snapPoints, 100]
         : snapPoints;
     const initialValue = useRef(-1);
+    const isInitialVisible = useRef(initialVisible);
     const actionSheetHeight = useRef(0);
     const insets = useSafeAreaInsets();
     const internalEventManager = React.useMemo(() => new EventManager(), []);
@@ -163,6 +165,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
     const {visible, setVisible, visibleRef} = useSheetManager({
       id: sheetId,
+      initialVisible,
       onHide: data => {
         hideSheet(undefined, data, true);
       },
@@ -408,7 +411,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
 
           minTranslate = rootViewHeight - actionSheetHeight.current;
 
-          if (initial === -1) {
+          if (initial === -1 && !isInitialVisible.current) {
             translateY.value = rootViewHeight * initialTranslateFactor;
           }
 
@@ -445,8 +448,15 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
           minTranslateValue.current = minTranslate;
           initialValue.current = initial;
 
-          animationSheetOpacity(defaultOverlayOpacity);
-          moveSheetWithAnimation(undefined, initial, minTranslate);
+          if (isInitialVisible.current) {
+            isInitialVisible.current = false;
+            opacity.value = defaultOverlayOpacity;
+            actionSheetOpacity.value = 1;
+            translateY.value = initial;
+          } else {
+            animationSheetOpacity(defaultOverlayOpacity);
+            moveSheetWithAnimation(undefined, initial, minTranslate);
+          }
 
           if (initial > 130) {
             underlayTranslateY.value = 130;
@@ -517,7 +527,9 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
         }
         const onCompleteAnimation = () => {
           if (closable || isSheetManagerOrRef) {
-            const providerIndex = providerRegistryStack.indexOf(providerId.current);
+            const providerIndex = providerRegistryStack.indexOf(
+              providerId.current,
+            );
             if (providerIndex > -1) {
               providerRegistryStack.splice(providerIndex, 1);
             }
@@ -1428,9 +1440,7 @@ export default forwardRef<ActionSheetRef, ActionSheetProps>(
                       {ExtraOverlayComponent}
                       {props.withNestedSheetProvider}
                       {sheetId ? (
-                        <SheetProvider
-                          context={providerId.current}
-                        />
+                        <SheetProvider context={providerId.current} />
                       ) : null}
                     </>
                   </Animated.View>
